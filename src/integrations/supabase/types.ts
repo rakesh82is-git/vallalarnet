@@ -14,16 +14,138 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      gallery_items: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["gallery_kind"]
+          sort_order: number
+          thumb_url: string | null
+          title_en: string
+          title_ta: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["gallery_kind"]
+          sort_order?: number
+          thumb_url?: string | null
+          title_en: string
+          title_ta: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["gallery_kind"]
+          sort_order?: number
+          thumb_url?: string | null
+          title_en?: string
+          title_ta?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      signatures: {
+        Row: {
+          age: number
+          consent: boolean
+          country: string
+          created_at: string
+          district: string
+          id: string
+          kind: Database["public"]["Enums"]["signature_kind"]
+          message: string | null
+          name: string
+          phone_hash: string
+          phone_masked: string
+          scan_url: string | null
+          signature_svg: string | null
+          state: string
+        }
+        Insert: {
+          age: number
+          consent?: boolean
+          country: string
+          created_at?: string
+          district: string
+          id?: string
+          kind: Database["public"]["Enums"]["signature_kind"]
+          message?: string | null
+          name: string
+          phone_hash: string
+          phone_masked: string
+          scan_url?: string | null
+          signature_svg?: string | null
+          state: string
+        }
+        Update: {
+          age?: number
+          consent?: boolean
+          country?: string
+          created_at?: string
+          district?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["signature_kind"]
+          message?: string | null
+          name?: string
+          phone_hash?: string
+          phone_masked?: string
+          scan_url?: string | null
+          signature_svg?: string | null
+          state?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      signatures_public: {
+        Row: {
+          country: string | null
+          created_at: string | null
+          district: string | null
+          id: string | null
+          kind: Database["public"]["Enums"]["signature_kind"] | null
+          message: string | null
+          name: string | null
+          scan_url: string | null
+          signature_svg: string | null
+          state: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string | null
+          district?: string | null
+          id?: string | null
+          kind?: Database["public"]["Enums"]["signature_kind"] | null
+          message?: string | null
+          name?: string | null
+          scan_url?: string | null
+          signature_svg?: string | null
+          state?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string | null
+          district?: string | null
+          id?: string | null
+          kind?: Database["public"]["Enums"]["signature_kind"] | null
+          message?: string | null
+          name?: string | null
+          scan_url?: string | null
+          signature_svg?: string | null
+          state?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      gallery_kind: "photo" | "video" | "fieldwork"
+      signature_kind: "digital" | "manual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +272,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      gallery_kind: ["photo", "video", "fieldwork"],
+      signature_kind: ["digital", "manual"],
+    },
   },
 } as const
