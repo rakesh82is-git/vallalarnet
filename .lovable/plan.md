@@ -1,92 +1,78 @@
-# Vallalar.net redesign — petition flow (demo build)
+# Vadalur Holy City — Rebuild Plan
 
-A three-route Tamil-first site asking the world to declare Vadalur a holy city. Everything is front-end only: signatures, OTP, vote counts and uploads live in browser memory (`localStorage`) so the flow feels real for a design preview, but nothing persists server-side.
+Adopt the structure of `vadalur-punithanagaram.vercel.app` with two adjustments you chose:
+- Keep our **Digital + Manual** two-tab signing flow on `/sign`.
+- Reuse our already-generated images (`sanctuary.jpg`, `thanks.jpg`, `gathering.jpg`, `lamp.jpg`).
 
 ## Routes
 
-```text
-src/routes/
-  __root.tsx           shared shell: top nav (முகப்பு · கையொப்பம் · படத்தொகுப்பு), footer
-  index.tsx            Home — hero image + 20 lines of Tamil intro copy
-  signature.tsx        Signature page with two tabs
-  gallery.tsx          Photos & videos grid
-```
+| Path | Tamil label | Purpose |
+|---|---|---|
+| `/` | முகப்பு | Hero banner, live counters, "Why Vadalur", testimonials preview, 3-step "How it works", final CTA |
+| `/story` | கதை | 3 chapters (Vallalar, Sathya Gnana Sabha, Holy City) + 3 Holy Sites cards |
+| `/sign` | கையெழுத்திடுங்கள் | **Two tabs**: Digital (form + mock OTP + signature pad) and Manual (upload + auto-redact) |
+| `/wall` | கையொப்பச் சுவர் | Public wall of approved signatures (name, place, message, signature thumbnail) |
+| `/analytics` | பகுப்பாய்வு | Goal progress (target 1,00,000), growth chart, recent activity, region split, world list |
+| `/gallery` | படத்தொகுப்பு | Tabs: புகைப்படங்கள் / காணொளிகள் / களப் பணிகள் |
 
-Each route gets its own `head()` with unique Tamil title + description + og tags.
+Shared `__root.tsx`: top nav with all six links, language switcher **த / EN**, footer.
 
-## 1. Home (`/`)
+## Bilingual (TA + EN)
 
-- Reuses the existing `sanctuary.jpg` as a full-bleed hero with the warm saffron glow already in `styles.css`.
-- Title: **அருட்பெருஞ்ஜோதி — வடலூர் புனித நகரம்**
-- Body: ~20 lines of placeholder Tamil prose I'll draft, framed in two columns on desktop, single column on mobile. Tone: reverent, inviting, ending with a clear CTA → "உங்கள் கையொப்பம் இடுங்கள்" button that links to `/signature`.
-- Live signature count chip ("இதுவரை N கையொப்பங்கள்") pulled from `localStorage` so the home page reacts as signatures grow.
+- New `src/i18n/` with `ta.ts` and `en.ts` dictionaries keyed by `home.hero.title`, etc.
+- `LanguageProvider` (React context) stores `lang` in `localStorage`, defaults to `ta`.
+- `useT()` hook returns the right string. All page copy comes from the dictionaries — no inline strings.
+- Switcher in nav toggles between த (Tamil) and EN.
 
-## 2. Signature page (`/signature`)
+## Backend (Lovable Cloud)
 
-Tabbed UI (shadcn `Tabs`). Two tabs: **டிஜிட்டல் கையொப்பம்** and **கையால் எழுதிய கையொப்பம்**.
+Enable Cloud, then create these tables:
 
-### A. Digital Signature tab
+- `signatures` — `id`, `name`, `age`, `phone_hash` (sha256 for one-vote-per-phone, never exposed), `phone_masked`, `country`, `state`, `district`, `message`, `signature_svg` (digital) OR `scan_url` (manual), `kind` ('digital' | 'manual'), `consent` (bool), `created_at`. RLS: public read of safe columns via a `signatures_public` view; insert via server function.
+- `gallery_items` — `id`, `kind` ('photo' | 'video' | 'fieldwork'), `title_ta`, `title_en`, `url`, `thumb_url`, `created_at`. Public read.
+- Storage buckets: `signatures` (private; manual scans), `gallery` (public).
 
-Step 1 — Intro panel
-- Animated Vallalar signature GIF placeholder (I'll generate a stylised "வள்ளலார்" calligraphic SVG that animates its stroke; if you have a real GIF, drop it in later).
-- Catchy Tamil tagline above the form.
+Server functions in `src/lib/petition.functions.ts`:
+- `submitSignature({ kind, ...payload })` — validates with zod, hashes phone, rejects duplicates, inserts.
+- `listSignatures({ limit, cursor })` — paginated for `/wall`.
+- `getStats()` — totals for counters + analytics (count, distinct districts, distinct countries, daily series, top regions).
 
-Step 2 — Details form (zod-validated)
-- பெயர் (Name)
-- வயது (Age)
-- நாடு / மாநிலம் / மாவட்டம் (Country / State / District — dropdowns, India pre-loaded, other countries as free text)
-- கைபேசி எண் (Mobile, with country code)
-- Consent question rendered as a required Yes/No radio:
-  **"வடலூர் புனித நகரம் ஆவதற்கு உங்களுக்கு சம்மதமா?"** (ஆம் / இல்லை)
+Replace localStorage `petition-store.ts` calls with `useServerFn`-wrapped versions. Counters become live across all visitors.
 
-Step 3 — Mock OTP
-- After submit, show a modal: "உங்கள் எண்ணுக்கு குறியீடு அனுப்பப்பட்டது". Any 6-digit code is accepted (we display a hint that this is a demo).
-- Enforce one-vote-per-phone by checking the number against `localStorage` before sending OTP. Duplicate → friendly Tamil message.
+## Sign page (two tabs preserved)
 
-Step 4 — Signature pad
-- `react-signature-canvas` for drawing the signature with a finger / mouse.
+- **Digital tab**: Vallalar signature GIF placeholder + Tamil tagline → form (name, age, +91 phone, country/state/district, 200-char message, consent question "வடலூர் புனித நகரம் ஆவதற்கு உங்களுக்கு சம்மதமா?") → mock 6-digit OTP step → signature pad → submit → thank-you screen (thanks.jpg) with live vote count and share buttons.
+- **Manual tab**: drop image → in-browser auto-redact (drag rectangles, canvas blur) → preview → upload only the blurred version to `signatures` bucket → success.
 
-Step 5 — Success state
-- Joyful "animals with Vallalar" thank-you illustration (I'll generate a bright, heavenly scene of deer/peacock/cow around Vallalar with floating hearts — placeholder for now, you can swap to a real GIF later).
-- Big number: **"நீங்கள் #N-ஆவது கையொப்பமிட்டவர்"** plus the running total.
-- Share buttons (WhatsApp + copy link) generated as `wa.me` deep links — no Twilio needed.
+## Gallery
 
-### B. Manual Signature tab
+Three tabs filter `gallery_items` by `kind`. Seed migration inserts placeholder rows pointing at our existing assets so the page isn't empty pre-launch. Lightbox on click.
 
-- Upload zone (drag-drop or click) accepting JPG/PNG/PDF of a physically signed page.
-- **Auto-blur**: the uploaded image is drawn to a `<canvas>`, the user is shown a simple rectangle tool to drag boxes over phone/address regions; those rectangles are rasterised with a strong Gaussian blur before the image is saved. Pre-blur preview shown so they can confirm.
-- Saved scans appear in a grid below the upload zone (read from `localStorage`), with a lightbox viewer. Only the blurred version is ever stored or displayed.
-- Clear Tamil notice explaining the demo nature + privacy guidance.
+## Analytics
 
-## 3. Gallery (`/gallery`)
+Single server function `getStats()` returns everything. Render:
+- Progress bar to 1,00,000.
+- Line chart (recharts) of cumulative signatures by day.
+- Recent activity list (last 8 signatures: name + district + relative time).
+- Top districts/states bar list.
+- Simple "Worldwide signers" country list (no map library to keep bundle small; we can add `react-simple-maps` later if you want a real world map).
 
-- Masonry grid of event photos + videos. Seeded with 6–8 placeholder slots using generated heavenly Vadalur-themed imagery (I'll create 2–3 fresh ones, reuse `sanctuary.jpg`).
-- Video tiles use native `<video>` with poster frames; you can later replace the `src` with real YouTube embeds.
-- Lightbox on click for photos; inline play for videos.
+## Design
 
-## Design language (carries from previous build)
-
-- Same warm ivory + saffron palette already in `src/styles.css`.
-- Hind Madurai + Noto Sans Tamil for Tamil, JetBrains Mono for the count numerals.
-- New tokens added for: success-green (thank-you state), petition card surface, blur-mask overlay.
-- All buttons/inputs/tabs through shadcn variants so the theme stays consistent.
+Same warm ivory + saffron + gold tokens we already shipped. Hind Madurai + Noto Sans Tamil. No visual regressions on the home page beyond layout.
 
 ## Technical notes
 
-- New deps: `react-signature-canvas`, `react-dropzone`, `zod` (already present), `react-hook-form` (likely already present).
-- A small `src/lib/petition-store.ts` wraps `localStorage` with a typed API: `addSignature`, `getCount`, `hasPhone`, `addManualScan`, `listManualScans`. Swappable for a real backend later.
-- Auto-blur done client-side with canvas `filter: blur(20px)` over user-drawn rectangles, then `toBlob('image/jpeg')` so the original pixels are gone before storage.
-- Everything stays SSR-safe — storage reads are wrapped in `useEffect`.
+- New deps: `recharts` for analytics chart. (`react-signature-canvas`, `react-dropzone` already added.)
+- One Supabase migration creates tables, view, RLS policies, GRANTs, storage buckets + policies, and seeds gallery rows.
+- Mock OTP stays client-side (any 6 digits) until you ask for real SMS — at which point we wire Twilio via a connector and swap the mock step.
+- Phone uniqueness enforced server-side by `phone_hash` unique index. Mask shown publicly is `+91 •••••• 1234`.
 
-## What I'll need from you later (not blocking)
+## Out of scope (call out)
 
-1. Final Tamil copy for the 20-line home intro (I'll ship a draft you can edit in place).
-2. Real Vallalar signature GIF + "animals thanking" GIF when you have them — placeholders go in now.
-3. Real event photos/videos for the gallery.
-4. When you're ready to go live with real votes: say the word and we enable Lovable Cloud + Twilio (or email OTP) and migrate the `petition-store` calls to server functions — UI stays the same.
+- Real SMS OTP (mock until you say go).
+- Admin moderation queue for the Wall (everything auto-publishes for now; we can add a `status` column later).
+- Multi-language beyond TA/EN.
+- Real map visualization (list view only, swap later).
 
-## Out of scope for this iteration
-
-- Real persistence, real OTP, real one-vote-per-person enforcement across devices.
-- Admin moderation tools.
-- Multi-language site (stays Tamil-first; English meta only).
+Proceed?
