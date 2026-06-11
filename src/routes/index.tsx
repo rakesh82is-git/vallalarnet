@@ -38,7 +38,7 @@ const languages = [
   { name: "తెలుగు", count: "24 நூல்கள்" },
   { name: "Français", count: "12 நூல்கள்" },
   { name: "Deutsch", count: "9 நூல்கள்" },
-  { name: "Español", content: "", count: "8 நூல்கள்" },
+  { name: "Español", count: "8 நூல்கள்" },
   { name: "日本語", count: "6 நூல்கள்" },
   { name: "العربية", count: "5 நூல்கள்" },
 ] as const;
