@@ -4,6 +4,30 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme inline {
+  --font-display: "Hind Madurai", "Noto Serif Tamil", serif;
+  --font-sans: "Noto Sans Tamil", "Hind Madurai", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
+  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.65; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@utility animate-glow {
+  animation: glow-pulse 8s ease-in-out infinite;
+}
+
+@utility animate-reveal {
+  animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /*
  * Design system definition.
  *
@@ -62,26 +86,27 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --radius: 0.75rem;
+  /* Vadalur luminosity — ivory + saffron jyothi */
+  --background: oklch(0.985 0.012 85);
+  --foreground: oklch(0.27 0.04 50);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
+  --card-foreground: oklch(0.27 0.04 50);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.27 0.04 50);
+  --primary: oklch(0.7 0.16 65);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.02 80);
+  --secondary-foreground: oklch(0.27 0.04 50);
+  --muted: oklch(0.95 0.02 80);
+  --muted-foreground: oklch(0.52 0.03 55);
+  --accent: oklch(0.74 0.18 50);
+  --accent-foreground: oklch(0.2 0.04 50);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: oklch(0.27 0.04 50 / 0.08);
+  --input: oklch(0.27 0.04 50 / 0.1);
+  --ring: oklch(0.74 0.18 50);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
