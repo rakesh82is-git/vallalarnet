@@ -277,5 +277,5 @@ export const dict = {
   },
 } as const;
 
-export type Lang = keyof typeof dict;
-export type Dict = typeof dict["ta"];
+export type Lang = "ta" | "en";
+export type Dict = (typeof dict)["ta"];
