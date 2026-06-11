@@ -11,6 +11,50 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { Toaster } from "@/components/ui/sonner";
+
+const NAV = [
+  { to: "/", label: "முகப்பு" },
+  { to: "/signature", label: "கையொப்பம்" },
+  { to: "/gallery", label: "படத்தொகுப்பு" },
+] as const;
+
+function SiteShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-screen flex flex-col bg-background text-foreground font-sans selection:bg-accent/20">
+      <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="text-xl font-display font-bold tracking-tight text-primary">
+            வள்ளலார்.net
+          </Link>
+          <div className="flex gap-6 text-sm font-medium">
+            {NAV.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                className="hover:text-primary transition-colors"
+                activeProps={{ className: "text-primary" }}
+                activeOptions={{ exact: true }}
+              >
+                {n.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </nav>
+      <main className="flex-1">{children}</main>
+      <footer className="border-t border-border py-10 px-6 mt-16">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
+          <div className="font-display font-bold text-primary text-sm">அருட்பெருஞ்ஜோதி</div>
+          <div className="font-mono uppercase tracking-widest">
+            © {new Date().getFullYear()} Vallalar.net · demo preview
+          </div>
+          <div className="font-mono uppercase tracking-widest">தனிப்பெருங்கருணை</div>
+        </div>
+      </footer>
+    </div>
+  );
+}
 
 function NotFoundComponent() {
   return (
@@ -128,8 +172,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <SiteShell>
+        <Outlet />
+      </SiteShell>
+      <Toaster richColors position="top-center" />
     </QueryClientProvider>
   );
 }

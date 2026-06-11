@@ -1,237 +1,160 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import sanctuaryImg from "@/assets/sanctuary.jpg";
-import { useEffect, useState } from "react";
+import lampImg from "@/assets/lamp.jpg";
+import { getSignatureCount, useStoreVersion } from "@/lib/petition-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "வள்ளலார்.net — அருட்பெருஞ்ஜோதி தனிப்பெருங்கருணை" },
-      { name: "description", content: "திருவருட்பிரகாச வள்ளலார் இராமலிங்க அடிகளார் — திருவருட்பா, சன்மார்க்க நெறிகள், பூசத் திருநாள் கால அட்டவணை மற்றும் உலக மொழிகளில் வள்ளலார் இலக்கியங்கள்." },
-      { property: "og:title", content: "வள்ளலார்.net — அருட்பெருஞ்ஜோதி" },
-      { property: "og:description", content: "சுத்த சன்மார்க்க சத்திய சங்கம். திருவருட்பா, ஜீவகாருண்யம் மற்றும் ஒளி வழிபாடு." },
+      { title: "வள்ளலார்.net — வடலூர் புனித நகரம்" },
+      { name: "description", content: "திருவருட்பிரகாச வள்ளலார் இராமலிங்க அடிகளாரின் தனிப்பெருங்கருணை கொள்கையில் இணைந்து, வடலூர் புனித நகரமாக அறிவிக்கப்பட வேண்டும் என்ற வேண்டுகோளுக்கு உங்கள் கையொப்பத்தை இடுங்கள்." },
+      { property: "og:title", content: "வடலூர் புனித நகரம் — உங்கள் கையொப்பம்" },
+      { property: "og:description", content: "அருட்பெருஞ்ஜோதி அடியார் ஒவ்வொருவரின் கையொப்பமும் ஒரு ஒளிக்கீற்று." },
+      { property: "og:image", content: sanctuaryImg },
     ],
   }),
   component: Index,
 });
 
-const VALLALAR_BIRTH = new Date("1823-10-05T00:00:00Z");
-
-const navItems = [
-  { label: "முகப்பு", href: "/" },
-  { label: "திருவருட்பா", href: "#nool" },
-  { label: "சபைத் தகவல்கள்", href: "#sabai" },
-  { label: "நிகழ்வுகள்", href: "#poosam" },
+const INTRO_LINES = [
+  "ஒரே இனம், ஒரே சமயம், ஒரே கடவுள் என்று அருட்பெருஞ்ஜோதி வள்ளலார் காட்டிய ஒளி நெறி இன்றும் வடலூரில் சுடர்விட்டு எரிகிறது.",
+  "சாதி, மத, மொழி வேறுபாடின்றி அனைவரும் ஒன்றுகூடும் சத்திய ஞான சபை — உலகின் தனிச்சிறப்பு வாய்ந்த ஆன்மிக மையம்.",
+  "ஜீவகாருண்யம், சுத்த சன்மார்க்கம், தனிப்பெருங்கருணை எனும் மூன்று கொள்கைகளால் இவ்வுலகிற்கு ஒளியூட்டிய மாமுனிவரின் பிறப்பிடம்.",
+  "ஏழைகளுக்கு உணவளிக்கும் சத்திய தர்மச் சாலை இன்றும் தினமும் இடைவிடாது இயங்கி வருகிறது — பசித்த ஒருவரும் திரும்ப அனுப்பப்படுவதில்லை.",
+  "ஏழு திரைகளை நீக்கி காட்சி தரும் ஜோதி தரிசனம் — ஒளியே கடவுள் என்ற உண்மையை கண்கூடாகக் காட்டும் அதிசயம்.",
+  "தைப்பூசம், மாசிப்பூசம், பங்குனிப்பூசம் — மூன்று பெருந்திருவிழாக்களில் உலகின் பல்வேறு நாடுகளிலிருந்து லட்சக்கணக்கான அடியார்கள் வருகின்றனர்.",
+  "திருவருட்பா ஆறு திருமுறைகள் — தமிழின் தலையாய ஆன்மிக இலக்கியக் கருவூலம், 5818 பாடல்களின் தெய்வீகத் தொகுப்பு.",
+  "வள்ளலார் தம் கையால் ஏற்றிய ஜோதி, இன்றும் சத்திய ஞான சபையில் அணையாமல் சுடர்விட்டு எரிகிறது.",
+  "சித்தி வளாகம், அருட்பெருஞ்ஜோதி ஆலயம், தர்மச்சாலை, கல்விக்கூடம் — ஒவ்வொரு கட்டிடமும் வரலாற்றுச் சின்னம்.",
+  "உலக சமாதானத்திற்கு ஒரு கலங்கரை விளக்கம் ஆகும் தகுதி வடலூருக்கு உள்ளது.",
+  "இந்த தலம் சாதாரண நகரம் அல்ல — இது வழிபடும் தலம், புனிதம் காக்கப்பட வேண்டிய தலம்.",
+  "ஆனால் இன்று சுற்றுச்சூழல் மாசு, ஆட்சி இணைப்புகள், வணிக மய நெருக்கடி என பல சவால்கள் வடலூரின் தூய்மையை அச்சுறுத்துகின்றன.",
+  "வடலூரை அரசு அதிகாரப்பூர்வமாக “புனித நகரம்” (Holy City) என்று அறிவிக்கும்போது மட்டுமே இதன் ஆன்மிகச் சூழல் முழுமையாகப் பாதுகாக்கப்படும்.",
+  "புதிய சட்ட பாதுகாப்பு, தடை செய்யப்பட்ட பகுதிகள், சுற்றுச்சூழல் கட்டுப்பாடுகள், போக்குவரத்து திட்டமிடல் — அனைத்தும் இதனால் சாத்தியமாகும்.",
+  "இது ஒரு சமயத்தின் கோரிக்கை அல்ல — இது மானுட ஒற்றுமையின் கோரிக்கை, அருளின் கோரிக்கை.",
+  "திருப்பதி, பழனி, காசி, மதுரை போல வடலூரும் பாதுகாக்கப்பட்ட புனித நகரமாக அறிவிக்கப்பட வேண்டும்.",
+  "உங்கள் ஒவ்வொருவரின் கையொப்பமும் ஒரு ஒளிக்கீற்று — பல லட்சம் ஒளிக்கீற்றுகள் சேர்ந்தால் ஒரு பெரிய ஜோதி.",
+  "டிஜிட்டல் கையொப்பம் அல்லது கையெழுத்திட்ட ஆவணம் — இரண்டில் எது வசதியோ அதன் மூலம் இந்த இயக்கத்தில் இணைய முடியும்.",
+  "ஒரு கைபேசி எண்ணுக்கு ஒரு கையொப்பம் மட்டுமே — ஒவ்வொரு குரலும் தனித்துவமானது, மதிப்புமிக்கது.",
+  "வாருங்கள், அருட்பெருஞ்ஜோதியின் ஒளியில் இணைந்து வடலூரைப் புனித நகரமாக்குவோம் — தனிப்பெருங்கருணை வாழ்க!",
 ];
-
-const quickAccess = [
-  { num: "01", title: "நூல்கள்", desc: "திருவருட்பா ஆறு திருமுறைகள் முழுமையாக" },
-  { num: "02", title: "காணொளி", desc: "சத்சங்கம் மற்றும் சொற்பொழிவுகள்" },
-  { num: "03", title: "ஒலிவடிவம்", desc: "பஜனைகள் மற்றும் பாராயண ஒலிப்பதிவுகள்" },
-  { num: "04", title: "நிகழ்வுகள்", desc: "பூசத் திருவிழா கால அட்டவணை" },
-];
-
-const languages = [
-  { name: "English", count: "142 நூல்கள்" },
-  { name: "हिन्दी", count: "48 நூல்கள்" },
-  { name: "മലയാളം", count: "36 நூல்கள்" },
-  { name: "ಕನ್ನಡ", count: "28 நூல்கள்" },
-  { name: "తెలుగు", count: "24 நூல்கள்" },
-  { name: "Français", count: "12 நூல்கள்" },
-  { name: "Deutsch", count: "9 நூல்கள்" },
-  { name: "Español", count: "8 நூல்கள்" },
-  { name: "日本語", count: "6 நூல்கள்" },
-  { name: "العربية", count: "5 நூல்கள்" },
-] as const;
-
-const poosamDates = [
-  { tag: "தைப்பூசம் 2026", date: "ஜனவரி 31", place: "வடலூர் சத்திய ஞான சபை", featured: true },
-  { tag: "மாசிப் பூசம்", date: "பிப்ரவரி 28", place: "வடலூர்", featured: false },
-  { tag: "பங்குனிப் பூசம்", date: "மார்ச் 27", place: "வடலூர்", featured: false },
-];
-
-function useDaysSinceBirth() {
-  const [days, setDays] = useState(() =>
-    Math.floor((Date.now() - VALLALAR_BIRTH.getTime()) / 86400000),
-  );
-  useEffect(() => {
-    const id = setInterval(() => {
-      setDays(Math.floor((Date.now() - VALLALAR_BIRTH.getTime()) / 86400000));
-    }, 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return days;
-}
 
 function Index() {
-  const days = useDaysSinceBirth();
-
+  useStoreVersion();
+  const count = getSignatureCount();
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-accent/20">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="/" className="text-xl font-display font-bold tracking-tight text-primary">
-            வள்ளலார்
-          </a>
-          <div className="hidden md:flex gap-8 text-sm font-medium">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="hover:text-primary transition-colors"
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-          <button className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity">
-            தேடுக
-          </button>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <header className="relative overflow-hidden pt-24 pb-32 px-6">
-        <div className="absolute top-1/2 left-1/2 size-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/25 blur-[120px] animate-glow pointer-events-none" />
-        <div className="relative max-w-4xl mx-auto text-center">
+    <>
+      <header className="relative overflow-hidden pt-12 md:pt-20 pb-16 px-6">
+        <div className="absolute top-32 left-1/2 size-[680px] -translate-x-1/2 rounded-full bg-accent/25 blur-[140px] animate-glow pointer-events-none" />
+        <div className="relative max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
           <div className="animate-reveal">
-            <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent mb-6">
-              Arutperum Jyothi
+            <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent mb-5">
+              Arutperum Jyothi · Vadalur
             </p>
-            <h1 className="text-5xl md:text-7xl font-display font-bold text-balance leading-[1.15] mb-10">
-              அருட்பெருஞ்ஜோதி
+            <h1 className="text-4xl md:text-6xl font-display font-bold text-balance leading-[1.1]">
+              வடலூர்
               <br />
-              தனிப்பெருங்கருணை
+              <span className="text-primary">புனித நகரம்</span> ஆக
+              <br />
+              அறிவிக்கப்பட வேண்டும்.
             </h1>
-          </div>
-          <div className="animate-reveal flex flex-col items-center" style={{ animationDelay: "200ms" }}>
-            <div className="text-4xl md:text-6xl font-mono tracking-tighter text-primary mb-2">
-              {days.toLocaleString("en-IN")}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              வள்ளலார் அவதரித்து இன்றுடன் நாட்கள்
+            <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-xl">
+              வள்ளலார் இராமலிங்க அடிகளார் ஏற்றிய அழியா ஜோதியின் தலம், ஒளி நெறியின் கலங்கரை விளக்கம்.
+              உங்கள் கையொப்பம் இந்த இயக்கத்திற்கு ஒரு புதிய ஒளிக்கீற்று.
             </p>
+            <div className="mt-8 flex flex-wrap gap-3 items-center">
+              <Link
+                to="/signature"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+              >
+                உங்கள் கையொப்பம் இடுங்கள் →
+              </Link>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card ring-1 ring-border">
+                <span className="size-2 rounded-full bg-accent animate-pulse" />
+                <span className="font-mono text-sm">
+                  {count.toLocaleString("en-IN")} கையொப்பங்கள்
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="relative animate-reveal" style={{ animationDelay: "200ms" }}>
+            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden ring-1 ring-border shadow-2xl shadow-primary/10">
+              <img
+                src={sanctuaryImg}
+                alt="வடலூர் சத்திய ஞான சபை"
+                width={1280}
+                height={1600}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
+              <div className="absolute bottom-6 left-6 right-6">
+                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-accent">
+                  புனித தலம்
+                </span>
+                <p className="mt-1 text-xl font-display font-bold text-foreground">
+                  சத்திய ஞான சபை · வடலூர்
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Quick Access */}
-      <section className="max-w-7xl mx-auto px-6 -mt-16 relative z-10">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickAccess.map((item, i) => (
-            <a
-              key={item.num}
-              href="#"
-              className="bg-card ring-1 ring-border p-8 rounded-2xl animate-reveal hover:ring-accent/50 hover:-translate-y-1 transition-all"
-              style={{ animationDelay: `${300 + i * 100}ms` }}
+      <section className="max-w-3xl mx-auto px-6 py-16">
+        <div className="mb-10 text-center animate-reveal">
+          <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">
+            ஏன் இந்த இயக்கம்?
+          </p>
+          <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">
+            இருபது வரிகளில் ஒரு வேண்டுகோள்
+          </h2>
+        </div>
+        <ol className="space-y-5 list-none">
+          {INTRO_LINES.map((line, i) => (
+            <li
+              key={i}
+              className="flex gap-4 animate-reveal"
+              style={{ animationDelay: `${i * 40}ms` }}
             >
-              <div className="text-accent mb-4 font-mono text-xs">{item.num}</div>
-              <h3 className="text-xl font-display font-bold mb-2">{item.title}</h3>
-              <p className="text-sm text-muted-foreground">{item.desc}</p>
-            </a>
+              <span className="shrink-0 font-mono text-xs text-accent pt-1.5 w-8">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <p className="text-base md:text-lg leading-relaxed">{line}</p>
+            </li>
           ))}
+        </ol>
+        <div className="mt-12 text-center">
+          <Link
+            to="/signature"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+          >
+            இணைய நான் தயார் — கையொப்பம் இடுங்கள்
+          </Link>
         </div>
       </section>
 
-      {/* Languages + Poosam */}
-      <section id="poosam" className="max-w-7xl mx-auto px-6 py-24">
-        <div className="grid lg:grid-cols-3 gap-16">
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
-              <h2 className="text-2xl font-display font-bold">மொழிவாரி தொகுப்பு</h2>
-              <input
-                type="text"
-                placeholder="தேடுக..."
-                className="bg-transparent border-none outline-none text-sm font-sans placeholder:text-muted-foreground/60 w-32"
-              />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-x-12">
-              {languages.map((lang) => (
-                <a key={lang.name} href="#" className="group cursor-pointer">
-                  <div className="flex justify-between items-end border-b border-border/60 py-3 group-hover:border-accent transition-colors">
-                    <span className="text-lg">{lang.name}</span>
-                    <span className="font-mono text-xs text-muted-foreground">{lang.count}</span>
-                  </div>
-                </a>
-              ))}
-            </div>
-            <a
-              href="#"
-              className="inline-block mt-8 text-sm font-mono uppercase tracking-widest text-accent hover:text-primary transition-colors"
-            >
-              அனைத்து மொழிகளும் →
-            </a>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-display font-bold mb-8">பூசத் திருநாள்</h2>
-            <div className="space-y-4">
-              {poosamDates.map((p) => (
-                <div
-                  key={p.tag}
-                  className={
-                    p.featured
-                      ? "p-6 bg-primary/5 rounded-2xl border border-primary/20"
-                      : "p-6 bg-card ring-1 ring-border rounded-2xl"
-                  }
-                >
-                  <div
-                    className={
-                      p.featured
-                        ? "text-xs font-mono text-accent mb-2"
-                        : "text-xs font-mono text-muted-foreground mb-2"
-                    }
-                  >
-                    {p.tag}
-                  </div>
-                  <div className="text-xl font-bold mb-1">{p.date}</div>
-                  <div className="text-sm text-muted-foreground">{p.place}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sanctuary Image */}
-      <section id="sabai" className="px-6 pb-24">
-        <div className="max-w-7xl mx-auto relative w-full h-[400px] md:h-[520px] rounded-3xl overflow-hidden">
+      <section className="px-6 pb-8">
+        <div className="max-w-6xl mx-auto relative w-full h-[300px] md:h-[420px] rounded-3xl overflow-hidden">
           <img
-            src={sanctuaryImg}
-            alt="வடலூர் சத்திய ஞான சபை — ஜோதி தரிசனம்"
-            width={1600}
-            height={800}
+            src={lampImg}
+            alt="அணையா ஜோதி"
+            width={1280}
+            height={896}
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/10 to-transparent" />
           <div className="absolute bottom-8 left-8 right-8">
             <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-accent">
-              புனித தலம்
+              அணையா ஜோதி
             </span>
-            <h3 className="mt-2 text-3xl md:text-4xl font-display font-bold text-foreground">
-              சத்திய ஞான சபை · வடலூர்
+            <h3 className="mt-2 text-2xl md:text-3xl font-display font-bold">
+              ஒளியே கடவுள் · கடவுளே ஒளி
             </h3>
-            <p className="mt-2 max-w-xl text-sm text-foreground/80">
-              ஏழு திரைகளை நீக்கி ஜோதி தரிசனம் காணும் புனித எண்கோண ஆலயம்.
-            </p>
           </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-12 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-primary font-display font-bold">வள்ளலார்.net</div>
-          <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-            © {new Date().getFullYear()} Arutperum Jyothi Trust
-          </div>
-          <div className="flex gap-6 text-xs font-medium">
-            <a href="#" className="hover:text-primary transition-colors">தொடர்புக்கு</a>
-            <a href="#" className="hover:text-primary transition-colors">நிபந்தனைகள்</a>
-          </div>
-        </div>
-      </footer>
     </div>
+      </section>
+    </>
   );
 }
