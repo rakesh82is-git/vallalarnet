@@ -9,18 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignatureRouteImport } from './routes/signature'
+import { Route as WallRouteImport } from './routes/wall'
+import { Route as StoryRouteImport } from './routes/story'
+import { Route as SignRouteImport } from './routes/sign'
 import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 
-const SignatureRoute = SignatureRouteImport.update({
-  id: '/signature',
-  path: '/signature',
+const WallRoute = WallRouteImport.update({
+  id: '/wall',
+  path: '/wall',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoryRoute = StoryRouteImport.update({
+  id: '/story',
+  path: '/story',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignRoute = SignRouteImport.update({
+  id: '/sign',
+  path: '/sign',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,41 +49,74 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/gallery': typeof GalleryRoute
-  '/signature': typeof SignatureRoute
+  '/sign': typeof SignRoute
+  '/story': typeof StoryRoute
+  '/wall': typeof WallRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/gallery': typeof GalleryRoute
-  '/signature': typeof SignatureRoute
+  '/sign': typeof SignRoute
+  '/story': typeof StoryRoute
+  '/wall': typeof WallRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/gallery': typeof GalleryRoute
-  '/signature': typeof SignatureRoute
+  '/sign': typeof SignRoute
+  '/story': typeof StoryRoute
+  '/wall': typeof WallRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gallery' | '/signature'
+  fullPaths: '/' | '/analytics' | '/gallery' | '/sign' | '/story' | '/wall'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/gallery' | '/signature'
-  id: '__root__' | '/' | '/gallery' | '/signature'
+  to: '/' | '/analytics' | '/gallery' | '/sign' | '/story' | '/wall'
+  id:
+    | '__root__'
+    | '/'
+    | '/analytics'
+    | '/gallery'
+    | '/sign'
+    | '/story'
+    | '/wall'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalyticsRoute: typeof AnalyticsRoute
   GalleryRoute: typeof GalleryRoute
-  SignatureRoute: typeof SignatureRoute
+  SignRoute: typeof SignRoute
+  StoryRoute: typeof StoryRoute
+  WallRoute: typeof WallRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/signature': {
-      id: '/signature'
-      path: '/signature'
-      fullPath: '/signature'
-      preLoaderRoute: typeof SignatureRouteImport
+    '/wall': {
+      id: '/wall'
+      path: '/wall'
+      fullPath: '/wall'
+      preLoaderRoute: typeof WallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/story': {
+      id: '/story'
+      path: '/story'
+      fullPath: '/story'
+      preLoaderRoute: typeof StoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign': {
+      id: '/sign'
+      path: '/sign'
+      fullPath: '/sign'
+      preLoaderRoute: typeof SignRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -73,6 +124,13 @@ declare module '@tanstack/react-router' {
       path: '/gallery'
       fullPath: '/gallery'
       preLoaderRoute: typeof GalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -87,9 +145,22 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalyticsRoute: AnalyticsRoute,
   GalleryRoute: GalleryRoute,
-  SignatureRoute: SignatureRoute,
+  SignRoute: SignRoute,
+  StoryRoute: StoryRoute,
+  WallRoute: WallRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
