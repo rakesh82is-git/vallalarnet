@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 /**
  * Demo-only petition store. Persists signatures, manual scans, and
  * one-per-phone tracking in localStorage so the flow feels real for
@@ -119,13 +121,9 @@ export function addScan(imageDataUrl: string): ManualScan {
 }
 
 export function useStoreVersion(): number {
-  // Lightweight subscriber for components that want to react to changes.
-  // Returns a number that increments on every store mutation.
-  if (typeof window === "undefined") return 0;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const React = require("react") as typeof import("react");
-  const [v, setV] = React.useState(0);
-  React.useEffect(() => {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     const handler = () => setV((n) => n + 1);
     window.addEventListener("vn:store-changed", handler);
     window.addEventListener("storage", handler);
