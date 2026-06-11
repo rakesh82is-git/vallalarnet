@@ -12,42 +12,86 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { LanguageProvider, useLang } from "@/i18n/context";
 
 const NAV = [
-  { to: "/", label: "முகப்பு" },
-  { to: "/signature", label: "கையொப்பம்" },
-  { to: "/gallery", label: "படத்தொகுப்பு" },
+  { to: "/", key: "home" },
+  { to: "/story", key: "story" },
+  { to: "/sign", key: "sign" },
+  { to: "/wall", key: "wall" },
+  { to: "/analytics", key: "analytics" },
+  { to: "/gallery", key: "gallery" },
 ] as const;
 
+function LangSwitcher() {
+  const { lang, setLang } = useLang();
+  return (
+    <div className="inline-flex rounded-full ring-1 ring-border bg-card overflow-hidden text-xs font-mono">
+      <button
+        onClick={() => setLang("ta")}
+        className={`px-3 py-1.5 transition-colors ${lang === "ta" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
+        aria-pressed={lang === "ta"}
+      >
+        த
+      </button>
+      <button
+        onClick={() => setLang("en")}
+        className={`px-3 py-1.5 transition-colors ${lang === "en" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
+        aria-pressed={lang === "en"}
+      >
+        EN
+      </button>
+    </div>
+  );
+}
+
 function SiteShell({ children }: { children: ReactNode }) {
+  const { t } = useLang();
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans selection:bg-accent/20">
       <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="text-xl font-display font-bold tracking-tight text-primary">
-            வள்ளலார்.net
+        <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-4">
+          <Link to="/" className="flex items-center gap-2 text-base md:text-xl font-display font-bold tracking-tight text-primary shrink-0">
+            <span className="text-lg">✦</span>
+            <span>{t.nav.brand}</span>
           </Link>
-          <div className="flex gap-6 text-sm font-medium">
+          <div className="hidden md:flex gap-5 text-sm font-medium overflow-x-auto">
             {NAV.map((n) => (
               <Link
                 key={n.to}
                 to={n.to}
-                className="hover:text-primary transition-colors"
+                className="hover:text-primary transition-colors whitespace-nowrap"
                 activeProps={{ className: "text-primary" }}
-                activeOptions={{ exact: true }}
+                activeOptions={{ exact: n.to === "/" }}
               >
-                {n.label}
+                {t.nav[n.key as keyof typeof t.nav]}
+              </Link>
+            ))}
+          </div>
+          <LangSwitcher />
+        </div>
+        <div className="md:hidden border-t border-border bg-background/80">
+          <div className="max-w-6xl mx-auto px-4 py-2 flex gap-4 text-xs font-medium overflow-x-auto">
+            {NAV.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                className="hover:text-primary transition-colors whitespace-nowrap"
+                activeProps={{ className: "text-primary" }}
+                activeOptions={{ exact: n.to === "/" }}
+              >
+                {t.nav[n.key as keyof typeof t.nav]}
               </Link>
             ))}
           </div>
         </div>
       </nav>
       <main className="flex-1">{children}</main>
-      <footer className="border-t border-border py-10 px-6 mt-16">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
+      <footer className="border-t border-border py-8 px-6 mt-16">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-muted-foreground">
           <div className="font-display font-bold text-primary text-sm">அருட்பெருஞ்ஜோதி</div>
-          <div className="font-mono uppercase tracking-widest">
-            © {new Date().getFullYear()} Vallalar.net · demo preview
+          <div className="font-mono uppercase tracking-widest text-center">
+            {t.footer.line}
           </div>
           <div className="font-mono uppercase tracking-widest">தனிப்பெருங்கருணை</div>
         </div>
@@ -172,10 +216,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SiteShell>
-        <Outlet />
-      </SiteShell>
-      <Toaster richColors position="top-center" />
+      <LanguageProvider>
+        <SiteShell>
+          <Outlet />
+        </SiteShell>
+        <Toaster richColors position="top-center" />
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }
