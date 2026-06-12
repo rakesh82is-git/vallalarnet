@@ -201,6 +201,32 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (() => {
+                const reloadKey = "vallalarnet:stale-vite-reload";
+                const shouldReload = (value) => {
+                  const text = String(value?.message || value?.reason?.message || value?.target?.src || value || "");
+                  return text.includes("Failed to fetch dynamically imported module") ||
+                    text.includes("Outdated Optimize Dep") ||
+                    text.includes("/node_modules/.vite/deps/");
+                };
+                const recover = (event) => {
+                  if (!shouldReload(event)) return;
+                  event?.preventDefault?.();
+                  const lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
+                  if (Date.now() - lastReload < 10000) return;
+                  sessionStorage.setItem(reloadKey, String(Date.now()));
+                  location.reload();
+                };
+                window.addEventListener("vite:preloadError", recover);
+                window.addEventListener("unhandledrejection", recover);
+                window.addEventListener("error", recover, true);
+              })();
+            `,
+          }}
+        />
         <HeadContent />
       </head>
       <body>
