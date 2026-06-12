@@ -54,11 +54,14 @@ export type Database = {
           country: string | null
           created_at: string
           district: string | null
+          document_title: string | null
           email: string | null
           full_name: string | null
           id: string
           kind: Database["public"]["Enums"]["signature_kind"] | null
+          manual_document_url: string | null
           message: string | null
+          mobile_number: string | null
           name: string | null
           phone_hash: string | null
           phone_masked: string | null
@@ -77,11 +80,14 @@ export type Database = {
           country?: string | null
           created_at?: string
           district?: string | null
+          document_title?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["signature_kind"] | null
+          manual_document_url?: string | null
           message?: string | null
+          mobile_number?: string | null
           name?: string | null
           phone_hash?: string | null
           phone_masked?: string | null
@@ -100,11 +106,14 @@ export type Database = {
           country?: string | null
           created_at?: string
           district?: string | null
+          document_title?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["signature_kind"] | null
+          manual_document_url?: string | null
           message?: string | null
+          mobile_number?: string | null
           name?: string | null
           phone_hash?: string | null
           phone_masked?: string | null
