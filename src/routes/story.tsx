@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useT } from "@/i18n/context";
-import sanctuaryImg from "@/assets/sanctuary.jpg";
-import lampImg from "@/assets/lamp.jpg";
-import gatheringImg from "@/assets/gathering.jpg";
-import thanksImg from "@/assets/thanks.jpg";
+import sanctuaryImg from "@/assets/gnana_sabai_over.jpg";
+import lampImg from "@/assets/vallalar_study.jpg";
+import gatheringImg from "@/assets/gnana_sabai_over.jpg";
+import thanksImg from "@/assets/vallalar_with_animals_2.jpg";
 
 export const Route = createFileRoute("/story")({
   head: () => ({
