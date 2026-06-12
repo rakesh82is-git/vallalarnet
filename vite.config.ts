@@ -12,4 +12,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    optimizeDeps: {
+      // 17MB dataset — Vite's prebundler times out trying to scan it. Load as-is.
+      exclude: ["country-state-city"],
+    },
+  },
 });
