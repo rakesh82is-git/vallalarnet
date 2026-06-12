@@ -17,6 +17,15 @@ const SignaturePayload = z.object({
   scanDataUrl: z.string().max(2_000_000).optional().nullable(),
 });
 
+const EmailSignaturePayload = z.object({
+  full_name: z.string().trim().min(1).max(100),
+  email: z.string().email().max(200),
+  phone_number: z.string().trim().min(6).max(20),
+  residential_address: z.string().trim().min(1).max(500),
+  pincode: z.string().trim().min(1).max(12),
+  signature_image: z.string().max(500_000),
+});
+
 function mask(phone: string) {
   const d = phone.replace(/\D/g, "");
   if (d.length < 4) return "••••";
