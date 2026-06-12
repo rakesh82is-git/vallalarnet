@@ -126,6 +126,12 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
       if (error.code === "23505") {
         return { ok: false as const, error: "duplicate" as const };
       }
+      console.error("[submitDigitalSignature] insert failed", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
       return { ok: false as const, error: "db" as const };
     }
 
