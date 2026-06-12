@@ -14,6 +14,10 @@ export default defineConfig({
   },
   vite: {
     optimizeDeps: {
+      // In preview, an already-open tab can request an optimized dependency URL
+      // from the previous dev-server cache. Let Vite serve the current file
+      // instead of returning a blank-screen-causing 504 for that stale URL.
+      ignoreOutdatedRequests: true,
       // 17MB dataset — Vite's prebundler times out trying to scan it. Load as-is.
       exclude: ["country-state-city"],
     },
