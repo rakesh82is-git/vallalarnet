@@ -76,6 +76,65 @@ export const submitSignature = createServerFn({ method: "POST" })
     return { ok: true as const, id: row.id, voteNumber: count ?? 1 };
   });
 
+export const submitEmailSignature = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => EmailSignaturePayload.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const callerEmail = (context.claims as { email?: string }).email;
+    if (!callerEmail || callerEmail !== data.email) {
+      return { ok: false as const, error: "auth" as const };
+    }
+
+    const phoneDigits = data.phone_number.replace(/\D/g, "");
+    const phoneHash = createHash("sha256")
+      .update(`vadalur:${phoneDigits}`)
+      .digest("hex");
+
+    const { data: existingPhone } = await supabaseAdmin
+      .from("signatures")
+      .select("id")
+      .eq("phone_hash", phoneHash)
+      .maybeSingle();
+    if (existingPhone) return { ok: false as const, error: "duplicate" as const };
+
+    const { data: existingEmail } = await supabaseAdmin
+      .from("signatures")
+      .select("id")
+      .eq("email", data.email)
+      .maybeSingle();
+    if (existingEmail) return { ok: false as const, error: "duplicate" as const };
+
+    const { data: row, error } = await supabaseAdmin
+      .from("signatures")
+      .insert({
+        user_id: context.userId,
+        full_name: data.full_name,
+        email: data.email,
+        phone_number: data.phone_number,
+        residential_address: data.residential_address,
+        pincode: data.pincode,
+        signature_image: data.signature_image,
+        name: data.full_name,
+        kind: "digital",
+        consent: true,
+        phone_hash: phoneHash,
+        phone_masked: mask(data.phone_number),
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      if (error.code === "23505") {
+        return { ok: false as const, error: "duplicate" as const };
+      }
+      return { ok: false as const, error: "db" as const };
+    }
+
+    return { ok: true as const, id: row.id as string };
+  });
+
 export const listSignatures = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) =>
     z
