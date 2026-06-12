@@ -10,6 +10,7 @@ import { SignaturePad } from "@/components/signature-pad";
 import vallalPeruman from "@/assets/vallal-peruman.jpg.asset.json";
 const thanksImg = vallalPeruman.url;
 import { supabase } from "@/integrations/supabase/client";
+import { submitEmailSignature } from "@/lib/petition.functions";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
