@@ -24,6 +24,7 @@ function mask(phone: string) {
 }
 
 export const submitSignature = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => SignaturePayload.parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
