@@ -142,11 +142,26 @@ function GalleryPage() {
             <img src={resolve(lightbox.url)} alt={title(lightbox)} className="w-full h-auto max-h-[80vh] object-contain" />
           )}
           {lightbox?.kind === "video" && (
-            <div className="aspect-video bg-black flex items-center justify-center text-muted-foreground">
-              <p>{title(lightbox)}</p>
+            <div className="aspect-video bg-black">
+              <iframe
+                src={`https://www.youtube.com/embed/${(lightbox as typeof HARDCODED_VIDEOS[number]).youtubeId ?? ""}`}
+                title={title(lightbox)}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
             </div>
           )}
-          {lightbox && <div className="px-5 py-3 text-sm text-muted-foreground">{title(lightbox)}</div>}
+          {lightbox && (
+            <div className="px-5 py-3 text-sm text-muted-foreground space-y-2">
+              <p className="font-medium text-foreground">{title(lightbox)}</p>
+              {(lightbox as typeof HARDCODED_VIDEOS[number]).caption_ta && (
+                <p className="whitespace-pre-line">
+                  {lang === "ta" ? (lightbox as typeof HARDCODED_VIDEOS[number]).caption_ta : (lightbox as typeof HARDCODED_VIDEOS[number]).caption_en}
+                </p>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
