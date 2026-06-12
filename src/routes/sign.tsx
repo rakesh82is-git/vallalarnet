@@ -94,48 +94,42 @@ function SignPage() {
     toast.success("Email verified — please sign below");
   }
 
-  async function submitSignature() {
+  async function handleSubmit() {
     if (!signature) {
       toast.error("Please draw your signature");
       return;
     }
     setBusy(true);
-    const { data: userRes } = await supabase.auth.getUser();
-    const user = userRes.user;
-    if (!user) {
+    try {
+      const result = await submitEmailSignature({
+        data: {
+          full_name: form.full_name,
+          email: form.email,
+          phone_number: form.phone_number,
+          residential_address: form.residential_address,
+          pincode: form.pincode,
+          signature_image: signature,
+        },
+      });
+      if (!result.ok) {
+        setBusy(false);
+        if (result.error === "duplicate") {
+          toast.error("This email or phone number has already signed the petition.");
+        } else if (result.error === "auth") {
+          toast.error("Session expired — please verify again");
+          setStep("form");
+        } else {
+          toast.error("Something went wrong. Please try again.");
+        }
+        return;
+      }
+      setResult({ id: result.id, name: form.full_name });
+      setStep("done");
+    } catch {
       setBusy(false);
       toast.error("Session expired — please verify again");
       setStep("form");
-      return;
     }
-    const { data, error } = await supabase
-      .from("signatures")
-      .insert({
-        user_id: user.id,
-        full_name: form.full_name,
-        email: form.email,
-        phone_number: form.phone_number,
-        residential_address: form.residential_address,
-        pincode: form.pincode,
-        signature_image: signature,
-        // legacy columns kept satisfied with the new data
-        name: form.full_name,
-        kind: "digital",
-        consent: true,
-      } as never)
-      .select("id")
-      .single();
-    setBusy(false);
-    if (error) {
-      toast.error(
-        error.code === "23505"
-          ? "This email has already signed the petition."
-          : error.message,
-      );
-      return;
-    }
-    setResult({ id: data.id as string, name: form.full_name });
-    setStep("done");
   }
 
   return (
