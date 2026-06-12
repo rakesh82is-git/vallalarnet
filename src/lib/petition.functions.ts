@@ -132,7 +132,11 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
         details: error.details,
         hint: error.hint,
       });
-      return { ok: false as const, error: "db" as const };
+      return {
+        ok: false as const,
+        error: "db" as const,
+        debug: `${error.code ?? "?"}: ${error.message ?? "unknown"}${error.details ? ` | ${error.details}` : ""}`,
+      };
     }
 
     const { count } = await supabaseAdmin

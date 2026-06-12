@@ -165,7 +165,11 @@ function DigitalTab() {
         if (res.error === "duplicate") {
           toast.error("This mobile number has already signed.");
         } else {
-          toast.error("Something went wrong. Please try again.");
+          toast.error(
+            "debug" in res && res.debug
+              ? `DB error: ${res.debug}`
+              : "Something went wrong. Please try again.",
+          );
         }
         return;
       }
