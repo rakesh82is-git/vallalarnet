@@ -49,52 +49,73 @@ export type Database = {
       }
       signatures: {
         Row: {
-          age: number
+          age: number | null
           consent: boolean
-          country: string
+          country: string | null
           created_at: string
-          district: string
+          district: string | null
+          email: string | null
+          full_name: string | null
           id: string
-          kind: Database["public"]["Enums"]["signature_kind"]
+          kind: Database["public"]["Enums"]["signature_kind"] | null
           message: string | null
-          name: string
-          phone_hash: string
-          phone_masked: string
+          name: string | null
+          phone_hash: string | null
+          phone_masked: string | null
+          phone_number: string | null
+          pincode: string | null
+          residential_address: string | null
           scan_url: string | null
+          signature_image: string | null
           signature_svg: string | null
-          state: string
+          state: string | null
+          user_id: string | null
         }
         Insert: {
-          age: number
+          age?: number | null
           consent?: boolean
-          country: string
+          country?: string | null
           created_at?: string
-          district: string
+          district?: string | null
+          email?: string | null
+          full_name?: string | null
           id?: string
-          kind: Database["public"]["Enums"]["signature_kind"]
+          kind?: Database["public"]["Enums"]["signature_kind"] | null
           message?: string | null
-          name: string
-          phone_hash: string
-          phone_masked: string
+          name?: string | null
+          phone_hash?: string | null
+          phone_masked?: string | null
+          phone_number?: string | null
+          pincode?: string | null
+          residential_address?: string | null
           scan_url?: string | null
+          signature_image?: string | null
           signature_svg?: string | null
-          state: string
+          state?: string | null
+          user_id?: string | null
         }
         Update: {
-          age?: number
+          age?: number | null
           consent?: boolean
-          country?: string
+          country?: string | null
           created_at?: string
-          district?: string
+          district?: string | null
+          email?: string | null
+          full_name?: string | null
           id?: string
-          kind?: Database["public"]["Enums"]["signature_kind"]
+          kind?: Database["public"]["Enums"]["signature_kind"] | null
           message?: string | null
-          name?: string
-          phone_hash?: string
-          phone_masked?: string
+          name?: string | null
+          phone_hash?: string | null
+          phone_masked?: string | null
+          phone_number?: string | null
+          pincode?: string | null
+          residential_address?: string | null
           scan_url?: string | null
+          signature_image?: string | null
           signature_svg?: string | null
-          state?: string
+          state?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
