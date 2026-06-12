@@ -348,7 +348,7 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     series,
     regions,
     countryList,
-    recent: recent ?? [],
+    recent: (recent ?? []) as Array<{ name: string | null; district: string | null; state: string | null; created_at: string }>,
     goal: 100_000,
   };
 });
