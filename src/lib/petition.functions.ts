@@ -34,7 +34,7 @@ function hashPhone(mobile: string) {
 export const submitDigitalSignature = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => DigitalSignaturePayload.parse(data))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
 
     const phoneHash = hashPhone(data.mobile_number);
 
@@ -86,7 +86,7 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
 export const submitManualSignature = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => ManualSignaturePayload.parse(data))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
 
     const phoneHash = hashPhone(data.mobile_number);
 
@@ -159,7 +159,7 @@ export const submitManualSignature = createServerFn({ method: "POST" })
 
 export const listManualSignatures = createServerFn({ method: "GET" }).handler(
   async () => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
     const { data: rows } = await supabaseAdmin
       .from("signatures")
       .select("id, name, document_title, manual_document_url, created_at")
@@ -199,7 +199,7 @@ export const listSignatures = createServerFn({ method: "GET" })
       .parse(data),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
     const limit = data.limit ?? 24;
     let q = supabaseAdmin
       .from("signatures_public")
@@ -216,7 +216,7 @@ export const listSignatures = createServerFn({ method: "GET" })
   });
 
 export const getStats = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
   const { count: total } = await supabaseAdmin
     .from("signatures")
     .select("*", { count: "exact", head: true });
@@ -290,7 +290,7 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const listGallery = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
   const { data, error } = await supabaseAdmin
     .from("gallery_items")
     .select("*")
