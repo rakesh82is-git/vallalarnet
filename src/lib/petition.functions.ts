@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash } from "crypto";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const SignaturePayload = z.object({
   kind: z.enum(["digital", "manual"]),
@@ -16,6 +17,15 @@ const SignaturePayload = z.object({
   scanDataUrl: z.string().max(2_000_000).optional().nullable(),
 });
 
+const EmailSignaturePayload = z.object({
+  full_name: z.string().trim().min(1).max(100),
+  email: z.string().email().max(200),
+  phone_number: z.string().trim().min(6).max(20),
+  residential_address: z.string().trim().min(1).max(500),
+  pincode: z.string().trim().min(1).max(12),
+  signature_image: z.string().max(500_000),
+});
+
 function mask(phone: string) {
   const d = phone.replace(/\D/g, "");
   if (d.length < 4) return "••••";
@@ -23,6 +33,7 @@ function mask(phone: string) {
 }
 
 export const submitSignature = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => SignaturePayload.parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -63,6 +74,65 @@ export const submitSignature = createServerFn({ method: "POST" })
       .select("*", { count: "exact", head: true });
 
     return { ok: true as const, id: row.id, voteNumber: count ?? 1 };
+  });
+
+export const submitEmailSignature = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => EmailSignaturePayload.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const callerEmail = (context.claims as { email?: string }).email;
+    if (!callerEmail || callerEmail !== data.email) {
+      return { ok: false as const, error: "auth" as const };
+    }
+
+    const phoneDigits = data.phone_number.replace(/\D/g, "");
+    const phoneHash = createHash("sha256")
+      .update(`vadalur:${phoneDigits}`)
+      .digest("hex");
+
+    const { data: existingPhone } = await supabaseAdmin
+      .from("signatures")
+      .select("id")
+      .eq("phone_hash", phoneHash)
+      .maybeSingle();
+    if (existingPhone) return { ok: false as const, error: "duplicate" as const };
+
+    const { data: existingEmail } = await supabaseAdmin
+      .from("signatures")
+      .select("id")
+      .eq("email", data.email)
+      .maybeSingle();
+    if (existingEmail) return { ok: false as const, error: "duplicate" as const };
+
+    const { data: row, error } = await supabaseAdmin
+      .from("signatures")
+      .insert({
+        user_id: context.userId,
+        full_name: data.full_name,
+        email: data.email,
+        phone_number: data.phone_number,
+        residential_address: data.residential_address,
+        pincode: data.pincode,
+        signature_image: data.signature_image,
+        name: data.full_name,
+        kind: "digital",
+        consent: true,
+        phone_hash: phoneHash,
+        phone_masked: mask(data.phone_number),
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      if (error.code === "23505") {
+        return { ok: false as const, error: "duplicate" as const };
+      }
+      return { ok: false as const, error: "db" as const };
+    }
+
+    return { ok: true as const, id: row.id as string };
   });
 
 export const listSignatures = createServerFn({ method: "GET" })
