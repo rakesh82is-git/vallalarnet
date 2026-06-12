@@ -14,16 +14,13 @@ import {
 import { Country, State, City } from "country-state-city";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
-import vallalPeruman from "@/assets/vallal-peruman.jpg.asset.json";
-import thankYou from "@/assets/thank-you-vallalar.jpg.asset.json";
+import heroImg from "@/assets/vallalar_with_animals_2.jpeg";
+import thanksImg from "@/assets/thanks.jpg";
 import {
   submitDigitalSignature,
   submitManualSignature,
   listManualSignatures,
 } from "@/lib/petition.functions";
-
-const heroImg = vallalPeruman.url;
-const thanksImg = thankYou.url;
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
