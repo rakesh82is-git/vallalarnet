@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "vadalurpunithanagaram",
   "compatibility_date": "2026-06-12",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env"],
   "main": "./dist/server/server.js",
   "assets": {
     "directory": "./dist/client"

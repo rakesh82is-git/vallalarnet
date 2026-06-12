@@ -8,9 +8,7 @@ const EXTERNAL_SUPABASE_URL = 'https://efaplbqcdodswcntoesj.supabase.co';
 function createExternalAdmin() {
   const key = process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY;
   if (!key) {
-    throw new Error(
-      'Missing EXTERNAL_SUPABASE_SERVICE_ROLE_KEY. Add it via Lovable secrets.',
-    );
+    throw new Error('External petition database is not configured.');
   }
   return createClient(EXTERNAL_SUPABASE_URL, key, {
     auth: {
