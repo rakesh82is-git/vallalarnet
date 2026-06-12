@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
 import vallalPeruman from "@/assets/vallal-peruman.jpg.asset.json";
@@ -24,7 +23,9 @@ export const Route = createFileRoute("/sign")({
   component: SignPage,
 });
 
-type Step = "form" | "otp" | "sign" | "done";
+type Step = "form" | "link-sent" | "sign" | "done";
+
+const DRAFT_KEY = "vadalur:sign-draft";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -45,53 +46,67 @@ function SignPage() {
     residential_address: "",
     pincode: "",
   });
-  const [otp, setOtp] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
   const [result, setResult] = useState<{ id: string; name: string } | null>(null);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
-    setForm((s) => ({ ...s, [k]: v }));
+    setForm((s) => {
+      const next = { ...s, [k]: v };
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
   }
 
-  async function sendCode(e: React.FormEvent) {
+  // Restore draft + detect verified session on return from email link
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft && typeof draft === "object") setForm((s) => ({ ...s, ...draft }));
+      }
+    } catch {}
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user?.email) {
+        setForm((s) => ({ ...s, email: s.email || data.session!.user.email! }));
+        setStep((cur) => (cur === "done" ? cur : "sign"));
+      }
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user?.email) {
+        setForm((s) => ({ ...s, email: s.email || session.user.email! }));
+        setStep((cur) => (cur === "done" ? cur : "sign"));
+        toast.success("Email verified — please sign below");
+      }
+    });
+    return () => { sub.subscription.unsubscribe(); };
+  }, []);
+
+  async function sendLink(e: React.FormEvent) {
     e.preventDefault();
     const { full_name, email, phone_number, residential_address, pincode } = form;
     if (!full_name || !email || !phone_number || !residential_address || !pincode) {
       toast.error("Please fill in all fields");
       return;
     }
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(form)); } catch {}
     setBusy(true);
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/sign`,
+      },
     });
     setBusy(false);
     if (error) {
       toast.error(error.message);
       return;
     }
-    setStep("otp");
-    toast.success("Verification code sent to your email");
-  }
-
-  async function verifyCode() {
-    if (otp.length !== 6) {
-      toast.error("Enter the 6-digit code");
-      return;
-    }
-    setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email: form.email,
-      token: otp,
-      type: "email",
-    });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setStep("sign");
-    toast.success("Email verified — please sign below");
+    setStep("link-sent");
+    toast.success("Verification link sent — check your inbox");
   }
 
   async function handleSubmit() {
@@ -123,6 +138,7 @@ function SignPage() {
         }
         return;
       }
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
       setResult({ id: result.id, name: form.full_name });
       setStep("done");
     } catch {
@@ -174,29 +190,21 @@ function SignPage() {
           </fieldset>
 
           {step === "form" && (
-            <Button onClick={sendCode as never} disabled={busy} size="lg" className="w-full">
-              {busy ? "Sending…" : "Send Code"}
+            <Button onClick={sendLink as never} disabled={busy} size="lg" className="w-full">
+              {busy ? "Sending…" : "Verify Email"}
             </Button>
           )}
 
-          {step === "otp" && (
-            <div className="rounded-2xl bg-secondary/40 p-5 border border-border space-y-4">
-              <div className="text-center">
-                <p className="font-medium">Enter the 6-digit code</p>
-                <p className="text-xs text-muted-foreground mt-1">Sent to {form.email}</p>
-              </div>
-              <div className="flex justify-center">
-                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                  <InputOTPGroup>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <InputOTPSlot key={i} index={i} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-              <Button onClick={verifyCode} disabled={busy} className="w-full">
-                {busy ? "Verifying…" : "Verify Code"}
-              </Button>
+          {step === "link-sent" && (
+            <div className="rounded-2xl bg-secondary/40 p-5 border border-border text-center space-y-2">
+              <p className="font-medium">Check your inbox</p>
+              <p className="text-sm text-muted-foreground">
+                We have emailed you an official verification link at <span className="font-medium text-foreground">{form.email}</span>.
+                Please click it to unlock your digital scratchpad signature.
+              </p>
+              <p className="text-xs text-muted-foreground pt-2">
+                Open the link in this same browser. Your details are saved — you'll come right back to sign.
+              </p>
             </div>
           )}
 
