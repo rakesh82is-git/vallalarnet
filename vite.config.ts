@@ -5,6 +5,8 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export default defineConfig({
   tanstackStart: {
@@ -22,8 +24,13 @@ export default defineConfig({
               next();
               return;
             }
-            req.url = "/node_modules/.vite/deps/chunk-KCFY4DTJ.js";
-            await server.middlewares(req, res, next);
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "text/javascript");
+            try {
+              res.end(await readFile(join(process.cwd(), "node_modules/.vite/deps/chunk-KCFY4DTJ.js"), "utf8"));
+            } catch {
+              res.end("export {};\n");
+            }
           });
         },
       },
