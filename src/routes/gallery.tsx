@@ -41,6 +41,23 @@ export const Route = createFileRoute("/gallery")({
 
 type Item = Awaited<ReturnType<typeof listGallery>>[number];
 
+const HARDCODED_VIDEOS: Array<Item & { caption_ta: string; caption_en: string; youtubeId: string }> = [
+  {
+    id: "video-prayer-monthly",
+    kind: "video",
+    url: "https://img.youtube.com/vi/MHxxQhc4MFo/maxresdefault.jpg",
+    thumb_url: "https://img.youtube.com/vi/MHxxQhc4MFo/maxresdefault.jpg",
+    title_ta: "வடலூரைப் புனித நகரமாக அறிவிக்கக் கோரி கூட்டுப் பிரார்த்தனை!",
+    title_en: "Collective Prayer to Declare Vadalur a Holy City",
+    sort_order: 0,
+    caption_ta:
+      "மாதந்தோறும் பூச தினத்தன்று வடலூர் சத்திய ஞான சபையில் சன்மார்க்க அன்பர்கள் அனைவரும் ஒன்றிணைந்து, உயிர்களைக் காக்க வேண்டி 'திரு அருட்பெருஞ்ஜோதி அகவல்' வாசித்து கூட்டுப் பிரார்த்தனை செய்கிறோம்.\n\nகருத்து வேறுபாடுகளைக் கடந்து, கொல்லப்படும் உயிர்களின் குரலாக நாம் அனைவரும் ஒன்றிணைவோம்!\n\nமுழு விபரங்களையும், நெகிழ்ச்சியான அந்த நிகழ்வையும் காண கீழே உள்ள இணைப்பைப் (Link) பாருங்கள்! 🏛️👇",
+    caption_en:
+      "Every month on Poosam day, Sanmarga devotees gather at Vadalur Sathya Gnana Sabha to recite 'Thiru Arutperum Jyothi Agaval' and offer collective prayers to protect all lives.\n\nLet us all unite beyond differences, as the voice of the lives being killed!\n\nWatch the full details and the touching event at the link below! 🏛️👇",
+    youtubeId: "MHxxQhc4MFo",
+  },
+];
+
 function GalleryPage() {
   const t = useT();
   const { lang } = useLang();
@@ -60,7 +77,7 @@ function GalleryPage() {
       } as Item,
       ...data.filter((i) => i.kind === "photo"),
     ],
-    video: data.filter((i) => i.kind === "video"),
+    video: [...HARDCODED_VIDEOS, ...data.filter((i) => i.kind === "video")],
     fieldwork: data.filter((i) => i.kind === "fieldwork"),
   }), [data]);
 
@@ -125,11 +142,26 @@ function GalleryPage() {
             <img src={resolve(lightbox.url)} alt={title(lightbox)} className="w-full h-auto max-h-[80vh] object-contain" />
           )}
           {lightbox?.kind === "video" && (
-            <div className="aspect-video bg-black flex items-center justify-center text-muted-foreground">
-              <p>{title(lightbox)}</p>
+            <div className="aspect-video bg-black">
+              <iframe
+                src={`https://www.youtube.com/embed/${(lightbox as typeof HARDCODED_VIDEOS[number]).youtubeId ?? ""}`}
+                title={title(lightbox)}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
             </div>
           )}
-          {lightbox && <div className="px-5 py-3 text-sm text-muted-foreground">{title(lightbox)}</div>}
+          {lightbox && (
+            <div className="px-5 py-3 text-sm text-muted-foreground space-y-2">
+              <p className="font-medium text-foreground">{title(lightbox)}</p>
+              {(lightbox as typeof HARDCODED_VIDEOS[number]).caption_ta && (
+                <p className="whitespace-pre-line">
+                  {lang === "ta" ? (lightbox as typeof HARDCODED_VIDEOS[number]).caption_ta : (lightbox as typeof HARDCODED_VIDEOS[number]).caption_en}
+                </p>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
