@@ -4,11 +4,11 @@ import sanctuaryImg from "@/assets/gnana_sabai_power.jpeg";
 import lampImg from "@/assets/vallalar_study.jpg";
 import gatheringImg from "@/assets/gnana_sabai_over.jpeg";
 import thanksImg from "@/assets/vallalar_with_animals_2.jpeg";
-import marudurImg from "@/assets/மருதூர்.jpeg";
-import karunguzhiImg from "@/assets/கருங்குழி.jpeg";
-import sathyaDharmaSalaiImg from "@/assets/சத்திய_தர்மசாலை.jpeg";
-import sathyaGnanaSabhaImg from "@/assets/சத்திய_ஞான_சபை.jpeg";
-import siddhiValagamImg from "@/assets/சித்தி_வளாகம்.jpeg";
+import marudurImg from "@/assets/Marudur.jpeg";
+import karunguzhiImg from "@/assets/Karunguzhi.jpeg";
+import sathyaDharmaSalaiImg from "@/assets/SathyaDharmaSalai.jpeg";
+import sathyaGnanaSabhaImg from "@/assets/SathyaGnanaSabha.jpeg";
+import siddhiValagamImg from "@/assets/SiddhiValagam.jpeg";
 
 export const Route = createFileRoute("/story")({
   head: () => ({
