@@ -11,12 +11,14 @@ import sanctuaryImg from "@/assets/sanctuary.jpg";
 import lampImg from "@/assets/lamp.jpg";
 import gatheringImg from "@/assets/gathering.jpg";
 import thanksImg from "@/assets/thanks.jpg";
+import vallalPeruman from "@/assets/vallal-peruman.jpg.asset.json";
 
 const SEED: Record<string, string> = {
   "/seed/sanctuary.jpg": sanctuaryImg,
   "/seed/lamp.jpg": lampImg,
   "/seed/gathering.jpg": gatheringImg,
   "/seed/thanks.jpg": thanksImg,
+  "/seed/vallal-peruman.jpg": vallalPeruman.url,
 };
 function resolve(url: string) {
   return SEED[url] ?? url;
@@ -46,7 +48,18 @@ function GalleryPage() {
   const [lightbox, setLightbox] = useState<Item | null>(null);
 
   const groups = useMemo(() => ({
-    photo: data.filter((i) => i.kind === "photo"),
+    photo: [
+      {
+        id: "featured-vallal-peruman",
+        kind: "photo" as const,
+        url: vallalPeruman.url,
+        thumb_url: vallalPeruman.url,
+        title_ta: "வள்ளல் பெருமான்",
+        title_en: "Vallal Peruman",
+        sort_order: 0,
+      } as Item,
+      ...data.filter((i) => i.kind === "photo"),
+    ],
     video: data.filter((i) => i.kind === "video"),
     fieldwork: data.filter((i) => i.kind === "fieldwork"),
   }), [data]);
