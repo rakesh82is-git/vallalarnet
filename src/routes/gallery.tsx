@@ -11,14 +11,14 @@ import sanctuaryImg from "@/assets/sanctuary.jpg";
 import lampImg from "@/assets/lamp.jpg";
 import gatheringImg from "@/assets/gathering.jpg";
 import thanksImg from "@/assets/thanks.jpg";
-import vallalPeruman from "@/assets/vallal-peruman.jpg.asset.json";
+import vallalPerumanImg from "@/assets/vallalar_with_animals_2.jpeg";
 
 const SEED: Record<string, string> = {
   "/seed/sanctuary.jpg": sanctuaryImg,
   "/seed/lamp.jpg": lampImg,
   "/seed/gathering.jpg": gatheringImg,
   "/seed/thanks.jpg": thanksImg,
-  "/seed/vallal-peruman.jpg": vallalPeruman.url,
+  "/seed/vallal-peruman.jpg": vallalPerumanImg,
 };
 function resolve(url: string) {
   return SEED[url] ?? url;
@@ -52,8 +52,8 @@ function GalleryPage() {
       {
         id: "featured-vallal-peruman",
         kind: "photo" as const,
-        url: vallalPeruman.url,
-        thumb_url: vallalPeruman.url,
+        url: vallalPerumanImg,
+        thumb_url: vallalPerumanImg,
         title_ta: "வள்ளல் பெருமான்",
         title_en: "Vallal Peruman",
         sort_order: 0,
