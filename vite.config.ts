@@ -17,29 +17,13 @@ export default defineConfig({
       {
         name: "stale-vite-dep-chunk-fallback",
         configureServer(server) {
-          server.middlewares.use((req, res, next) => {
+          server.middlewares.use(async (req, res, next) => {
             if (!req.url?.startsWith("/node_modules/.vite/deps/chunk-KCFY4DTJ.js")) {
               next();
               return;
             }
-            res.statusCode = 200;
-            res.setHeader("Content-Type", "text/javascript");
-            res.end(`
-              export * from "/node_modules/.vite/deps/chunk-5M7U64OP.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-6WBQ3PW6.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-BEDQLYDE.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-BPGYRLWZ.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-EKTAS3OU.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-FMHSZV5P.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-G3PMV62Z.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-GNQBU2FN.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-KA7Q37B3.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-LOG2ZSQO.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-O7XYRGWP.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-Q6YWI74T.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-SZINW6JV.js?v=65461d16";
-              export * from "/node_modules/.vite/deps/chunk-U7P2NEEE.js?v=65461d16";
-            `);
+            req.url = "/node_modules/.vite/deps/chunk-KCFY4DTJ.js";
+            await server.middlewares(req, res, next);
           });
         },
       },
