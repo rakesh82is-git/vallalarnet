@@ -4,6 +4,11 @@ import sanctuaryImg from "@/assets/gnana_sabai_over.jpeg";
 import lampImg from "@/assets/vallalar_study.jpeg";
 import gatheringImg from "@/assets/gnana_sabai_over.jpeg";
 import thanksImg from "@/assets/vallalar_with_animals_2.jpeg";
+import marudurImg from "@/assets/மருதூர்.jpeg";
+import karunguzhiImg from "@/assets/கருங்குழி.jpeg";
+import sathyaDharmaSalaiImg from "@/assets/சத்திய_தர்மசாலை.jpeg";
+import sathyaGnanaSabhaImg from "@/assets/சத்திய_ஞான_சபை.jpeg";
+import siddhiValagamImg from "@/assets/சித்தி_வளாகம்.jpeg";
 
 export const Route = createFileRoute("/story")({
   head: () => ({
@@ -26,11 +31,11 @@ function StoryPage() {
     { n: 3, title: t.story.ch3Title, body: t.story.ch3Body, img: gatheringImg },
   ];
   const sites = [
-    { title: t.story.site1Title, body: t.story.site1Body, img: thanksImg },
-    { title: t.story.site2Title, body: t.story.site2Body, img: lampImg },
-    { title: t.story.site3Title, body: t.story.site3Body, img: gatheringImg },
-    { title: t.story.site4Title, body: t.story.site4Body, img: sanctuaryImg },
-    { title: t.story.site5Title, body: t.story.site5Body, img: lampImg },
+    { title: t.story.site1Title, body: t.story.site1Body, img: marudurImg },
+    { title: t.story.site2Title, body: t.story.site2Body, img: karunguzhiImg },
+    { title: t.story.site3Title, body: t.story.site3Body, img: sathyaDharmaSalaiImg },
+    { title: t.story.site4Title, body: t.story.site4Body, img: sathyaGnanaSabhaImg },
+    { title: t.story.site5Title, body: t.story.site5Body, img: siddhiValagamImg },
   ];
   const faqs = [
     { q: t.story.faq1Q, a: t.story.faq1A },
