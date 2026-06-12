@@ -3,20 +3,6 @@ import { z } from "zod";
 import { createHash } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const SignaturePayload = z.object({
-  kind: z.enum(["digital", "manual"]),
-  name: z.string().trim().min(1).max(100),
-  age: z.number().int().min(1).max(120),
-  country: z.string().trim().min(1).max(80),
-  state: z.string().trim().min(1).max(80),
-  district: z.string().trim().min(1).max(80),
-  phone: z.string().trim().min(6).max(20),
-  message: z.string().trim().max(200).optional().nullable(),
-  consent: z.boolean(),
-  signatureSvg: z.string().max(500_000).optional().nullable(),
-  scanDataUrl: z.string().max(2_000_000).optional().nullable(),
-});
-
 const EmailSignaturePayload = z.object({
   full_name: z.string().trim().min(1).max(100),
   email: z.string().email().max(200),
@@ -31,50 +17,6 @@ function mask(phone: string) {
   if (d.length < 4) return "••••";
   return `${"•".repeat(Math.max(d.length - 4, 4))}${d.slice(-4)}`;
 }
-
-export const submitSignature = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => SignaturePayload.parse(data))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const phoneDigits = data.phone.replace(/\D/g, "");
-    const phoneHash = createHash("sha256")
-      .update(`vadalur:${phoneDigits}`)
-      .digest("hex");
-
-    const { data: existing } = await supabaseAdmin
-      .from("signatures")
-      .select("id")
-      .eq("phone_hash", phoneHash)
-      .maybeSingle();
-    if (existing) return { ok: false as const, error: "duplicate" as const };
-
-    const { data: row, error } = await supabaseAdmin
-      .from("signatures")
-      .insert({
-        kind: data.kind,
-        name: data.name,
-        age: data.age,
-        country: data.country,
-        state: data.state,
-        district: data.district,
-        message: data.message ?? null,
-        phone_hash: phoneHash,
-        phone_masked: mask(data.phone),
-        signature_svg: data.signatureSvg ?? null,
-        scan_url: data.scanDataUrl ?? null,
-        consent: data.consent,
-      })
-      .select("id, created_at")
-      .single();
-    if (error) return { ok: false as const, error: "db" as const };
-
-    const { count } = await supabaseAdmin
-      .from("signatures")
-      .select("*", { count: "exact", head: true });
-
-    return { ok: true as const, id: row.id, voteNumber: count ?? 1 };
-  });
 
 export const submitEmailSignature = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
