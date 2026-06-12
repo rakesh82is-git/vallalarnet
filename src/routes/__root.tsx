@@ -126,6 +126,20 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
+    const message = String(error?.message || error || "");
+    const isStaleDevModule =
+      message.includes("Failed to fetch dynamically imported module") ||
+      message.includes("Outdated Optimize Dep") ||
+      message.includes("/node_modules/.vite/deps/");
+    if (isStaleDevModule) {
+      const reloadKey = "vallalarnet:stale-route-reload";
+      const lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
+      if (Date.now() - lastReload > 10000) {
+        sessionStorage.setItem(reloadKey, String(Date.now()));
+        location.reload();
+        return;
+      }
+    }
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
