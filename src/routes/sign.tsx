@@ -1,75 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
-import { ScanRedactor } from "@/components/scan-redactor";
 import vallalPeruman from "@/assets/vallal-peruman.jpg.asset.json";
 const thanksImg = vallalPeruman.url;
-import { useT } from "@/i18n/context";
-import { submitSignature } from "@/lib/petition.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
     meta: [
       { title: "Sign — Vadalur Holy City" },
-      { name: "description", content: "Add your digital signature or upload a signed paper to support declaring Vadalur a Holy City." },
+      { name: "description", content: "Verify your email and add your digital signature to support declaring Vadalur a Holy City." },
       { property: "og:title", content: "Sign the Vadalur petition" },
-      { property: "og:description", content: "Two ways to join — digital signature or a signed paper. One signature per phone." },
+      { property: "og:description", content: "Email-verified petition. One signature per email." },
     ],
   }),
   component: SignPage,
 });
 
-function SignPage() {
-  const t = useT();
-  return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
-      <div className="text-center mb-8 animate-reveal">
-        <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">{t.sign.heroEyebrow}</p>
-        <h1 className="mt-3 text-3xl md:text-5xl font-display font-bold">{t.sign.heroTitle}</h1>
-        <p className="mt-4 text-muted-foreground">{t.sign.heroBody}</p>
-      </div>
-
-      <Tabs defaultValue="digital" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="digital">{t.sign.tabDigital}</TabsTrigger>
-          <TabsTrigger value="manual">{t.sign.tabManual}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="digital">
-          <DigitalTab />
-        </TabsContent>
-        <TabsContent value="manual">
-          <ManualTab />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-type DigitalForm = {
-  name: string;
-  age: string;
-  country: string;
-  state: string;
-  district: string;
-  phone: string;
-  message: string;
-};
+type Step = "form" | "otp" | "sign" | "done";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -80,293 +34,216 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function DigitalTab() {
-  const t = useT();
-  const submit = useServerFn(submitSignature);
-  const [form, setForm] = useState<DigitalForm>({
-    name: "",
-    age: "",
-    country: "India",
-    state: "Tamil Nadu",
-    district: "",
-    phone: "",
-    message: "",
-  });
-  const [consent, setConsent] = useState("");
-  const [signature, setSignature] = useState<string | null>(null);
-  const [otpOpen, setOtpOpen] = useState(false);
-  const [otp, setOtp] = useState("");
+function SignPage() {
+  const [step, setStep] = useState<Step>("form");
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ name: string; voteNumber: number } | null>(null);
+  const [form, setForm] = useState({
+    full_name: "",
+    email: "",
+    phone_number: "",
+    residential_address: "",
+    pincode: "",
+  });
+  const [otp, setOtp] = useState("");
+  const [signature, setSignature] = useState<string | null>(null);
+  const [result, setResult] = useState<{ id: string; name: string } | null>(null);
 
-  function field<K extends keyof DigitalForm>(k: K, v: string) {
+  function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((s) => ({ ...s, [k]: v }));
   }
 
-  function startSign(e: React.FormEvent) {
+  async function sendCode(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.age || !form.country || !form.state || !form.district || !form.phone) {
-      toast.error(t.sign.errAll);
-      return;
-    }
-    if (consent !== "yes") {
-      toast.error(t.sign.errConsent);
-      return;
-    }
-    if (!signature) {
-      toast.error(t.sign.errSig);
-      return;
-    }
-    setOtpOpen(true);
-    toast.success(t.sign.otpSent);
-  }
-
-  async function confirmOtp() {
-    if (otp.length !== 6) {
-      toast.error(t.sign.errOtp);
+    const { full_name, email, phone_number, residential_address, pincode } = form;
+    if (!full_name || !email || !phone_number || !residential_address || !pincode) {
+      toast.error("Please fill in all fields");
       return;
     }
     setBusy(true);
-    try {
-      const r = await submit({
-        data: {
-          kind: "digital",
-          name: form.name,
-          age: Number(form.age),
-          country: form.country,
-          state: form.state,
-          district: form.district,
-          phone: form.phone,
-          message: form.message || null,
-          consent: true,
-          signatureSvg: signature,
-          scanDataUrl: null,
-        },
-      });
-      if (!r.ok) {
-        toast.error(r.error === "duplicate" ? t.sign.errDup : "Something went wrong");
-        return;
-      }
-      setOtpOpen(false);
-      setResult({ name: form.name, voteNumber: r.voteNumber });
-    } finally {
-      setBusy(false);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
     }
+    setStep("otp");
+    toast.success("Verification code sent to your email");
   }
 
-  if (result) return <ThankYou name={result.name} voteNumber={result.voteNumber} />;
+  async function verifyCode() {
+    if (otp.length !== 6) {
+      toast.error("Enter the 6-digit code");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email: form.email,
+      token: otp,
+      type: "email",
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setStep("sign");
+    toast.success("Email verified — please sign below");
+  }
+
+  async function submitSignature() {
+    if (!signature) {
+      toast.error("Please draw your signature");
+      return;
+    }
+    setBusy(true);
+    const { data: userRes } = await supabase.auth.getUser();
+    const user = userRes.user;
+    if (!user) {
+      setBusy(false);
+      toast.error("Session expired — please verify again");
+      setStep("form");
+      return;
+    }
+    const { data, error } = await supabase
+      .from("signatures")
+      .insert({
+        user_id: user.id,
+        full_name: form.full_name,
+        email: form.email,
+        phone_number: form.phone_number,
+        residential_address: form.residential_address,
+        pincode: form.pincode,
+        signature_image: signature,
+        // legacy columns kept satisfied with the new data
+        name: form.full_name,
+        kind: "digital",
+        consent: true,
+      } as never)
+      .select("id")
+      .single();
+    setBusy(false);
+    if (error) {
+      toast.error(
+        error.code === "23505"
+          ? "This email has already signed the petition."
+          : error.message,
+      );
+      return;
+    }
+    setResult({ id: data.id as string, name: form.full_name });
+    setStep("done");
+  }
 
   return (
-    <form
-      onSubmit={startSign}
-      className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8 space-y-6 animate-reveal"
-    >
-      <div className="rounded-2xl bg-gradient-to-br from-accent/10 to-primary/10 p-6 text-center">
-        <div className="font-display text-3xl md:text-4xl text-primary italic">வள்ளலார்</div>
-        <p className="mt-2 text-sm text-muted-foreground">{t.sign.quote}</p>
-      </div>
-
-      <div className="grid sm:grid-cols-2 gap-4">
-        <Field label={t.sign.name}>
-          <Input value={form.name} onChange={(e) => field("name", e.target.value)} required maxLength={100} />
-        </Field>
-        <Field label={t.sign.age}>
-          <Input type="number" min={1} max={120} value={form.age} onChange={(e) => field("age", e.target.value)} required />
-        </Field>
-        <Field label={t.sign.country}>
-          <Input value={form.country} onChange={(e) => field("country", e.target.value)} required maxLength={80} />
-        </Field>
-        <Field label={t.sign.state}>
-          <Input value={form.state} onChange={(e) => field("state", e.target.value)} required maxLength={80} />
-        </Field>
-        <Field label={t.sign.district}>
-          <Input value={form.district} onChange={(e) => field("district", e.target.value)} required maxLength={80} />
-        </Field>
-        <Field label={t.sign.phone}>
-          <Input type="tel" inputMode="tel" placeholder="+91 9XXXXXXXXX" value={form.phone} onChange={(e) => field("phone", e.target.value)} required />
-        </Field>
-      </div>
-
-      <Field label={t.sign.message}>
-        <Textarea
-          value={form.message}
-          onChange={(e) => field("message", e.target.value.slice(0, 200))}
-          rows={3}
-          maxLength={200}
-        />
-        <p className="text-xs text-muted-foreground text-right">
-          {200 - form.message.length} {t.sign.messageHint}
+    <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="text-center mb-8 animate-reveal">
+        <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">PETITION</p>
+        <h1 className="mt-3 text-3xl md:text-5xl font-display font-bold">
+          Sign the Petition
+        </h1>
+        <p className="mt-4 text-muted-foreground">
+          Verify your email, then add your digital signature to support declaring Vadalur a Holy City.
         </p>
-      </Field>
-
-      <div className="rounded-2xl bg-secondary/40 p-5 border border-border">
-        <p className="font-medium text-base mb-3">{t.sign.consentQ}</p>
-        <RadioGroup value={consent} onValueChange={setConsent} className="flex gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <RadioGroupItem value="yes" id="yes" />
-            <span className="font-medium">{t.sign.consentYes}</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <RadioGroupItem value="no" id="no" />
-            <span>{t.sign.consentNo}</span>
-          </label>
-        </RadioGroup>
       </div>
 
-      <div>
-        <Label className="text-sm font-medium mb-2 block">{t.sign.signatureLabel}</Label>
-        <SignaturePad onChange={setSignature} />
-      </div>
+      {step === "done" && result ? (
+        <ThankYou id={result.id} name={result.name} />
+      ) : (
+        <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8 space-y-6 animate-reveal">
+          <fieldset disabled={step !== "form" || busy} className="grid sm:grid-cols-2 gap-4">
+            <Field label="Full Name">
+              <Input value={form.full_name} onChange={(e) => set("full_name", e.target.value)} maxLength={120} />
+            </Field>
+            <Field label="Email">
+              <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value.trim())} maxLength={200} />
+            </Field>
+            <Field label="Phone Number">
+              <Input type="tel" inputMode="tel" value={form.phone_number} onChange={(e) => set("phone_number", e.target.value)} maxLength={20} />
+            </Field>
+            <Field label="Pincode">
+              <Input value={form.pincode} onChange={(e) => set("pincode", e.target.value)} maxLength={12} />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Residential Address">
+                <Textarea
+                  value={form.residential_address}
+                  onChange={(e) => set("residential_address", e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                />
+              </Field>
+            </div>
+          </fieldset>
 
-      <Button type="submit" size="lg" className="w-full text-base font-medium">
-        {t.sign.verify}
-      </Button>
-      <p className="text-xs text-muted-foreground text-center">{t.sign.onePerPhone}</p>
+          {step === "form" && (
+            <Button onClick={sendCode as never} disabled={busy} size="lg" className="w-full">
+              {busy ? "Sending…" : "Send Code"}
+            </Button>
+          )}
 
-      <Dialog open={otpOpen} onOpenChange={(o) => !busy && setOtpOpen(o)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t.sign.otpTitle}</DialogTitle>
-            <DialogDescription>{form.phone}</DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-center py-4">
-            <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-              <InputOTPGroup>
-                {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <InputOTPSlot key={i} index={i} />
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
-          <p className="text-xs text-center text-muted-foreground">{t.sign.otpHint}</p>
-          <Button onClick={confirmOtp} disabled={busy} className="w-full">
-            {busy ? "…" : t.sign.confirm}
-          </Button>
-        </DialogContent>
-      </Dialog>
-    </form>
+          {step === "otp" && (
+            <div className="rounded-2xl bg-secondary/40 p-5 border border-border space-y-4">
+              <div className="text-center">
+                <p className="font-medium">Enter the 6-digit code</p>
+                <p className="text-xs text-muted-foreground mt-1">Sent to {form.email}</p>
+              </div>
+              <div className="flex justify-center">
+                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                  <InputOTPGroup>
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <InputOTPSlot key={i} index={i} />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <Button onClick={verifyCode} disabled={busy} className="w-full">
+                {busy ? "Verifying…" : "Verify Code"}
+              </Button>
+            </div>
+          )}
+
+          {step === "sign" && (
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-gradient-to-br from-accent/10 to-primary/10 p-4 text-center">
+                <p className="text-sm font-medium">Email verified ✓</p>
+                <p className="text-xs text-muted-foreground mt-1">Draw your signature below</p>
+              </div>
+              <SignaturePad onChange={setSignature} />
+              <Button onClick={submitSignature} disabled={busy || !signature} size="lg" className="w-full">
+                {busy ? "Submitting…" : "Submit Signature"}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
-function ThankYou({ name, voteNumber }: { name: string; voteNumber: number }) {
-  const t = useT();
-  const shareText = encodeURIComponent("I just signed to declare Vadalur a Holy City. Join: ");
-  const shareUrl = typeof window !== "undefined" ? window.location.origin + "/sign" : "/sign";
-
+function ThankYou({ id, name }: { id: string; name: string }) {
   return (
     <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-10 text-center animate-reveal overflow-hidden">
       <div className="relative mx-auto w-full max-w-md aspect-square rounded-2xl overflow-hidden mb-6">
         <img src={thanksImg} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
       </div>
-      <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">{t.sign.thankYouEyebrow}</p>
+      <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">THANK YOU</p>
       <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">
-        {t.sign.thankYou}, {name}!
+        {name}, your signature is recorded
       </h2>
       <div className="mt-8 inline-flex flex-col items-center rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 px-10 py-6">
-        <span className="text-xs font-mono uppercase tracking-widest text-accent">{t.sign.voteNumber}</span>
-        <span className="mt-1 text-5xl md:text-6xl font-mono font-bold text-primary tracking-tight">
-          #{voteNumber.toLocaleString("en-IN")}
+        <span className="text-xs font-mono uppercase tracking-widest text-accent">Signature ID</span>
+        <span className="mt-1 text-lg md:text-xl font-mono font-bold text-primary tracking-tight break-all">
+          {id}
         </span>
-        <span className="mt-1 text-sm text-muted-foreground">{t.sign.voteSuffix}</span>
       </div>
       <div className="mt-8 flex flex-wrap gap-3 justify-center">
-        <a
-          href={`https://wa.me/?text=${shareText}${encodeURIComponent(shareUrl)}`}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-        >
-          {t.sign.shareWA}
-        </a>
         <Link to="/wall" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full ring-1 ring-border text-sm font-medium hover:bg-secondary">
-          {t.nav.wall} →
+          View the Wall →
         </Link>
-      </div>
-    </div>
-  );
-}
-
-function ManualTab() {
-  const t = useT();
-  const submit = useServerFn(submitSignature);
-  const [pending, setPending] = useState<File | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", country: "India", state: "Tamil Nadu", district: "" });
-
-  function handlePick(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (f) setPending(f);
-    e.target.value = "";
-  }
-
-  async function handleSave(dataUrl: string) {
-    if (!form.name || !form.phone || !form.district) {
-      toast.error(t.sign.errAll);
-      return;
-    }
-    setBusy(true);
-    try {
-      const r = await submit({
-        data: {
-          kind: "manual",
-          name: form.name,
-          age: 18,
-          country: form.country,
-          state: form.state,
-          district: form.district,
-          phone: form.phone,
-          message: null,
-          consent: true,
-          signatureSvg: null,
-          scanDataUrl: dataUrl,
-        },
-      });
-      if (!r.ok) {
-        toast.error(r.error === "duplicate" ? t.sign.errDup : "Something went wrong");
-        return;
-      }
-      setPending(null);
-      setForm({ name: "", phone: "", country: "India", state: "Tamil Nadu", district: "" });
-      toast.success(t.sign.uploadOk);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="space-y-6 animate-reveal">
-      <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
-        <h2 className="text-xl font-display font-bold mb-2">{t.sign.manualTitle}</h2>
-        <p className="text-sm text-muted-foreground mb-5">{t.sign.manualBody}</p>
-
-        <div className="grid sm:grid-cols-2 gap-4 mb-5">
-          <Field label={t.sign.name}>
-            <Input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
-          </Field>
-          <Field label={t.sign.phone}>
-            <Input type="tel" value={form.phone} onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))} />
-          </Field>
-          <Field label={t.sign.state}>
-            <Input value={form.state} onChange={(e) => setForm((s) => ({ ...s, state: e.target.value }))} />
-          </Field>
-          <Field label={t.sign.district}>
-            <Input value={form.district} onChange={(e) => setForm((s) => ({ ...s, district: e.target.value }))} />
-          </Field>
-        </div>
-
-        {!pending ? (
-          <label className="block cursor-pointer">
-            <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={handlePick} />
-            <div className="border-2 border-dashed border-primary/40 rounded-2xl py-12 px-6 text-center hover:bg-secondary/30 transition-colors">
-              <p className="text-base font-medium">{t.sign.manualPick}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t.sign.manualHint}</p>
-            </div>
-          </label>
-        ) : (
-          <ScanRedactor file={pending} onCancel={() => setPending(null)} onSave={handleSave} />
-        )}
-        {busy && <p className="text-xs text-muted-foreground text-center mt-3">…</p>}
       </div>
     </div>
   );
