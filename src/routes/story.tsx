@@ -26,9 +26,16 @@ function StoryPage() {
     { n: 3, title: t.story.ch3Title, body: t.story.ch3Body, img: gatheringImg },
   ];
   const sites = [
-    { title: t.story.site1Title, body: t.story.site1Body, img: sanctuaryImg },
-    { title: t.story.site2Title, body: t.story.site2Body, img: gatheringImg },
-    { title: t.story.site3Title, body: t.story.site3Body, img: lampImg },
+    { title: t.story.site1Title, body: t.story.site1Body, img: thanksImg },
+    { title: t.story.site2Title, body: t.story.site2Body, img: lampImg },
+    { title: t.story.site3Title, body: t.story.site3Body, img: gatheringImg },
+    { title: t.story.site4Title, body: t.story.site4Body, img: sanctuaryImg },
+    { title: t.story.site5Title, body: t.story.site5Body, img: lampImg },
+  ];
+  const faqs = [
+    { q: t.story.faq1Q, a: t.story.faq1A },
+    { q: t.story.faq2Q, a: t.story.faq2A },
+    { q: t.story.faq3Q, a: t.story.faq3A },
   ];
 
   return (
@@ -69,6 +76,33 @@ function StoryPage() {
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{s.body}</p>
               </div>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-16 rounded-3xl bg-card ring-1 ring-border p-8 md:p-10 text-center">
+        <p className="whitespace-pre-line text-base md:text-lg leading-relaxed italic text-foreground">
+          {t.story.verse}
+        </p>
+        <p className="mt-4 text-sm font-mono text-accent">{t.story.verseAttr}</p>
+      </section>
+
+      <section className="mt-16">
+        <h2 className="text-2xl md:text-3xl font-display font-bold">{t.story.faqsTitle}</h2>
+        <div className="mt-6 space-y-4">
+          {faqs.map((f, i) => (
+            <details
+              key={i}
+              className="group rounded-2xl bg-card ring-1 ring-border p-5 open:ring-primary/40"
+            >
+              <summary className="cursor-pointer list-none flex justify-between items-start gap-4 font-display font-semibold text-base md:text-lg">
+                <span>{f.q}</span>
+                <span className="text-primary transition-transform group-open:rotate-45">+</span>
+              </summary>
+              <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed">
+                {f.a}
+              </p>
+            </details>
           ))}
         </div>
       </section>
