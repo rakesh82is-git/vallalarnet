@@ -1,9 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Country, State, City } from "country-state-city";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
 import vallalPeruman from "@/assets/vallal-peruman.jpg.asset.json";
@@ -93,10 +101,10 @@ function DigitalTab() {
   const [form, setForm] = useState({
     name: "",
     age: "",
-    country: "India",
-    state: "",
+    countryCode: "IN",
+    stateCode: "",
     district: "",
-    mobile_number: "",
+    mobile_local: "",
   });
   const [signature, setSignature] = useState<string | null>(null);
   const [result, setResult] = useState<{ id: string; name: string; voteNumber: number } | null>(null);
@@ -105,9 +113,31 @@ function DigitalTab() {
     setForm((s) => ({ ...s, [k]: v }));
   }
 
+  const countries = useMemo(() => Country.getAllCountries(), []);
+  const states = useMemo(
+    () => (form.countryCode ? State.getStatesOfCountry(form.countryCode) : []),
+    [form.countryCode],
+  );
+  const cities = useMemo(
+    () =>
+      form.countryCode && form.stateCode
+        ? City.getCitiesOfState(form.countryCode, form.stateCode)
+        : [],
+    [form.countryCode, form.stateCode],
+  );
+  const selectedCountry = useMemo(
+    () => countries.find((c) => c.isoCode === form.countryCode) ?? null,
+    [countries, form.countryCode],
+  );
+  const dialCode = selectedCountry?.phonecode
+    ? `+${selectedCountry.phonecode.replace(/^\+/, "")}`
+    : "";
+
   async function handleSubmit() {
-    const { name, age, country, state, district, mobile_number } = form;
-    if (!name || !age || !country || !state || !district || !mobile_number) {
+    const { name, age, countryCode, stateCode, district, mobile_local } = form;
+    const country = selectedCountry?.name ?? "";
+    const state = states.find((s) => s.isoCode === stateCode)?.name ?? "";
+    if (!name || !age || !country || !state || !district || !mobile_local) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -120,6 +150,7 @@ function DigitalTab() {
       toast.error("Please draw your signature");
       return;
     }
+    const mobile_number = `${dialCode} ${mobile_local}`.trim();
     setBusy(true);
     try {
       const res = await submitDigitalSignature({
@@ -170,22 +201,84 @@ function DigitalTab() {
           />
         </Field>
         <Field label="Country / நாடு">
-          <Input value={form.country} onChange={(e) => set("country", e.target.value)} maxLength={80} />
+          <Select
+            value={form.countryCode}
+            onValueChange={(v) =>
+              setForm((s) => ({ ...s, countryCode: v, stateCode: "", district: "" }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select country" />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              {countries.map((c) => (
+                <SelectItem key={c.isoCode} value={c.isoCode}>
+                  {c.flag} {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
         <Field label="State / மாநிலம்">
-          <Input value={form.state} onChange={(e) => set("state", e.target.value)} maxLength={80} />
+          <Select
+            value={form.stateCode}
+            onValueChange={(v) => setForm((s) => ({ ...s, stateCode: v, district: "" }))}
+            disabled={!states.length}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={states.length ? "Select state" : "No states available"} />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              {states.map((s) => (
+                <SelectItem key={s.isoCode} value={s.isoCode}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
         <Field label="District / மாவட்டம்">
-          <Input value={form.district} onChange={(e) => set("district", e.target.value)} maxLength={80} />
+          {cities.length > 0 ? (
+            <Select
+              value={form.district}
+              onValueChange={(v) => set("district", v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select district" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {cities.map((c) => (
+                  <SelectItem key={`${c.name}-${c.latitude}-${c.longitude}`} value={c.name}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              value={form.district}
+              onChange={(e) => set("district", e.target.value)}
+              maxLength={80}
+              placeholder={form.stateCode ? "Enter district" : "Select state first"}
+              disabled={!form.stateCode}
+            />
+          )}
         </Field>
         <Field label="Mobile Number / கைபேசி எண்">
-          <Input
-            type="tel"
-            inputMode="tel"
-            value={form.mobile_number}
-            onChange={(e) => set("mobile_number", e.target.value)}
-            maxLength={20}
-          />
+          <div className="flex">
+            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-secondary text-sm font-mono text-muted-foreground min-w-[64px] justify-center">
+              {dialCode || "+—"}
+            </span>
+            <Input
+              type="tel"
+              inputMode="tel"
+              value={form.mobile_local}
+              onChange={(e) => set("mobile_local", e.target.value.replace(/[^\d\s-]/g, ""))}
+              maxLength={15}
+              className="rounded-l-none"
+              placeholder="Phone number"
+            />
+          </div>
         </Field>
       </fieldset>
 
