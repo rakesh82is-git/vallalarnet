@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && tsc --noEmit",
+    "build": "vite build && node -e \"const fs=require('fs'); const p='dist/client/wrangler.json'; const w=JSON.parse(fs.readFileSync(p,'utf8')); w.main='../server/server.js'; fs.writeFileSync(p, JSON.stringify(w,null,2));\" && tsc --noEmit",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types"
   },
