@@ -59,7 +59,7 @@ function StoryPage() {
             <div className="relative aspect-square rounded-2xl overflow-hidden ring-1 ring-border">
               <img src={c.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
             </div>
-            <p className="text-base md:text-lg leading-relaxed text-muted-foreground">{c.body}</p>
+            <p className="text-base md:text-lg leading-relaxed text-muted-foreground whitespace-pre-line">{c.body}</p>
           </div>
         </article>
       ))}
