@@ -207,7 +207,7 @@ function SignPage() {
                 <p className="text-xs text-muted-foreground mt-1">Draw your signature below</p>
               </div>
               <SignaturePad onChange={setSignature} />
-              <Button onClick={submitSignature} disabled={busy || !signature} size="lg" className="w-full">
+              <Button onClick={handleSubmit} disabled={busy || !signature} size="lg" className="w-full">
                 {busy ? "Submitting…" : "Submit Signature"}
               </Button>
             </div>
