@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useT } from "@/i18n/context";
-import sanctuaryImg from "@/assets/gnana_sabai_over.jpeg";
+import sanctuaryImg from "@/assets/gnana_sabai_power.jpeg";
 import lampImg from "@/assets/vallalar_study.jpeg";
 import gatheringImg from "@/assets/gnana_sabai_over.jpeg";
 import thanksImg from "@/assets/vallalar_with_animals_2.jpeg";
