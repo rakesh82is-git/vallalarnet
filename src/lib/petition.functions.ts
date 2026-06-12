@@ -1,6 +1,62 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
+
+type ManualItem = {
+  id: string;
+  name: string;
+  document_title: string | null;
+  url: string | null;
+  is_pdf: boolean;
+  created_at: string;
+};
+
+type SignatureItem = {
+  id: string;
+  created_at: string;
+  name: string | null;
+  district: string | null;
+  state: string | null;
+  country: string | null;
+  message: string | null;
+  signature_svg: string | null;
+  scan_url: string | null;
+};
+
+type SignatureRow = {
+  country: string | null;
+  state: string | null;
+  district: string | null;
+  created_at: string;
+};
+
+type GalleryItem = {
+  id: string;
+  kind: "photo" | "video" | "fieldwork";
+  url: string;
+  thumb_url: string | null;
+  title_ta: string;
+  title_en: string;
+  sort_order: number;
+};
+
+function emptyStats() {
+  return {
+    total: 0,
+    countries: 0,
+    districts: 0,
+    series: [] as Array<{ day: string; daily: number; cumulative: number }>,
+    regions: [] as Array<{ label: string; count: number }>,
+    countryList: [] as Array<{ label: string; count: number }>,
+    recent: [] as Array<{ name: string | null; district: string | null; state: string | null; created_at: string }>,
+    goal: 100_000,
+  };
+}
+
+async function getBackendClient() {
+  const { getExternalSupabaseAdmin } = await import("@/integrations/supabase/external-client.server");
+  return getExternalSupabaseAdmin();
+}
 
 const DigitalSignaturePayload = z.object({
   name: z.string().trim().min(1).max(100),
@@ -34,7 +90,8 @@ function hashPhone(mobile: string) {
 export const submitDigitalSignature = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => DigitalSignaturePayload.parse(data))
   .handler(async ({ data }) => {
-    const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
+    const supabaseAdmin = await getBackendClient();
+    if (!supabaseAdmin) return { ok: false as const, error: "config" as const };
 
     const phoneHash = hashPhone(data.mobile_number);
 
@@ -86,7 +143,8 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
 export const submitManualSignature = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => ManualSignaturePayload.parse(data))
   .handler(async ({ data }) => {
-    const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
+    const supabaseAdmin = await getBackendClient();
+    if (!supabaseAdmin) return { ok: false as const, error: "config" as const };
 
     const phoneHash = hashPhone(data.mobile_number);
 
@@ -119,7 +177,7 @@ export const submitManualSignature = createServerFn({ method: "POST" })
             ? "webp"
             : "jpg";
     const safeName = data.file_name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 60);
-    const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}_${safeName}.${ext}`;
+    const path = `${new Date().toISOString().slice(0, 10)}/${randomUUID()}_${safeName}.${ext}`;
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from("petition-manual")
@@ -159,7 +217,9 @@ export const submitManualSignature = createServerFn({ method: "POST" })
 
 export const listManualSignatures = createServerFn({ method: "GET" }).handler(
   async () => {
-    const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
+    const supabaseAdmin = await getBackendClient();
+    if (!supabaseAdmin) return { items: [] as ManualItem[] };
+
     const { data: rows } = await supabaseAdmin
       .from("signatures")
       .select("id, name, document_title, manual_document_url, created_at")
@@ -169,7 +229,7 @@ export const listManualSignatures = createServerFn({ method: "GET" }).handler(
       .limit(24);
 
     const items = await Promise.all(
-      (rows ?? []).map(async (r) => {
+      ((rows ?? []) as Array<{ id: string; name: string; document_title: string | null; manual_document_url: string | null; created_at: string }>).map(async (r) => {
         const path = r.manual_document_url as string;
         const { data: signed } = await supabaseAdmin.storage
           .from("petition-manual")
@@ -186,7 +246,7 @@ export const listManualSignatures = createServerFn({ method: "GET" }).handler(
       }),
     );
 
-    return { items: items.filter((i) => i.url) };
+    return { items: items.filter((i: ManualItem) => i.url) };
   });
 
 export const listSignatures = createServerFn({ method: "GET" })
@@ -199,7 +259,9 @@ export const listSignatures = createServerFn({ method: "GET" })
       .parse(data),
   )
   .handler(async ({ data }) => {
-    const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
+    const supabaseAdmin = await getBackendClient();
+    if (!supabaseAdmin) return { items: [] as SignatureItem[], nextCursor: null as string | null };
+
     const limit = data.limit ?? 24;
     let q = supabaseAdmin
       .from("signatures_public")
@@ -210,13 +272,15 @@ export const listSignatures = createServerFn({ method: "GET" })
     const { data: rows, error } = await q;
     if (error) return { items: [], nextCursor: null };
     const hasMore = (rows?.length ?? 0) > limit;
-    const items = (rows ?? []).slice(0, limit);
+    const items = ((rows ?? []) as SignatureItem[]).slice(0, limit);
     const nextCursor = hasMore ? items[items.length - 1].created_at : null;
     return { items, nextCursor };
   });
 
 export const getStats = createServerFn({ method: "GET" }).handler(async () => {
-  const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
+  const supabaseAdmin = await getBackendClient();
+  if (!supabaseAdmin) return emptyStats();
+
   const { count: total } = await supabaseAdmin
     .from("signatures")
     .select("*", { count: "exact", head: true });
@@ -227,7 +291,7 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     .order("created_at", { ascending: true })
     .limit(5000);
 
-  const list = (rows ?? []).map((r) => ({
+  const list = ((rows ?? []) as SignatureRow[]).map((r: SignatureRow) => ({
     country: (r.country ?? "").trim(),
     state: (r.state ?? "").trim(),
     district: (r.district ?? "").trim(),
@@ -284,17 +348,19 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     series,
     regions,
     countryList,
-    recent: recent ?? [],
+    recent: (recent ?? []) as Array<{ name: string | null; district: string | null; state: string | null; created_at: string }>,
     goal: 100_000,
   };
 });
 
 export const listGallery = createServerFn({ method: "GET" }).handler(async () => {
-  const { externalSupabaseAdmin: supabaseAdmin } = await import("@/integrations/supabase/external-client.server");
+  const supabaseAdmin = await getBackendClient();
+  if (!supabaseAdmin) return [] as GalleryItem[];
+
   const { data, error } = await supabaseAdmin
     .from("gallery_items")
     .select("*")
     .order("sort_order", { ascending: true });
   if (error) return [];
-  return data ?? [];
+  return (data ?? []) as GalleryItem[];
 });
