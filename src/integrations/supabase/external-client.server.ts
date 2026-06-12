@@ -9,9 +9,8 @@ const EXTERNAL_SUPABASE_URL = "https://efaplbqcdodswcntoesj.supabase.co";
 function createExternalAdminClient() {
   const key = process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY;
   if (!key) {
-    throw new Error(
-      "Missing EXTERNAL_SUPABASE_SERVICE_ROLE_KEY. Add it via Lovable secrets.",
-    );
+    console.warn("[external backend] EXTERNAL_SUPABASE_SERVICE_ROLE_KEY is not available at runtime.");
+    return null;
   }
   return createClient(EXTERNAL_SUPABASE_URL, key, {
     auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
@@ -20,12 +19,7 @@ function createExternalAdminClient() {
 
 let _client: ReturnType<typeof createExternalAdminClient> | undefined;
 
-export const externalSupabaseAdmin = new Proxy(
-  {} as ReturnType<typeof createExternalAdminClient>,
-  {
-    get(_, prop, receiver) {
-      if (!_client) _client = createExternalAdminClient();
-      return Reflect.get(_client, prop, receiver);
-    },
-  },
-);
+export function getExternalSupabaseAdmin() {
+  if (_client === undefined) _client = createExternalAdminClient();
+  return _client;
+}
