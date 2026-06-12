@@ -18,7 +18,8 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
 import { ScanRedactor } from "@/components/scan-redactor";
-import thanksImg from "@/assets/thanks.jpg";
+import vallalPeruman from "@/assets/vallal-peruman.jpg.asset.json";
+const thanksImg = vallalPeruman.url;
 import { useT } from "@/i18n/context";
 import { submitSignature } from "@/lib/petition.functions";
 
