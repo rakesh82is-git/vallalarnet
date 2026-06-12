@@ -6,7 +6,10 @@ import { createClient } from '@supabase/supabase-js';
 const EXTERNAL_SUPABASE_URL = 'https://efaplbqcdodswcntoesj.supabase.co';
 
 function createExternalAdmin() {
-  const key = process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY;
+  const key =
+    process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    "missing-external-service-role-key";
   if (!key) {
     throw new Error('External petition database is not configured.');
   }
