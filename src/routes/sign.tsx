@@ -58,16 +58,16 @@ function SignPage() {
     <div className="max-w-4xl mx-auto px-6 py-12">
       <div className="text-center mb-10 animate-reveal">
         <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">PETITION</p>
-        <div className="mt-5 grid sm:grid-cols-[auto,1fr] gap-5 items-center max-w-2xl mx-auto text-left">
+        <div className="mt-6 flex flex-col items-center max-w-2xl mx-auto">
           <img
             src={heroImg}
             alt="Vallalar"
-            width={120}
-            height={120}
+            width={256}
+            height={256}
             loading="lazy"
-            className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover ring-1 ring-border shadow-lg mx-auto sm:mx-0"
+            className="w-40 h-40 sm:w-56 sm:h-56 rounded-2xl object-cover ring-1 ring-border shadow-lg"
           />
-          <div>
+          <div className="mt-5">
             <h1 className="text-2xl md:text-4xl font-display font-bold leading-tight">
               வடலூர் புனித நகரம் ஆவதற்கு உங்களுக்கு சம்மதமா?
             </h1>
