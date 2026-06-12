@@ -103,9 +103,16 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     .order("created_at", { ascending: true })
     .limit(5000);
 
-  const list = rows ?? [];
-  const countries = new Set(list.map((r) => r.country.trim())).size;
-  const districts = new Set(list.map((r) => `${r.state}::${r.district}`.trim())).size;
+  const list = (rows ?? []).map((r) => ({
+    country: (r.country ?? "").trim(),
+    state: (r.state ?? "").trim(),
+    district: (r.district ?? "").trim(),
+    created_at: r.created_at,
+  }));
+  const countries = new Set(list.map((r) => r.country).filter(Boolean)).size;
+  const districts = new Set(
+    list.filter((r) => r.state || r.district).map((r) => `${r.state}::${r.district}`),
+  ).size;
 
   const byDay = new Map<string, number>();
   for (const r of list) {
@@ -122,6 +129,7 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
 
   const topRegion = new Map<string, number>();
   for (const r of list) {
+    if (!r.district && !r.state) continue;
     const key = `${r.district}, ${r.state}`;
     topRegion.set(key, (topRegion.get(key) ?? 0) + 1);
   }
@@ -132,6 +140,7 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
 
   const countryCount = new Map<string, number>();
   for (const r of list) {
+    if (!r.country) continue;
     countryCount.set(r.country, (countryCount.get(r.country) ?? 0) + 1);
   }
   const countryList = Array.from(countryCount.entries())
