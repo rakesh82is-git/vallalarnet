@@ -1,15 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash } from "crypto";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const EmailSignaturePayload = z.object({
-  full_name: z.string().trim().min(1).max(100),
-  email: z.string().email().max(200),
-  phone_number: z.string().trim().min(6).max(20),
-  residential_address: z.string().trim().min(1).max(500),
-  pincode: z.string().trim().min(1).max(12),
-  signature_image: z.string().max(500_000),
+const DigitalSignaturePayload = z.object({
+  name: z.string().trim().min(1).max(100),
+  age: z.number().int().min(1).max(120),
+  country: z.string().trim().min(1).max(80),
+  state: z.string().trim().min(1).max(80),
+  district: z.string().trim().min(1).max(80),
+  mobile_number: z.string().trim().min(6).max(20),
+  signature_image: z.string().max(800_000),
+});
+
+const ManualSignaturePayload = z.object({
+  name: z.string().trim().min(1).max(100),
+  mobile_number: z.string().trim().min(6).max(20),
+  document_title: z.string().trim().min(1).max(200),
+  file_data_url: z.string().min(30).max(8_000_000),
+  file_name: z.string().trim().min(1).max(200),
 });
 
 function mask(phone: string) {
@@ -18,51 +26,119 @@ function mask(phone: string) {
   return `${"•".repeat(Math.max(d.length - 4, 4))}${d.slice(-4)}`;
 }
 
-export const submitEmailSignature = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => EmailSignaturePayload.parse(data))
-  .handler(async ({ data, context }) => {
+function hashPhone(mobile: string) {
+  const digits = mobile.replace(/\D/g, "");
+  return createHash("sha256").update(`vadalur:${digits}`).digest("hex");
+}
+
+export const submitDigitalSignature = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => DigitalSignaturePayload.parse(data))
+  .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const callerEmail = (context.claims as { email?: string }).email;
-    if (!callerEmail || callerEmail !== data.email) {
-      return { ok: false as const, error: "auth" as const };
-    }
+    const phoneHash = hashPhone(data.mobile_number);
 
-    const phoneDigits = data.phone_number.replace(/\D/g, "");
-    const phoneHash = createHash("sha256")
-      .update(`vadalur:${phoneDigits}`)
-      .digest("hex");
-
-    const { data: existingPhone } = await supabaseAdmin
+    const { data: existingMobile } = await supabaseAdmin
       .from("signatures")
       .select("id")
-      .eq("phone_hash", phoneHash)
+      .eq("mobile_number", data.mobile_number)
       .maybeSingle();
-    if (existingPhone) return { ok: false as const, error: "duplicate" as const };
-
-    const { data: existingEmail } = await supabaseAdmin
-      .from("signatures")
-      .select("id")
-      .eq("email", data.email)
-      .maybeSingle();
-    if (existingEmail) return { ok: false as const, error: "duplicate" as const };
+    if (existingMobile) return { ok: false as const, error: "duplicate" as const };
 
     const { data: row, error } = await supabaseAdmin
       .from("signatures")
       .insert({
-        user_id: context.userId,
-        full_name: data.full_name,
-        email: data.email,
-        phone_number: data.phone_number,
-        residential_address: data.residential_address,
-        pincode: data.pincode,
+        name: data.name,
+        full_name: data.name,
+        age: data.age,
+        country: data.country,
+        state: data.state,
+        district: data.district,
+        mobile_number: data.mobile_number,
+        phone_number: data.mobile_number,
         signature_image: data.signature_image,
-        name: data.full_name,
         kind: "digital",
         consent: true,
         phone_hash: phoneHash,
-        phone_masked: mask(data.phone_number),
+        phone_masked: mask(data.mobile_number),
+      })
+      .select("id, created_at")
+      .single();
+
+    if (error) {
+      if (error.code === "23505") {
+        return { ok: false as const, error: "duplicate" as const };
+      }
+      return { ok: false as const, error: "db" as const };
+    }
+
+    const { count } = await supabaseAdmin
+      .from("signatures")
+      .select("*", { count: "exact", head: true });
+
+    return {
+      ok: true as const,
+      id: row.id as string,
+      voteNumber: count ?? 1,
+    };
+  });
+
+export const submitManualSignature = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => ManualSignaturePayload.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const phoneHash = hashPhone(data.mobile_number);
+
+    const { data: existingMobile } = await supabaseAdmin
+      .from("signatures")
+      .select("id")
+      .eq("mobile_number", data.mobile_number)
+      .maybeSingle();
+    if (existingMobile) return { ok: false as const, error: "duplicate" as const };
+
+    // Decode the data URL → bytes
+    const match = /^data:([^;,]+);base64,(.+)$/.exec(data.file_data_url);
+    if (!match) return { ok: false as const, error: "bad_file" as const };
+    const contentType = match[1];
+    const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (!allowed.includes(contentType)) {
+      return { ok: false as const, error: "bad_file" as const };
+    }
+    const bytes = Buffer.from(match[2], "base64");
+    if (bytes.byteLength > 6_000_000) {
+      return { ok: false as const, error: "too_large" as const };
+    }
+
+    const ext =
+      contentType === "application/pdf"
+        ? "pdf"
+        : contentType === "image/png"
+          ? "png"
+          : contentType === "image/webp"
+            ? "webp"
+            : "jpg";
+    const safeName = data.file_name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 60);
+    const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}_${safeName}.${ext}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from("petition-manual")
+      .upload(path, bytes, { contentType, upsert: false });
+    if (uploadError) return { ok: false as const, error: "upload" as const };
+
+    const { data: row, error } = await supabaseAdmin
+      .from("signatures")
+      .insert({
+        name: data.name,
+        full_name: data.name,
+        mobile_number: data.mobile_number,
+        phone_number: data.mobile_number,
+        document_title: data.document_title,
+        manual_document_url: path,
+        kind: "manual",
+        consent: true,
+        phone_hash: phoneHash,
+        phone_masked: mask(data.mobile_number),
       })
       .select("id")
       .single();
@@ -74,7 +150,43 @@ export const submitEmailSignature = createServerFn({ method: "POST" })
       return { ok: false as const, error: "db" as const };
     }
 
-    return { ok: true as const, id: row.id as string };
+    const { count } = await supabaseAdmin
+      .from("signatures")
+      .select("*", { count: "exact", head: true });
+
+    return { ok: true as const, id: row.id as string, voteNumber: count ?? 1 };
+  });
+
+export const listManualSignatures = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows } = await supabaseAdmin
+      .from("signatures")
+      .select("id, name, document_title, manual_document_url, created_at")
+      .eq("kind", "manual")
+      .not("manual_document_url", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(24);
+
+    const items = await Promise.all(
+      (rows ?? []).map(async (r) => {
+        const path = r.manual_document_url as string;
+        const { data: signed } = await supabaseAdmin.storage
+          .from("petition-manual")
+          .createSignedUrl(path, 60 * 60 * 24 * 7);
+        const isPdf = path.toLowerCase().endsWith(".pdf");
+        return {
+          id: r.id as string,
+          name: r.name as string,
+          document_title: r.document_title as string | null,
+          url: signed?.signedUrl ?? null,
+          is_pdf: isPdf,
+          created_at: r.created_at as string,
+        };
+      }),
+    );
+
+    return { items: items.filter((i) => i.url) };
   });
 
 export const listSignatures = createServerFn({ method: "GET" })
