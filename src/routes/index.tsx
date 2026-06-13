@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import lampImg from "@/assets/lamp.jpg";
-import sanctuaryImg from "@/assets/vallalar_with_animals_2.jpeg";
+import lampImg from "@/assets/vallalar_study.jpeg";
+import sanctuaryImg from "@/assets/vallalar_with_animals_1.jpeg";
 import { useT } from "@/i18n/context";
 import { getStats, listSignatures } from "@/lib/petition.functions";
 
