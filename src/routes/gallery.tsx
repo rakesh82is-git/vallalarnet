@@ -56,6 +56,20 @@ const HARDCODED_VIDEOS: Array<Item & { caption_ta: string; caption_en: string; y
       "Every month on Poosam day, Sanmarga devotees gather at Vadalur Sathya Gnana Sabha to recite 'Thiru Arutperum Jyothi Agaval' and offer collective prayers to protect all lives.\n\nLet us all unite beyond differences, as the voice of the lives being killed!\n\nWatch the full details and the touching event at the link below! 🏛️👇",
     youtubeId: "MHxxQhc4MFo",
   },
+  {
+    id: "video_2",
+    kind: "video",
+    url: "https://img.youtube.com/vi/Mv6dTvchqAI/maxresdefault.jpg",
+    thumb_url: "https://img.youtube.com/vi/Mv6dTvchqAI/maxresdefault.jpg",
+    title_ta: "வடலூரை மது மாமிசமற்ற புனித நகரமாக அரசு அறிவிக்க உலகெங்கிலும் ஆதரவு ஓங்குகின்றது",
+    title_en: "Government's declaration of Vadalur as a meat-free holy city draws worldwide support",
+    sort_order: 1,
+    caption_ta:
+      "புனித நகரமாகும் வடலூர்",
+    caption_en:
+      "Vadalur is a holy city",
+    youtubeId: "Mv6dTvchqAI",
+  },
 ];
 
 function GalleryPage() {
