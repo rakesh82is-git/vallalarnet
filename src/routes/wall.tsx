@@ -5,7 +5,16 @@ import { listSignatures } from "@/lib/petition.functions";
 
 const wallOpts = queryOptions({
   queryKey: ["wall", "all"],
-  queryFn: () => listSignatures({ data: { limit: 60 } }),
+  queryFn: async () => {
+    console.log("[wall.tsx] Calling listSignatures...");
+    const result = await listSignatures({ data: { limit: 60 } });
+    console.log("[wall.tsx] listSignatures returned:", result);
+    console.log("[wall.tsx] items.length:", result.items?.length);
+    if (result.items && result.items.length > 0) {
+      console.log("[wall.tsx] First item:", result.items[0]);
+    }
+    return result;
+  },
 });
 
 export const Route = createFileRoute("/wall")({
