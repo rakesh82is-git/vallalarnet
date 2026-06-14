@@ -270,7 +270,10 @@ export const listSignatures = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const supabaseAdmin = await getBackendClient();
-    if (!supabaseAdmin) return { items: [] as SignatureItem[], nextCursor: null as string | null };
+    if (!supabaseAdmin) {
+      console.error("[listSignatures] supabaseAdmin is null");
+      return { items: [] as SignatureItem[], nextCursor: null as string | null };
+    }
 
     const limit = data.limit ?? 24;
     let q = supabaseAdmin
@@ -280,10 +283,21 @@ export const listSignatures = createServerFn({ method: "GET" })
       .limit(limit + 1);
     if (data.before) q = q.lt("created_at", data.before);
     const { data: rows, error } = await q;
-    if (error) return { items: [], nextCursor: null };
+    
+    if (error) {
+      console.error("[listSignatures] query failed", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      return { items: [], nextCursor: null };
+    }
+    
     const hasMore = (rows?.length ?? 0) > limit;
     const items = ((rows ?? []) as SignatureItem[]).slice(0, limit);
     const nextCursor = hasMore ? items[items.length - 1].created_at : null;
+    console.log(`[listSignatures] success - returned ${items.length} items`);
     return { items, nextCursor };
   });
 
