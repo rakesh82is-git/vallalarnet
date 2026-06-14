@@ -25,6 +25,13 @@ function WallPage() {
   const t = useT();
   const { data } = useSuspenseQuery(wallOpts);
 
+  // Debug logging
+  console.log("[wall.tsx] Data received:", data);
+  console.log("[wall.tsx] Items count:", data.items?.length ?? 0);
+  if (data.items?.length > 0) {
+    console.log("[wall.tsx] First item:", data.items[0]);
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="text-center mb-10 animate-reveal">
