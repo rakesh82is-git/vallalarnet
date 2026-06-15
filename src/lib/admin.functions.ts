@@ -112,7 +112,7 @@ export const adminExportSignaturesCsv = createServerFn({ method: "GET" }).handle
       .select(SAFE_COLS.join(","))
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    const rows = (data ?? []) as Array<Record<string, unknown>>;
+    const rows = ((data ?? []) as unknown) as Array<Record<string, unknown>>;
     return { csv: toCsv(rows, SAFE_COLS), count: rows.length };
   },
 );
