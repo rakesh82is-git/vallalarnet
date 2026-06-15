@@ -13,8 +13,11 @@ import { Route as WallRouteImport } from './routes/wall'
 import { Route as StoryRouteImport } from './routes/story'
 import { Route as SignRouteImport } from './routes/sign'
 import { Route as GalleryRouteImport } from './routes/gallery'
-import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminGalleryRouteImport } from './routes/admin.gallery'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 
 const WallRoute = WallRouteImport.update({
   id: '/wall',
@@ -36,9 +39,9 @@ const GalleryRoute = GalleryRouteImport.update({
   path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AnalyticsRoute = AnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -46,50 +49,93 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGalleryRoute = AdminGalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
+  '/admin': typeof AdminRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/sign': typeof SignRoute
   '/story': typeof StoryRoute
   '/wall': typeof WallRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/gallery': typeof AdminGalleryRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
   '/gallery': typeof GalleryRoute
   '/sign': typeof SignRoute
   '/story': typeof StoryRoute
   '/wall': typeof WallRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/gallery': typeof AdminGalleryRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
+  '/admin': typeof AdminRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/sign': typeof SignRoute
   '/story': typeof StoryRoute
   '/wall': typeof WallRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/gallery': typeof AdminGalleryRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analytics' | '/gallery' | '/sign' | '/story' | '/wall'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analytics' | '/gallery' | '/sign' | '/story' | '/wall'
-  id:
-    | '__root__'
+  fullPaths:
     | '/'
-    | '/analytics'
+    | '/admin'
     | '/gallery'
     | '/sign'
     | '/story'
     | '/wall'
+    | '/admin/analytics'
+    | '/admin/gallery'
+    | '/admin/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/gallery'
+    | '/sign'
+    | '/story'
+    | '/wall'
+    | '/admin/analytics'
+    | '/admin/gallery'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/gallery'
+    | '/sign'
+    | '/story'
+    | '/wall'
+    | '/admin/analytics'
+    | '/admin/gallery'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AnalyticsRoute: typeof AnalyticsRoute
+  AdminRoute: typeof AdminRouteWithChildren
   GalleryRoute: typeof GalleryRoute
   SignRoute: typeof SignRoute
   StoryRoute: typeof StoryRoute
@@ -126,11 +172,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/analytics': {
-      id: '/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -140,12 +186,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/gallery': {
+      id: '/admin/gallery'
+      path: '/gallery'
+      fullPath: '/admin/gallery'
+      preLoaderRoute: typeof AdminGalleryRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminGalleryRoute: typeof AdminGalleryRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminGalleryRoute: AdminGalleryRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AnalyticsRoute: AnalyticsRoute,
+  AdminRoute: AdminRouteWithChildren,
   GalleryRoute: GalleryRoute,
   SignRoute: SignRoute,
   StoryRoute: StoryRoute,

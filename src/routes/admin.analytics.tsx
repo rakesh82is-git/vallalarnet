@@ -1,20 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useT } from "@/i18n/context";
+import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { getStats } from "@/lib/petition.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { getStats } from "@/lib/petition.functions";
+import { adminExportSignaturesCsv } from "@/lib/admin.functions";
+import { useT } from "@/i18n/context";
+import { toast } from "sonner";
 
-const opts = queryOptions({ queryKey: ["stats", "full"], queryFn: () => getStats() });
+const opts = queryOptions({ queryKey: ["admin", "stats", "full"], queryFn: () => getStats() });
 
-export const Route = createFileRoute("/analytics")({
-  head: () => ({
-    meta: [
-      { title: "Analytics — Vadalur Holy City" },
-      { name: "description", content: "Live progress toward 1,00,000 signatures for declaring Vadalur a Holy City." },
-    ],
-  }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(opts),
-  component: AnalyticsPage,
+export const Route = createFileRoute("/admin/analytics")({
+  component: AdminAnalytics,
 });
 
 function timeAgo(iso: string) {
@@ -26,17 +23,55 @@ function timeAgo(iso: string) {
   return `${Math.floor(s / 86400)}d`;
 }
 
-function AnalyticsPage() {
+function AdminAnalytics() {
   const t = useT();
   const { data } = useSuspenseQuery(opts);
+  const exportCsv = useServerFn(adminExportSignaturesCsv);
+  const [exporting, setExporting] = useState(false);
+
   const pct = Math.min(100, Math.round((data.total / data.goal) * 100));
   const maxRegion = data.regions[0]?.count ?? 1;
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await exportCsv();
+      const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `signatures-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${res.count} signatures`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12 space-y-10">
-      {/* Goal */}
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-display font-bold">Analytics</h1>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-50"
+        >
+          {exporting ? "Preparing…" : "Download signatures CSV"}
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground -mt-4">
+        CSV excludes signature images, scans, and unmasked phone numbers.
+      </p>
+
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
-        <h2 className="text-2xl font-display font-bold">{t.analytics.goalTitle}</h2>
+        <h2 className="text-xl font-display font-bold">{t.analytics.goalTitle}</h2>
         <p className="text-sm text-muted-foreground mt-1">{t.analytics.goalSub}</p>
         <div className="mt-5 h-4 rounded-full bg-secondary overflow-hidden">
           <div
@@ -49,7 +84,6 @@ function AnalyticsPage() {
         </p>
       </section>
 
-      {/* Growth */}
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
         <h2 className="text-xl font-display font-bold mb-4">{t.analytics.growthTitle}</h2>
         {data.series.length === 0 ? (
@@ -70,7 +104,6 @@ function AnalyticsPage() {
       </section>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Recent */}
         <section className="rounded-3xl bg-card ring-1 ring-border p-6">
           <h2 className="text-xl font-display font-bold mb-4">{t.analytics.recentTitle}</h2>
           {data.recent.length === 0 ? (
@@ -90,7 +123,6 @@ function AnalyticsPage() {
           )}
         </section>
 
-        {/* Region split */}
         <section className="rounded-3xl bg-card ring-1 ring-border p-6">
           <h2 className="text-xl font-display font-bold mb-4">{t.analytics.regionTitle}</h2>
           {data.regions.length === 0 ? (
@@ -116,7 +148,6 @@ function AnalyticsPage() {
         </section>
       </div>
 
-      {/* World list */}
       <section className="rounded-3xl bg-card ring-1 ring-border p-6">
         <h2 className="text-xl font-display font-bold mb-4">{t.analytics.worldTitle}</h2>
         {data.countryList.length === 0 ? (
@@ -132,15 +163,6 @@ function AnalyticsPage() {
           </div>
         )}
       </section>
-
-      <div className="text-center">
-        <Link
-          to="/sign"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90"
-        >
-          ✎ {t.wall.sign}
-        </Link>
-      </div>
     </div>
   );
 }

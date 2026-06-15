@@ -19,7 +19,6 @@ const NAV = [
   { to: "/story", key: "story" },
   { to: "/sign", key: "sign" },
   { to: "/wall", key: "wall" },
-  { to: "/analytics", key: "analytics" },
   { to: "/gallery", key: "gallery" },
 ] as const;
 
@@ -93,7 +92,15 @@ function SiteShell({ children }: { children: ReactNode }) {
           <div className="font-mono uppercase tracking-widest text-center">
             {t.footer.line}
           </div>
-          <div className="font-mono uppercase tracking-widest">தனிப்பெருங்கருணை</div>
+          <div className="flex items-center gap-4 font-mono uppercase tracking-widest">
+            <span>தனிப்பெருங்கருணை</span>
+            <Link
+              to="/admin"
+              className="text-muted-foreground/70 hover:text-primary transition-colors"
+            >
+              Admin
+            </Link>
+          </div>
         </div>
       </footer>
     </div>
