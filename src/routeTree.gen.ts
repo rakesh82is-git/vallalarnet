@@ -13,7 +13,6 @@ import { Route as WallRouteImport } from './routes/wall'
 import { Route as StoryRouteImport } from './routes/story'
 import { Route as SignRouteImport } from './routes/sign'
 import { Route as GalleryRouteImport } from './routes/gallery'
-import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -38,11 +37,6 @@ const SignRoute = SignRouteImport.update({
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AnalyticsRoute = AnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -74,7 +68,6 @@ const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/analytics': typeof AnalyticsRoute
   '/gallery': typeof GalleryRoute
   '/sign': typeof SignRoute
   '/story': typeof StoryRoute
@@ -85,7 +78,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
   '/gallery': typeof GalleryRoute
   '/sign': typeof SignRoute
   '/story': typeof StoryRoute
@@ -98,7 +90,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/analytics': typeof AnalyticsRoute
   '/gallery': typeof GalleryRoute
   '/sign': typeof SignRoute
   '/story': typeof StoryRoute
@@ -112,7 +103,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/analytics'
     | '/gallery'
     | '/sign'
     | '/story'
@@ -123,7 +113,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/analytics'
     | '/gallery'
     | '/sign'
     | '/story'
@@ -135,7 +124,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
-    | '/analytics'
     | '/gallery'
     | '/sign'
     | '/story'
@@ -148,7 +136,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  AnalyticsRoute: typeof AnalyticsRoute
   GalleryRoute: typeof GalleryRoute
   SignRoute: typeof SignRoute
   StoryRoute: typeof StoryRoute
@@ -183,13 +170,6 @@ declare module '@tanstack/react-router' {
       path: '/gallery'
       fullPath: '/gallery'
       preLoaderRoute: typeof GalleryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/analytics': {
-      id: '/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -247,7 +227,6 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  AnalyticsRoute: AnalyticsRoute,
   GalleryRoute: GalleryRoute,
   SignRoute: SignRoute,
   StoryRoute: StoryRoute,
