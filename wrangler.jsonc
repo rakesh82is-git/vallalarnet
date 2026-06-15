@@ -6,7 +6,7 @@
   "main": "./dist/server/server.js",
   "assets": {
     "directory": "./dist/client"
-  }
+  },
   "observability": {
     "enabled": false,
     "head_sampling_rate": 1,
