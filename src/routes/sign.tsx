@@ -106,6 +106,8 @@ function DigitalTab() {
     mobile_local: "",
   });
   const [signature, setSignature] = useState<string | null>(null);
+  const [signOpen, setSignOpen] = useState(false);
+  const [pendingSig, setPendingSig] = useState<string | null>(null);
   const [result, setResult] = useState<{ id: string; name: string; voteNumber: number } | null>(null);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
@@ -132,23 +134,33 @@ function DigitalTab() {
     ? `+${selectedCountry.phonecode.replace(/^\+/, "")}`
     : "";
 
-  async function handleSubmit() {
-    const { name, age, countryCode, stateCode, district, mobile_local } = form;
+  function validateForm(): boolean {
+    const { name, age, district, mobile_local } = form;
     const country = selectedCountry?.name ?? "";
-    const state = states.find((s) => s.isoCode === stateCode)?.name ?? "";
+    const state = states.find((s) => s.isoCode === form.stateCode)?.name ?? "";
     if (!name || !age || !country || !state || !district || !mobile_local) {
       toast.error("Please fill in all fields");
-      return;
+      return false;
     }
     const ageNum = Number(age);
     if (!Number.isFinite(ageNum) || ageNum < 1 || ageNum > 120) {
       toast.error("Please enter a valid age");
-      return;
+      return false;
     }
-    if (!signature) {
-      toast.error("Please draw your signature");
-      return;
-    }
+    return true;
+  }
+
+  function openSignDialog() {
+    if (!validateForm()) return;
+    setPendingSig(null);
+    setSignOpen(true);
+  }
+
+  async function handleSubmit(sig: string) {
+    const { name, age, district, mobile_local } = form;
+    const country = selectedCountry?.name ?? "";
+    const state = states.find((s) => s.isoCode === form.stateCode)?.name ?? "";
+    const ageNum = Number(age);
     const mobile_number = `${dialCode} ${mobile_local}`.trim();
     setBusy(true);
     try {
@@ -160,7 +172,7 @@ function DigitalTab() {
           state,
           district,
           mobile_number,
-          signature_image: signature,
+          signature_image: sig,
         },
       });
       if (!res.ok) {
@@ -175,6 +187,8 @@ function DigitalTab() {
         }
         return;
       }
+      setSignature(sig);
+      setSignOpen(false);
       setResult({ id: res.id, name, voteNumber: res.voteNumber });
     } catch {
       toast.error("Network error — please try again");
