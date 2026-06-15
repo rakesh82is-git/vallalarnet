@@ -204,59 +204,44 @@ function DigitalTab() {
           />
         </Field>
         <Field label="Country / நாடு">
-          <Select
+          <Combobox
             value={form.countryCode}
-            onValueChange={(v) =>
+            onChange={(v) =>
               setForm((s) => ({ ...s, countryCode: v, stateCode: "", district: "" }))
             }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select country" />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {countries.map((c) => (
-                <SelectItem key={c.isoCode} value={c.isoCode}>
-                  {c.flag} {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Select country"
+            searchPlaceholder="Search country..."
+            emptyText="No country found"
+            options={countries.map((c) => ({
+              value: c.isoCode,
+              label: `${c.flag} ${c.name}`,
+              keywords: c.name,
+            }))}
+          />
         </Field>
         <Field label="State / மாநிலம்">
-          <Select
+          <Combobox
             value={form.stateCode}
-            onValueChange={(v) => setForm((s) => ({ ...s, stateCode: v, district: "" }))}
+            onChange={(v) => setForm((s) => ({ ...s, stateCode: v, district: "" }))}
             disabled={!states.length}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={states.length ? "Select state" : "No states available"} />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {states.map((s) => (
-                <SelectItem key={s.isoCode} value={s.isoCode}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder={states.length ? "Select state" : "No states available"}
+            searchPlaceholder="Search state..."
+            emptyText="No state found"
+            options={states.map((s) => ({ value: s.isoCode, label: s.name, keywords: s.name }))}
+          />
         </Field>
         <Field label="District / மாவட்டம்">
           {cities.length > 0 ? (
-            <Select
+            <Combobox
               value={form.district}
-              onValueChange={(v) => set("district", v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select district" />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                {cities.map((c) => (
-                  <SelectItem key={`${c.name}-${c.latitude}-${c.longitude}`} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(v) => set("district", v)}
+              placeholder="Select district"
+              searchPlaceholder="Search district..."
+              emptyText="No district found"
+              options={Array.from(
+                new Map(cities.map((c) => [c.name, { value: c.name, label: c.name }])).values(),
+              )}
+            />
           ) : (
             <Input
               value={form.district}
