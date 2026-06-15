@@ -5,11 +5,14 @@ import { randomUUID } from "crypto";
 
 const SESSION_NAME = "vd_admin";
 
+const ADMIN_USERNAME = "Vallalar";
+const ADMIN_PASSWORD = "Vallalar1823";
+const FALLBACK_SESSION_SECRET = "vadalur-admin-static-session-secret-v1";
+
 function sessionConfig() {
-  const password = process.env.ADMIN_SESSION_SECRET;
-  if (!password || password.length < 32) {
-    throw new Error("ADMIN_SESSION_SECRET missing or too short (need >=32 chars)");
-  }
+  const envSecret = process.env.ADMIN_SESSION_SECRET;
+  const password =
+    envSecret && envSecret.length >= 32 ? envSecret : FALLBACK_SESSION_SECRET;
   return {
     password,
     name: SESSION_NAME,
@@ -43,12 +46,15 @@ async function getBackend() {
 
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    z.object({ password: z.string().min(1).max(300) }).parse(d),
+    z
+      .object({
+        username: z.string().min(1).max(100),
+        password: z.string().min(1).max(300),
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
-    const expected = process.env.ADMIN_PASSWORD;
-    if (!expected) return { ok: false as const, error: "config" as const };
-    if (data.password !== expected) {
+    if (data.username !== ADMIN_USERNAME || data.password !== ADMIN_PASSWORD) {
       return { ok: false as const, error: "bad" as const };
     }
     const session = await useSession<{ authed?: boolean }>(sessionConfig());
