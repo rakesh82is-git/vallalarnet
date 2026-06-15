@@ -261,7 +261,7 @@ function AdminGallery() {
 
         {tab !== "photo" && (
           <>
-            <Field label="Thumbnail URL (optional)">
+            <Field label="Thumbnail URL (optional — auto-derived for YouTube links)">
               <input
                 type="url"
                 value={draft.thumb_url}
