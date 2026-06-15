@@ -560,9 +560,12 @@ function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteN
   return (
     <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-10 text-center animate-reveal overflow-hidden">
       <div className="relative mx-auto w-full max-w-md aspect-square rounded-2xl overflow-hidden mb-6">
-        <img
-          src={thanksImg}
-          alt="Vallalar with happy animals and hearts"
+        <video
+          src={thankYouVideo.url}
+          autoPlay
+          muted
+          loop
+          playsInline
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
