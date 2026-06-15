@@ -293,7 +293,20 @@ export const listSignatures = createServerFn({ method: "GET" })
       });
       return { items: [], nextCursor: null };
     }
-    
+
+    if ((rows?.length ?? 0) === 0) {
+      const [{ count: viewCount }, { count: tableCount }] = await Promise.all([
+        supabaseAdmin.from("signatures_public").select("*", { count: "exact", head: true }),
+        supabaseAdmin.from("signatures").select("*", { count: "exact", head: true }),
+      ]);
+      console.warn("[listSignatures] zero rows from signatures_public", {
+        viewCount: viewCount ?? null,
+        tableCount: tableCount ?? null,
+        limit,
+        before: data.before ?? null,
+      });
+    }
+
     const hasMore = (rows?.length ?? 0) > limit;
     const items = ((rows ?? []) as SignatureItem[]).slice(0, limit);
     const nextCursor = hasMore ? items[items.length - 1].created_at : null;
