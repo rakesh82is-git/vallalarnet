@@ -14,7 +14,9 @@ import { Route as StoryRouteImport } from './routes/story'
 import { Route as SignRouteImport } from './routes/sign'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 
 const WallRoute = WallRouteImport.update({
   id: '/wall',
@@ -41,19 +43,31 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/analytics': typeof AnalyticsRoute
   '/gallery': typeof GalleryRoute
   '/sign': typeof SignRoute
   '/story': typeof StoryRoute
   '/wall': typeof WallRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,33 +76,47 @@ export interface FileRoutesByTo {
   '/sign': typeof SignRoute
   '/story': typeof StoryRoute
   '/wall': typeof WallRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/analytics': typeof AnalyticsRoute
   '/gallery': typeof GalleryRoute
   '/sign': typeof SignRoute
   '/story': typeof StoryRoute
   '/wall': typeof WallRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analytics' | '/gallery' | '/sign' | '/story' | '/wall'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analytics' | '/gallery' | '/sign' | '/story' | '/wall'
-  id:
-    | '__root__'
+  fullPaths:
     | '/'
+    | '/admin'
     | '/analytics'
     | '/gallery'
     | '/sign'
     | '/story'
     | '/wall'
+    | '/admin/'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/analytics' | '/gallery' | '/sign' | '/story' | '/wall' | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/analytics'
+    | '/gallery'
+    | '/sign'
+    | '/story'
+    | '/wall'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AnalyticsRoute: typeof AnalyticsRoute
   GalleryRoute: typeof GalleryRoute
   SignRoute: typeof SignRoute
@@ -133,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -140,11 +175,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AnalyticsRoute: AnalyticsRoute,
   GalleryRoute: GalleryRoute,
   SignRoute: SignRoute,
