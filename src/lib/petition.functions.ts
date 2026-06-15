@@ -271,19 +271,8 @@ export const listSignatures = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const supabaseAdmin = await getBackendClient();
     if (!supabaseAdmin) {
-      const supabaseEnvKeys = Object.keys(process.env)
-        .filter((k) => k.includes("SUPABASE"))
-        .sort();
-      const debug = {
-        reason: "supabaseAdmin_null",
-        hasExternalServiceRole: Boolean(process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY),
-        hasSupabaseServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
-        hasSupabaseSecretKey: Boolean(process.env.SUPABASE_SECRET_KEY),
-        hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
-        detectedSupabaseEnvKeys: supabaseEnvKeys,
-      };
-      console.error("[listSignatures] supabaseAdmin is null", debug);
-      return { items: [] as SignatureItem[], nextCursor: null as string | null, debug };
+      console.error("[listSignatures] supabaseAdmin is null");
+      return { items: [] as SignatureItem[], nextCursor: null as string | null };
     }
 
     const limit = data.limit ?? 24;
@@ -296,41 +285,13 @@ export const listSignatures = createServerFn({ method: "GET" })
     const { data: rows, error } = await q;
     
     if (error) {
-      const debug = {
-        reason: "query_failed",
-        code: error.code ?? null,
-        message: error.message ?? null,
-        details: error.details ?? null,
-        hint: error.hint ?? null,
-      };
       console.error("[listSignatures] query failed", {
         code: error.code,
         message: error.message,
         details: error.details,
         hint: error.hint,
       });
-      return { items: [], nextCursor: null, debug };
-    }
-
-    if ((rows?.length ?? 0) === 0) {
-      const [{ count: viewCount }, { count: tableCount }] = await Promise.all([
-        supabaseAdmin.from("signatures_public").select("*", { count: "exact", head: true }),
-        supabaseAdmin.from("signatures").select("*", { count: "exact", head: true }),
-      ]);
-      const debug = {
-        reason: "zero_rows",
-        viewCount: viewCount ?? null,
-        tableCount: tableCount ?? null,
-        limit,
-        before: data.before ?? null,
-      };
-      console.warn("[listSignatures] zero rows from signatures_public", {
-        viewCount: viewCount ?? null,
-        tableCount: tableCount ?? null,
-        limit,
-        before: data.before ?? null,
-      });
-      return { items: [] as SignatureItem[], nextCursor: null as string | null, debug };
+      return { items: [], nextCursor: null };
     }
 
     const hasMore = (rows?.length ?? 0) > limit;

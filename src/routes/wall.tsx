@@ -5,19 +5,7 @@ import { listSignatures } from "@/lib/petition.functions";
 
 const wallOpts = queryOptions({
   queryKey: ["wall", "all"],
-  queryFn: async () => {
-    console.log("[wall.tsx] Calling listSignatures...");
-    const result = await listSignatures({ data: { limit: 60 } });
-    console.log("[wall.tsx] listSignatures returned:", result);
-    if ((result as { debug?: unknown }).debug) {
-      console.error("[wall.tsx] Server debug payload:", (result as { debug?: unknown }).debug);
-    }
-    console.log("[wall.tsx] items.length:", result.items?.length);
-    if (result.items && result.items.length > 0) {
-      console.log("[wall.tsx] First item:", result.items[0]);
-    }
-    return result;
-  },
+  queryFn: async () => listSignatures({ data: { limit: 60 } }),
 });
 
 export const Route = createFileRoute("/wall")({
@@ -36,13 +24,6 @@ export const Route = createFileRoute("/wall")({
 function WallPage() {
   const t = useT();
   const { data } = useSuspenseQuery(wallOpts);
-
-  // Debug logging
-  console.log("[wall.tsx] Data received:", data);
-  console.log("[wall.tsx] Items count:", data.items?.length ?? 0);
-  if (data.items?.length > 0) {
-    console.log("[wall.tsx] First item:", data.items[0]);
-  }
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">

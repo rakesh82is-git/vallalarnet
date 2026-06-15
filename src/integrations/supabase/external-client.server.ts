@@ -40,6 +40,10 @@ function createExternalAdminClient() {
 let _client: ReturnType<typeof createExternalAdminClient> | undefined;
 
 export function getExternalSupabaseAdmin() {
-  if (_client === undefined) _client = createExternalAdminClient();
+  if (_client === undefined) {
+    const created = createExternalAdminClient();
+    if (created) _client = created;
+    return created;
+  }
   return _client;
 }
