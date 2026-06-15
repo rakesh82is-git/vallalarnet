@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -17,11 +18,11 @@ import { Country, State, City } from "country-state-city";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
 import heroImg from "@/assets/vallalar_with_animals_2.jpeg";
-import thankYouVideo from "@/assets/vallalar-thankyou.mp4.asset.json";
 import {
   submitDigitalSignature,
   submitManualSignature,
   listManualSignatures,
+  listGallery,
 } from "@/lib/petition.functions";
 
 export const Route = createFileRoute("/sign")({
@@ -592,19 +593,27 @@ function ManualFeed() {
 // ─────────────── Success ───────────────
 
 function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteNumber: number }) {
+  const { data: gallery } = useQuery({
+    queryKey: ["gallery"],
+    queryFn: () => listGallery(),
+    staleTime: 5 * 60_000,
+  });
+  const thankYouUrl = gallery?.find((g) => g.title_en === "Thank You Blessing")?.url;
   return (
     <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-10 text-center animate-reveal overflow-hidden">
-      <div className="relative mx-auto w-full max-w-md aspect-square rounded-2xl overflow-hidden mb-6">
-        <video
-          src={thankYouVideo.url}
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
-      </div>
+      {thankYouUrl && (
+        <div className="relative mx-auto w-full max-w-md aspect-square rounded-2xl overflow-hidden mb-6">
+          <video
+            src={thankYouUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
+        </div>
+      )}
       <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">THANK YOU · நன்றி</p>
       <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">Thank you, {name}!</h2>
       <p className="mt-2 text-muted-foreground">
