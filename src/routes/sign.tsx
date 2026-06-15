@@ -105,7 +105,6 @@ function DigitalTab() {
     district: "",
     mobile_local: "",
   });
-  const [signature, setSignature] = useState<string | null>(null);
   const [signOpen, setSignOpen] = useState(false);
   const [pendingSig, setPendingSig] = useState<string | null>(null);
   const [result, setResult] = useState<{ id: string; name: string; voteNumber: number } | null>(null);
@@ -187,7 +186,6 @@ function DigitalTab() {
         }
         return;
       }
-      setSignature(sig);
       setSignOpen(false);
       setResult({ id: res.id, name, voteNumber: res.voteNumber });
     } catch {
