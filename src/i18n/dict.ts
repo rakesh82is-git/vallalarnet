@@ -212,7 +212,7 @@ export const dict = {
       site1Title: "1. Marudur",
       site1Body: "The birthplace of Arutprakasa Vallalar.",
       site2Title: "2. Karunguzhi",
-      site2Body: "Where Vallalar lived for nine years; the site of the miracle of lighting a lamp on water.",
+      site2Body: "**The sacred site where Vallalar Perumaan lived for nine years. The important place where the \"Arutperum Jyothi Agaval\" — the supreme creation of the spiritual revolution — was revealed. Moreover, the historic sacred site where the miracle of \"lighting a lamp on water\" took place, and where the Sanmarga Sangam was founded.**",
       site3Title: "3. Sathya Dharma Salai",
       site3Body: "An almshouse feeding the hungry without break since 1867; the seat of Jeeva Karunyam.",
       site4Title: "4. Sathya Gnana Sabha",
