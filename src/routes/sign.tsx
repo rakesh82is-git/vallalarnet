@@ -594,18 +594,32 @@ function ManualFeed() {
 
 function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteNumber: number }) {
   const thankYouUrl = thankYouAsset.url;
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   return (
     <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-10 text-center animate-reveal overflow-hidden">
       {thankYouUrl && (
-        <div className="relative mx-auto w-full max-w-md aspect-square rounded-2xl overflow-hidden mb-6">
-          <video
-            src={thankYouUrl}
-            autoPlay
-            muted
-            loop
-            playsInline
+        <div className="relative mx-auto w-full max-w-md aspect-square rounded-2xl overflow-hidden mb-6 bg-secondary/40">
+          <img
+            src={heroImg}
+            alt="Vallalar blessing"
             className="absolute inset-0 w-full h-full object-cover"
           />
+          {!videoFailed && (
+            <video
+              src={thankYouUrl}
+              poster={heroImg}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              onCanPlay={() => setVideoReady(true)}
+              onError={() => setVideoFailed(true)}
+              aria-label="Thank you blessing video"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoReady ? "opacity-100" : "opacity-0"}`}
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
         </div>
       )}
