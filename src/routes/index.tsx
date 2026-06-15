@@ -3,6 +3,7 @@ import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import lampImg from "@/assets/vallalar_study.jpeg";
 import sanctuaryImg from "@/assets/vallalar_with_animals_1.jpeg";
 import { useT } from "@/i18n/context";
+import { RichText } from "@/components/rich-text";
 import { getStats, listSignatures } from "@/lib/petition.functions";
 
 const statsOpts = queryOptions({
@@ -63,8 +64,8 @@ function Index() {
             <br />
             {t.home.title3}
           </h1>
-          <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto text-center">
-            {t.home.lede}
+          <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto text-center whitespace-pre-line">
+            <RichText text={t.home.lede} />
           </p>
           <div className="mt-8 flex flex-wrap gap-3 items-center justify-center">
             <Link

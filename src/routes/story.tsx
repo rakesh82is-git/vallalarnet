@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useT } from "@/i18n/context";
+import { RichText } from "@/components/rich-text";
 import sanctuaryImg from "@/assets/gnana_sabai_power.jpeg";
 import lampImg from "@/assets/vallalar_study.jpg";
 import gatheringImg from "@/assets/gnana_sabai_over.jpeg";
@@ -59,7 +60,9 @@ function StoryPage() {
             <div className="relative aspect-square rounded-2xl overflow-hidden ring-1 ring-border">
               <img src={c.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
             </div>
-            <p className="text-base md:text-lg leading-relaxed text-muted-foreground whitespace-pre-line">{c.body}</p>
+            <p className="text-base md:text-lg leading-relaxed text-muted-foreground whitespace-pre-line">
+              <RichText text={c.body} />
+            </p>
           </div>
         </article>
       ))}
@@ -78,7 +81,9 @@ function StoryPage() {
               </div>
               <div className="p-5">
                 <h3 className="font-display font-bold text-lg">{s.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                  <RichText text={s.body} />
+                </p>
               </div>
             </div>
           ))}
@@ -105,7 +110,7 @@ function StoryPage() {
                 <span className="text-primary transition-transform group-open:rotate-45">+</span>
               </summary>
               <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed">
-                {f.a}
+                <RichText text={f.a} />
               </p>
             </details>
           ))}
