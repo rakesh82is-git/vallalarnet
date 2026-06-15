@@ -9,6 +9,9 @@ const wallOpts = queryOptions({
     console.log("[wall.tsx] Calling listSignatures...");
     const result = await listSignatures({ data: { limit: 60 } });
     console.log("[wall.tsx] listSignatures returned:", result);
+    if ((result as { debug?: unknown }).debug) {
+      console.error("[wall.tsx] Server debug payload:", (result as { debug?: unknown }).debug);
+    }
     console.log("[wall.tsx] items.length:", result.items?.length);
     if (result.items && result.items.length > 0) {
       console.log("[wall.tsx] First item:", result.items[0]);
