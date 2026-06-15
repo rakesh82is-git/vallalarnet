@@ -167,6 +167,7 @@ export const dict = {
       title1: "Declare Vadalur",
       title2: "a Holy City",
       title3: "and protect every life",
+      titleQuote: "\"Compassion for life is the worship of God\" — Vallalar Perumaan.",
       lede: "The Government must declare as a \"**Holy City (Compassion Town)**\" the entire area within roughly a 15 km radius — including the **Vadalur Sathya Gnana Sabha grounds** (known as Uttara Gnana Chidambaram), the seat of the all-powerful supreme God \"**Arutperum Jyothi Andavar**\", together with the sacred sites of compassion where Vallalar Perumaan was born, lived and attained Siddhi: **Marudur** (12 km from the Sathya Gnana Sabha), **Karunguzhi** (8.3 km), **Mettukuppam** (7.6 km) and the **Vallalar Bus Stand** (3 km). Within that zone, the sale of meat shops, non-vegetarian restaurants and intoxicants including alcohol must be completely prohibited.\n\nTo press this demand, the primary aim of this movement is to gather, through **digital and physical signatures**, the voices of many thousands of Vallalar devotees from around the world, and to officially submit them to the **Hon'ble Chief Minister of Tamil Nadu**.",
       ctaSign: "Sign now",
       ctaStory: "Read the story",
