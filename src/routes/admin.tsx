@@ -21,6 +21,7 @@ function AdminLayout() {
   const logout = useServerFn(adminLogout);
 
   const [status, setStatus] = useState<"loading" | "in" | "out">("loading");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,16 +37,17 @@ function AdminLayout() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!password) return;
+    if (!username || !password) return;
     setSubmitting(true);
     try {
-      const r = await login({ data: { password } });
+      const r = await login({ data: { username, password } });
       if (r.ok) {
         setStatus("in");
         setPassword("");
+        setUsername("");
         toast.success("Welcome, admin");
       } else {
-        toast.error(r.error === "config" ? "Admin password not configured" : "Wrong password");
+        toast.error("Wrong username or password");
       }
     } catch {
       toast.error("Login failed");
@@ -76,15 +78,24 @@ function AdminLayout() {
       <div className="max-w-md mx-auto px-6 py-20">
         <h1 className="text-2xl font-display font-bold mb-2">Admin sign-in</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Enter the admin password to manage analytics and gallery content.
+          Enter the admin credentials to manage analytics and gallery content.
         </p>
         <form onSubmit={handleLogin} className="space-y-4">
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username"
+            autoFocus
+            autoComplete="username"
+            className="w-full rounded-xl ring-1 ring-border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
-            autoFocus
+            autoComplete="current-password"
             className="w-full rounded-xl ring-1 ring-border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <button
