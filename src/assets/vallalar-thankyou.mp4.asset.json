@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "asset_id": "6ea6bac8-bdfc-4ef6-882e-4250f2662f5b",
+  "asset_id": "ce100cc4-2414-4a21-8942-d9e139510acc",
   "project_id": "32747843-b731-414e-ab08-3fa8c1c32466",
-  "url": "https://efaplbqcdodswcntoesj.supabase.co/storage/v1/object/public/gallery/video/06305116-71ad-4cce-bb95-f40c144d73ac_Vallalar_ThankYou.mp4",
-  "r2_key": "a/v1/32747843-b731-414e-ab08-3fa8c1c32466/6ea6bac8-bdfc-4ef6-882e-4250f2662f5b/vallalar-thankyou.mp4",
+  "url": "/__l5e/assets-v1/ce100cc4-2414-4a21-8942-d9e139510acc/vallalar-thankyou.mp4",
+  "r2_key": "a/v1/32747843-b731-414e-ab08-3fa8c1c32466/ce100cc4-2414-4a21-8942-d9e139510acc/vallalar-thankyou.mp4",
   "original_filename": "vallalar-thankyou.mp4",
   "size": 12875288,
   "content_type": "video/mp4",
-  "created_at": "2026-06-15T09:31:42Z"
+  "created_at": "2026-06-15T09:42:10Z"
 }
