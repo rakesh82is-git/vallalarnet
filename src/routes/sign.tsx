@@ -284,16 +284,52 @@ function DigitalTab() {
         </Field>
       </fieldset>
 
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">
-          Draw Your Signature Here / உங்கள் கையொப்பத்தை இங்கே வரையவும்
-        </Label>
-        <SignaturePad onChange={setSignature} />
-      </div>
-
-      <Button onClick={handleSubmit} disabled={busy} size="lg" className="w-full">
-        {busy ? "Submitting…" : "Submit Signature"}
+      <Button onClick={openSignDialog} disabled={busy} size="lg" className="w-full">
+        Review & Sign
       </Button>
+
+      <Dialog
+        open={signOpen}
+        onOpenChange={(o) => {
+          if (busy) return;
+          setSignOpen(o);
+          if (!o) setPendingSig(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign to confirm</DialogTitle>
+            <DialogDescription>
+              Draw your signature below to confirm your support.
+              <br />
+              <span className="text-xs">உங்கள் கையொப்பத்தை இங்கே வரையவும்</span>
+            </DialogDescription>
+          </DialogHeader>
+          <SignaturePad onChange={setPendingSig} />
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setSignOpen(false);
+                setPendingSig(null);
+              }}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (pendingSig) void handleSubmit(pendingSig);
+              }}
+              disabled={busy || !pendingSig}
+            >
+              {busy ? "Submitting…" : "Submit Signature"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
