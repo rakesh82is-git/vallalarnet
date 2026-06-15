@@ -4,13 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Combobox } from "@/components/combobox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Country, State, City } from "country-state-city";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
@@ -103,7 +105,8 @@ function DigitalTab() {
     district: "",
     mobile_local: "",
   });
-  const [signature, setSignature] = useState<string | null>(null);
+  const [signOpen, setSignOpen] = useState(false);
+  const [pendingSig, setPendingSig] = useState<string | null>(null);
   const [result, setResult] = useState<{ id: string; name: string; voteNumber: number } | null>(null);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
@@ -130,23 +133,33 @@ function DigitalTab() {
     ? `+${selectedCountry.phonecode.replace(/^\+/, "")}`
     : "";
 
-  async function handleSubmit() {
-    const { name, age, countryCode, stateCode, district, mobile_local } = form;
+  function validateForm(): boolean {
+    const { name, age, district, mobile_local } = form;
     const country = selectedCountry?.name ?? "";
-    const state = states.find((s) => s.isoCode === stateCode)?.name ?? "";
+    const state = states.find((s) => s.isoCode === form.stateCode)?.name ?? "";
     if (!name || !age || !country || !state || !district || !mobile_local) {
       toast.error("Please fill in all fields");
-      return;
+      return false;
     }
     const ageNum = Number(age);
     if (!Number.isFinite(ageNum) || ageNum < 1 || ageNum > 120) {
       toast.error("Please enter a valid age");
-      return;
+      return false;
     }
-    if (!signature) {
-      toast.error("Please draw your signature");
-      return;
-    }
+    return true;
+  }
+
+  function openSignDialog() {
+    if (!validateForm()) return;
+    setPendingSig(null);
+    setSignOpen(true);
+  }
+
+  async function handleSubmit(sig: string) {
+    const { name, age, district, mobile_local } = form;
+    const country = selectedCountry?.name ?? "";
+    const state = states.find((s) => s.isoCode === form.stateCode)?.name ?? "";
+    const ageNum = Number(age);
     const mobile_number = `${dialCode} ${mobile_local}`.trim();
     setBusy(true);
     try {
@@ -158,7 +171,7 @@ function DigitalTab() {
           state,
           district,
           mobile_number,
-          signature_image: signature,
+          signature_image: sig,
         },
       });
       if (!res.ok) {
@@ -173,6 +186,7 @@ function DigitalTab() {
         }
         return;
       }
+      setSignOpen(false);
       setResult({ id: res.id, name, voteNumber: res.voteNumber });
     } catch {
       toast.error("Network error — please try again");
@@ -202,59 +216,44 @@ function DigitalTab() {
           />
         </Field>
         <Field label="Country / நாடு">
-          <Select
+          <Combobox
             value={form.countryCode}
-            onValueChange={(v) =>
+            onChange={(v) =>
               setForm((s) => ({ ...s, countryCode: v, stateCode: "", district: "" }))
             }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select country" />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {countries.map((c) => (
-                <SelectItem key={c.isoCode} value={c.isoCode}>
-                  {c.flag} {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Select country"
+            searchPlaceholder="Search country..."
+            emptyText="No country found"
+            options={countries.map((c) => ({
+              value: c.isoCode,
+              label: `${c.flag} ${c.name}`,
+              keywords: c.name,
+            }))}
+          />
         </Field>
         <Field label="State / மாநிலம்">
-          <Select
+          <Combobox
             value={form.stateCode}
-            onValueChange={(v) => setForm((s) => ({ ...s, stateCode: v, district: "" }))}
+            onChange={(v) => setForm((s) => ({ ...s, stateCode: v, district: "" }))}
             disabled={!states.length}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={states.length ? "Select state" : "No states available"} />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {states.map((s) => (
-                <SelectItem key={s.isoCode} value={s.isoCode}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder={states.length ? "Select state" : "No states available"}
+            searchPlaceholder="Search state..."
+            emptyText="No state found"
+            options={states.map((s) => ({ value: s.isoCode, label: s.name, keywords: s.name }))}
+          />
         </Field>
         <Field label="District / மாவட்டம்">
           {cities.length > 0 ? (
-            <Select
+            <Combobox
               value={form.district}
-              onValueChange={(v) => set("district", v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select district" />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                {cities.map((c) => (
-                  <SelectItem key={`${c.name}-${c.latitude}-${c.longitude}`} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(v) => set("district", v)}
+              placeholder="Select district"
+              searchPlaceholder="Search district..."
+              emptyText="No district found"
+              options={Array.from(
+                new Map(cities.map((c) => [c.name, { value: c.name, label: c.name }])).values(),
+              )}
+            />
           ) : (
             <Input
               value={form.district}
@@ -283,16 +282,52 @@ function DigitalTab() {
         </Field>
       </fieldset>
 
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">
-          Draw Your Signature Here / உங்கள் கையொப்பத்தை இங்கே வரையவும்
-        </Label>
-        <SignaturePad onChange={setSignature} />
-      </div>
-
-      <Button onClick={handleSubmit} disabled={busy} size="lg" className="w-full">
-        {busy ? "Submitting…" : "Submit Signature"}
+      <Button onClick={openSignDialog} disabled={busy} size="lg" className="w-full">
+        Review & Sign
       </Button>
+
+      <Dialog
+        open={signOpen}
+        onOpenChange={(o) => {
+          if (busy) return;
+          setSignOpen(o);
+          if (!o) setPendingSig(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign to confirm</DialogTitle>
+            <DialogDescription>
+              Draw your signature below to confirm your support.
+              <br />
+              <span className="text-xs">உங்கள் கையொப்பத்தை இங்கே வரையவும்</span>
+            </DialogDescription>
+          </DialogHeader>
+          <SignaturePad onChange={setPendingSig} />
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setSignOpen(false);
+                setPendingSig(null);
+              }}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (pendingSig) void handleSubmit(pendingSig);
+              }}
+              disabled={busy || !pendingSig}
+            >
+              {busy ? "Submitting…" : "Submit Signature"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
