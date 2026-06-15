@@ -18,11 +18,11 @@ import { Country, State, City } from "country-state-city";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
 import heroImg from "@/assets/vallalar_with_animals_2.jpeg";
+import thankYouAsset from "@/assets/vallalar-thankyou.mp4.asset.json";
 import {
   submitDigitalSignature,
   submitManualSignature,
   listManualSignatures,
-  listGallery,
 } from "@/lib/petition.functions";
 
 export const Route = createFileRoute("/sign")({
@@ -593,12 +593,7 @@ function ManualFeed() {
 // ─────────────── Success ───────────────
 
 function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteNumber: number }) {
-  const { data: gallery } = useQuery({
-    queryKey: ["gallery"],
-    queryFn: () => listGallery(),
-    staleTime: 5 * 60_000,
-  });
-  const thankYouUrl = gallery?.find((g) => g.title_en === "Thank You Blessing")?.url;
+  const thankYouUrl = thankYouAsset.url;
   return (
     <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-10 text-center animate-reveal overflow-hidden">
       {thankYouUrl && (
