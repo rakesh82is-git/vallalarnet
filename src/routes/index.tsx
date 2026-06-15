@@ -64,6 +64,9 @@ function Index() {
             <br />
             {t.home.title3}
           </h1>
+          <p className="mt-3 text-center text-lg md:text-xl italic text-accent font-medium max-w-2xl mx-auto">
+            {t.home.titleQuote}
+          </p>
           <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto text-center whitespace-pre-line">
             <RichText text={t.home.lede} />
           </p>
