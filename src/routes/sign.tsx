@@ -18,7 +18,7 @@ import { Country, State, City } from "country-state-city";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
 import heroImg from "@/assets/vallalar_with_animals_2.jpeg";
-import thankYouAsset from "@/assets/vallalar-thankyou.mp4.asset.json";
+import thankYouVideo from "@/assets/vallalar-thankyou.mp4";
 import {
   submitDigitalSignature,
   submitManualSignature,
@@ -593,7 +593,7 @@ function ManualFeed() {
 // ─────────────── Success ───────────────
 
 function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteNumber: number }) {
-  const thankYouUrl = thankYouAsset.url;
+  const thankYouUrl = thankYouVideo;
   const [videoReady, setVideoReady] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
   return (
