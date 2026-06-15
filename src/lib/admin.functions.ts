@@ -159,17 +159,32 @@ const GalleryUpsert = z.object({
   sort_order: z.number().int().min(0).max(9999).default(0),
 });
 
+function extractYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function deriveThumbUrl(url: string): string | null {
+  const yt = extractYouTubeId(url);
+  if (yt) return `https://img.youtube.com/vi/${yt}/maxresdefault.jpg`;
+  if (/\.(jpe?g|png|webp|gif|avif|svg)(\?|$)/i.test(url)) return url;
+  return null;
+}
+
 export const adminSaveGalleryItem = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => GalleryUpsert.parse(d))
   .handler(async ({ data }) => {
     await requireAdmin();
     const sb = await getBackend();
+    const thumb = (data.thumb_url && data.thumb_url.trim())
+      ? data.thumb_url.trim()
+      : deriveThumbUrl(data.url);
     const payload = {
       kind: data.kind,
       title_ta: data.title_ta,
       title_en: data.title_en,
       url: data.url,
-      thumb_url: data.thumb_url || null,
+      thumb_url: thumb,
       sort_order: data.sort_order ?? 0,
     };
     if (data.id) {
