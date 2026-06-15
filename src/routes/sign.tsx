@@ -15,7 +15,7 @@ import { Country, State, City } from "country-state-city";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
 import heroImg from "@/assets/vallalar_with_animals_2.jpeg";
-import thanksImg from "@/assets/vallalar_with_animals_2.jpeg";
+import thankYouVideo from "@/assets/vallalar-thankyou.mp4.asset.json";
 import {
   submitDigitalSignature,
   submitManualSignature,
