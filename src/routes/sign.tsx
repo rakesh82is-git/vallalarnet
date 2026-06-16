@@ -529,7 +529,7 @@ function DigitalTab() {
               new Set(
                 availablePostOffices
                   .map((o) => o.Block)
-                  .filter((b) => b && b !== "NA"),
+                  .filter((b): b is string => !!b && b !== "NA"),
               ),
             ).map((b) => ({ value: b, label: b, keywords: b }));
             const districtSelected = !!form.district.trim();
