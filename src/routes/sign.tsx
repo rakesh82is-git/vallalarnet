@@ -56,7 +56,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 type PostalOffice = {
   State: string;
   District: string;
-  Block: string;
+  Block?: string;
   Name: string;
   Pincode?: string;
 };
