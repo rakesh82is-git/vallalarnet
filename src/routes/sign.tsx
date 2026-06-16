@@ -523,20 +523,20 @@ function DigitalTab() {
   }, [localityList, indiaPostOffices, isIndia, form.sub_district, form.locality]);
 
   const pincodeOptions = useMemo(() => {
-    const s = new Set<string>(pincodeList);
-    if (isIndia) {
-      for (const p of indiaPostOffices) {
-        if (form.sub_district && p.Block !== form.sub_district && p.Block !== "NA") continue;
-        if (form.locality && p.Name !== form.locality) continue;
-        if (p.Pincode) s.add(p.Pincode);
-      }
-    }
-    const arr = Array.from(s).sort();
+    const eq = (a?: string, b?: string) =>
+      !!a && !!b && a.toLowerCase() === b.toLowerCase();
+    const filtered = statePincodes.filter((r) => {
+      if (form.district && !eq(r.district, form.district)) return false;
+      if (form.sub_district && !eq(r.sub_district, form.sub_district)) return false;
+      if (form.locality && !eq(r.locality, form.locality)) return false;
+      return true;
+    });
+    const arr = Array.from(new Set(filtered.map((r) => r.pincode))).sort();
     const opts = arr.map((p) => ({ value: p, label: p, keywords: p }));
     if (form.pincode && !arr.includes(form.pincode))
       opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
     return opts;
-  }, [pincodeList, indiaPostOffices, isIndia, form.sub_district, form.locality, form.pincode]);
+  }, [statePincodes, form.district, form.sub_district, form.locality, form.pincode]);
 
   function validateForm(): boolean {
     const { name, age, district, mobile_local, pincode, sub_district, locality } = form;
