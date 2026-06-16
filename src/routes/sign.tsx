@@ -168,11 +168,20 @@ function DigitalTab() {
   const pincodeOptions = useMemo(() => {
     let options: { value: string; label: string; keywords: string }[];
     if (isIndia) {
-      const fromPostOffices = availablePostOffices
+      const sub = form.sub_district.trim().toLowerCase();
+      const loc = form.locality.trim().toLowerCase();
+      const filtered = availablePostOffices.filter((o) => {
+        if (sub && (o.Block ?? "").toLowerCase() !== sub) return false;
+        if (loc && (o.Name ?? "").toLowerCase() !== loc) return false;
+        return true;
+      });
+      const fromPostOffices = filtered
         .map((o) => o.Pincode)
         .filter((pin): pin is string => !!pin);
       const fromPrefix = foreignPostcodeOptions.map((o) => o.value);
-      options = Array.from(new Set([...fromPostOffices, ...fromPrefix]))
+      // If the user has narrowed by sub-district/locality, don't pollute with prefix search results.
+      const merged = sub || loc ? fromPostOffices : [...fromPostOffices, ...fromPrefix];
+      options = Array.from(new Set(merged))
         .sort((a, b) => a.localeCompare(b))
         .map((pin) => ({ value: pin, label: pin, keywords: pin }));
     } else {
@@ -182,7 +191,7 @@ function DigitalTab() {
       return [{ value: form.pincode, label: form.pincode, keywords: form.pincode }, ...options];
     }
     return options;
-  }, [availablePostOffices, foreignPostcodeOptions, form.pincode, isIndia]);
+  }, [availablePostOffices, foreignPostcodeOptions, form.pincode, form.sub_district, form.locality, isIndia]);
 
   // ─── Auto-fill via geolocation (one-shot, on mount) ───
   useEffect(() => {
