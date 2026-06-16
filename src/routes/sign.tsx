@@ -490,61 +490,101 @@ function DigitalTab() {
               : "Sub-District / County (optional)"
           }
         >
-          {isIndia && availablePostOffices.length > 0 ? (
-            <Combobox
-              value={form.sub_district}
-              onChange={(v) => setForm((s) => ({ ...s, sub_district: v, locality: "" }))}
-              placeholder="Select sub-district"
-              searchPlaceholder="Search sub-district..."
-              emptyText="No sub-district found"
-              options={Array.from(
-                new Set(
-                  availablePostOffices
-                    .map((o) => o.Block)
-                    .filter((b) => b && b !== "NA"),
-                ),
-              ).map((b) => ({ value: b, label: b, keywords: b }))}
-            />
-          ) : (
-            <Input
-              value={form.sub_district}
-              onChange={(e) => set("sub_district", e.target.value)}
-              maxLength={120}
-              placeholder={isIndia ? "Select district or enter pincode" : "Optional"}
-            />
-          )}
+          {(() => {
+            const blockOptions = Array.from(
+              new Set(
+                availablePostOffices
+                  .map((o) => o.Block)
+                  .filter((b) => b && b !== "NA"),
+              ),
+            ).map((b) => ({ value: b, label: b, keywords: b }));
+            const districtSelected = !!form.district.trim();
+            if (isIndia && blockOptions.length > 0) {
+              return (
+                <Combobox
+                  value={form.sub_district}
+                  onChange={(v) =>
+                    setForm((s) => ({ ...s, sub_district: v, locality: "" }))
+                  }
+                  placeholder="Select sub-district"
+                  searchPlaceholder="Search sub-district..."
+                  emptyText="No sub-district found"
+                  options={blockOptions}
+                  disabled={!districtSelected}
+                />
+              );
+            }
+            return (
+              <Input
+                value={form.sub_district}
+                onChange={(e) => set("sub_district", e.target.value)}
+                maxLength={120}
+                disabled={!districtSelected}
+                placeholder={
+                  !districtSelected
+                    ? "Select district first"
+                    : isIndia
+                      ? "Enter sub-district (or enter pincode to load options)"
+                      : "Optional"
+                }
+              />
+            );
+          })()}
         </Field>
         <Field
           label={isIndia ? "Locality / ஊர்" : "Locality / City (optional)"}
         >
-          {isIndia && availablePostOffices.length > 0 ? (
-            <Combobox
-              value={form.locality}
-              onChange={(v) => set("locality", v)}
-              placeholder="Select locality"
-              searchPlaceholder="Search locality..."
-              emptyText="No locality found"
-              options={Array.from(
-                new Map(
-                  availablePostOffices
-                    .filter(
-                      (o) =>
-                        !form.sub_district ||
-                        o.Block === form.sub_district ||
-                        o.Block === "NA",
-                    )
-                    .map((o) => [o.Name, { value: o.Name, label: o.Name, keywords: o.Name }]),
-                ).values(),
-              )}
-            />
-          ) : (
-            <Input
-              value={form.locality}
-              onChange={(e) => set("locality", e.target.value)}
-              maxLength={160}
-              placeholder={isIndia ? "Select sub-district or enter pincode" : "Optional"}
-            />
-          )}
+          {(() => {
+            const districtSelected = !!form.district.trim();
+            const subSelected = !!form.sub_district.trim();
+            const localityOptions = Array.from(
+              new Map(
+                availablePostOffices
+                  .filter(
+                    (o) =>
+                      !form.sub_district ||
+                      o.Block === form.sub_district ||
+                      o.Block === "NA",
+                  )
+                  .map((o) => [
+                    o.Name,
+                    { value: o.Name, label: o.Name, keywords: o.Name },
+                  ]),
+              ).values(),
+            );
+            // Locality depends on sub-district being filled
+            const disabled = !districtSelected || !subSelected;
+            if (isIndia && subSelected && localityOptions.length > 0) {
+              return (
+                <Combobox
+                  value={form.locality}
+                  onChange={(v) => set("locality", v)}
+                  placeholder="Select locality"
+                  searchPlaceholder="Search locality..."
+                  emptyText="No locality found"
+                  options={localityOptions}
+                  disabled={disabled}
+                />
+              );
+            }
+            return (
+              <Input
+                value={form.locality}
+                onChange={(e) => set("locality", e.target.value)}
+                maxLength={160}
+                disabled={disabled}
+                placeholder={
+                  !districtSelected
+                    ? "Select district first"
+                    : !subSelected
+                      ? "Select sub-district first"
+                      : isIndia
+                        ? "Enter locality"
+                        : "Optional"
+                }
+              />
+            );
+          })()}
         </Field>
         <Field
           label={
