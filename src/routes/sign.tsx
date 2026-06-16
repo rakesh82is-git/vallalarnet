@@ -267,14 +267,18 @@ function DigitalTab() {
     };
   }, [form.countryCode, form.locality]);
 
-  // ─── India enrichment: lookup post offices by locality name ───
+  // ─── India enrichment: lookup post offices by district (broadest set we
+  //     filter down via sub_district / locality in pincodeOptions). ───
   useEffect(() => {
     if (!isIndia) {
       setIndiaPostOffices([]);
       return;
     }
-    const place = form.locality.trim();
-    if (!place) return;
+    const place = form.district.trim() || form.locality.trim();
+    if (!place) {
+      setIndiaPostOffices([]);
+      return;
+    }
     let cancelled = false;
     fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(place)}`)
       .then((r) => r.json())
@@ -300,7 +304,7 @@ function DigitalTab() {
     return () => {
       cancelled = true;
     };
-  }, [isIndia, form.locality, form.district, stateName]);
+  }, [isIndia, form.district, form.locality, stateName]);
 
   // ─── Pincode entered → reverse-fill the address ───
   useEffect(() => {
