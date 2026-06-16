@@ -400,47 +400,43 @@ function DigitalTab() {
     setLookingUpPin(true);
 
     if (isIndia) {
-      fetch(`https://api.postalpincode.in/pincode/${pin}`)
-        .then((r) => r.json())
-        .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
-          const entry = j?.[0];
-          if (entry?.Status !== "Success" || !entry.PostOffice?.length) return;
-          const offices = [
-            ...entry.PostOffice,
-            ...knownIndianPostOffices.filter((p) => sameText(p.Pincode, pin)),
-          ];
-          setIndiaPostOffices(offices);
-          setStatePincodes((rows) => {
-            const next = new Map(
-              rows.map((r) => [`${r.pincode}|${r.locality}|${r.sub_district ?? ""}`, r]),
-            );
-            for (const office of offices) {
-              const row = postalOfficeToPincodeEntry(office);
-              if (row.pincode) {
-                next.set(`${row.pincode}|${row.locality}|${row.sub_district ?? ""}`, row);
-              }
-            }
-            return Array.from(next.values());
+      lookupPincode(pin)
+        .then((rows) => {
+          if (!rows.length) return;
+          // Score against current selections; prefer matching locality > sub > district > state.
+          const score = (r: (typeof rows)[number]) => {
+            let s = 0;
+            if (form.locality && sameText(r.officeName, form.locality)) s += 128;
+            if (form.sub_district && r.taluk && sameText(r.taluk, form.sub_district)) s += 32;
+            if (form.district && sameText(r.district, form.district)) s += 16;
+            if (stateName && sameText(r.stateName, stateName)) s += 8;
+            if (!form.locality && sameText(r.officeName, preferredLocality)) s += 4;
+            return s;
+          };
+          const best = [...rows].sort((a, b) => score(b) - score(a))[0];
+          if (!best) return;
+          // Seed the state's dataset so the dropdowns immediately reflect the chain.
+          loadStateRows(best.stateName).then((stateRows) => {
+            if (stateRows.length) setInRows(stateRows);
           });
-          const po = choosePostalOffice(offices, {
-            stateName,
-            district: form.district,
-            sub_district: form.sub_district,
-            locality: form.locality,
-          });
-          if (!po) return;
           setForm((s) => {
             const next = { ...s };
-            const st = State.getStatesOfCountry("IN").find((x) => sameText(x.name, po.State));
-            if (st) next.stateCode = st.isoCode;
-            next.district = po.District;
-            const blocks = Array.from(
-              new Set(offices.map((o) => usableBlock(o.Block)).filter(Boolean)),
+            const st = State.getStatesOfCountry("IN").find((x) =>
+              sameText(x.name, best.stateName),
             );
-            const selectedBlock = usableBlock(po.Block);
-            if (selectedBlock) next.sub_district = selectedBlock;
+            if (st) next.stateCode = st.isoCode;
+            next.district = best.district;
+            const blocks = Array.from(
+              new Set(
+                rows
+                  .filter((r) => sameText(r.district, best.district))
+                  .map((r) => r.taluk)
+                  .filter(Boolean),
+              ),
+            );
+            if (best.taluk) next.sub_district = best.taluk;
             else if (blocks.length === 1) next.sub_district = blocks[0];
-            next.locality = po.Name;
+            next.locality = best.officeName;
             return next;
           });
         })
