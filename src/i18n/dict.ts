@@ -163,7 +163,7 @@ export const dict = {
       brand: "Vadalur",
     },
     home: {
-      eyebrow: "Arutperum Jyothi · Boundless Compassion",
+      eyebrow: "Arut Perum Jyothi, Arut Perum JyothiThani Perum Karunai, Arut Perum Jyothi · Boundless Compassion",
       title1: "Declare Vadalur",
       title2: "a Holy City",
       title3: "and protect every life",
