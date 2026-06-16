@@ -24,6 +24,7 @@ import {
   listManualSignatures,
 } from "@/lib/petition.functions";
 import * as gn from "@/lib/geonames";
+import { loadStateRows, lookupPincode, type InRow } from "@/lib/india-postal";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
@@ -53,14 +54,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-type PostalOffice = {
-  State: string;
-  District: string;
-  Block?: string | null;
-  Name: string;
-  Pincode?: string | null;
-};
-
 type PincodeEntry = {
   pincode: string;
   district?: string;
@@ -71,57 +64,6 @@ type PincodeEntry = {
 const clean = (value?: string | null) => (value ?? "").trim().toLowerCase();
 const sameText = (a?: string | null, b?: string | null) => !!clean(a) && clean(a) === clean(b);
 const preferredLocality = "Vadalur";
-const knownIndianPostOffices: PostalOffice[] = [
-  { State: "Tamil Nadu", District: "Cuddalore", Block: "Panruti", Name: "Vadalur", Pincode: "607303" },
-];
-const usableBlock = (block?: string | null) => {
-  const value = (block ?? "").trim();
-  return value && value.toLowerCase() !== "na" ? value : "";
-};
-
-function officeMatchesAddress(
-  office: PostalOffice,
-  address: { stateName?: string; district?: string; sub_district?: string; locality?: string },
-) {
-  if (address.stateName && !sameText(office.State, address.stateName)) return false;
-  if (address.district && !sameText(office.District, address.district)) return false;
-  if (address.sub_district && !sameText(usableBlock(office.Block), address.sub_district)) return false;
-  if (address.locality && !sameText(office.Name, address.locality)) return false;
-  return true;
-}
-
-function scorePostalOffice(
-  office: PostalOffice,
-  address: { stateName?: string; district?: string; sub_district?: string; locality?: string },
-) {
-  let score = 0;
-  if (address.stateName && sameText(office.State, address.stateName)) score += 8;
-  if (address.district && sameText(office.District, address.district)) score += 16;
-  if (address.sub_district && sameText(usableBlock(office.Block), address.sub_district)) score += 32;
-  if (address.locality && sameText(office.Name, address.locality)) score += 128;
-  if (!address.locality && sameText(office.Name, preferredLocality)) score += 4;
-  return score;
-}
-
-function choosePostalOffice(
-  offices: PostalOffice[],
-  address: { stateName?: string; district?: string; sub_district?: string; locality?: string },
-) {
-  return [...offices].sort(
-    (a, b) =>
-      scorePostalOffice(b, address) - scorePostalOffice(a, address) ||
-      Number(sameText(b.Name, preferredLocality)) - Number(sameText(a.Name, preferredLocality)),
-  )[0];
-}
-
-function postalOfficeToPincodeEntry(po: PostalOffice): PincodeEntry {
-  return {
-    pincode: po.Pincode ?? "",
-    district: po.District,
-    sub_district: usableBlock(po.Block) || undefined,
-    locality: po.Name,
-  };
-}
 
 function SignPage() {
   return (
@@ -200,13 +142,14 @@ function DigitalTab() {
   const [loadingLocality, setLoadingLocality] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
 
-  // India-only enrichment via api.postalpincode.in (Tiruvallur etc. with
-  // authoritative block + pincode mapping). Augments the GeoNames lists.
-  const [indiaPostOffices, setIndiaPostOffices] = useState<PostalOffice[]>([]);
-  // Pincode dataset that powers the Pincode dropdown only. It is widened
-  // from the best available selection level, then filtered by the current
-  // State / District / Sub-District / Locality in `pincodeOptions`.
+  // Pincode dataset (non-India) — for India, see `inRows` below.
   const [statePincodes, setStatePincodes] = useState<PincodeEntry[]>([]);
+  // India-only: full static post-office dataset for the selected state.
+  // Same source powers District / Sub-District / Locality / Pincode dropdowns
+  // and the reverse pincode lookup, keeping the forward cascade and the
+  // reverse fill 100% consistent.
+  const [inRows, setInRows] = useState<InRow[]>([]);
+  const [loadingIn, setLoadingIn] = useState(false);
   const lastPinRef = useRef<string>("");
 
   function set<K extends keyof typeof form>(k: K, v: string) {
@@ -335,140 +278,48 @@ function DigitalTab() {
     };
   }, [form.countryCode, form.locality]);
 
-  // ─── India enrichment: lookup post offices by district (broadest set we
-  //     filter down via sub_district / locality in pincodeOptions). ───
+  // ─── India: load full state dataset (single source of truth) ───
   useEffect(() => {
-    if (!isIndia) {
-      setIndiaPostOffices([]);
-      return;
-    }
-    const place = form.district.trim() || form.locality.trim();
-    if (!place) {
-      setIndiaPostOffices([]);
+    if (!isIndia || !stateName) {
+      setInRows([]);
       return;
     }
     let cancelled = false;
-    fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(place)}`)
-      .then((r) => r.json())
-      .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
-        if (cancelled) return;
-        const entry = j?.[0];
-        if (entry?.Status !== "Success" || !entry.PostOffice?.length) return;
-        const wanted = entry.PostOffice.filter((p) => {
-          if (stateName && p.State?.toLowerCase() !== stateName.toLowerCase()) return false;
-          if (form.district && !sameText(p.District, form.district)) return false;
-          return true;
-        });
-        const known = knownIndianPostOffices.filter((p) =>
-          officeMatchesAddress(p, { stateName, district: form.district }),
-        );
-        setIndiaPostOffices([...(wanted.length ? wanted : entry.PostOffice), ...known]);
-      })
-      .catch(() => {});
+    setLoadingIn(true);
+    loadStateRows(stateName).then((rows) => {
+      if (cancelled) return;
+      setInRows(rows);
+      setLoadingIn(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, [isIndia, form.district, form.locality, stateName]);
+  }, [isIndia, stateName]);
 
-  // ─── Selected address level → pincode dataset for the Pincode dropdown ───
-  // India has no reliable full-state pincode endpoint in the public API, so
-  // load from the most specific stable level available. The dropdown then
-  // filters the loaded rows by District / Sub-District / Locality.
+  // ─── Non-India: pincode dataset via GeoNames for the Pincode dropdown ───
   useEffect(() => {
-    if (!form.countryCode || !stateName) {
+    if (isIndia || !form.countryCode || !stateName) {
       setStatePincodes([]);
       return;
     }
     let cancelled = false;
-    if (isIndia) {
-      const searchTerm = form.locality.trim() || form.sub_district.trim() || form.district.trim();
-      if (!searchTerm) {
-        setStatePincodes([]);
-        return;
-      }
-      fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(searchTerm)}`)
-        .then((r) => r.json())
-        .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
-          if (cancelled) return;
-          const entry = j?.[0];
-          if (entry?.Status !== "Success" || !entry.PostOffice?.length) {
-            setStatePincodes([]);
-            return;
-          }
-          const rows: PincodeEntry[] = entry.PostOffice.filter((p) =>
-            sameText(p.State, stateName),
-          ).map(postalOfficeToPincodeEntry);
-          const known = knownIndianPostOffices
-            .filter((p) => officeMatchesAddress(p, { stateName, district: form.district }))
-            .map(postalOfficeToPincodeEntry);
-          setStatePincodes([...rows, ...known].filter((r) => r.pincode));
-        })
-        .catch(() => {
-          if (!cancelled) setStatePincodes([]);
-        });
-    } else {
-      gn.postalCodeSearch(form.countryCode, stateName).then((rows) => {
-        if (cancelled) return;
-        setStatePincodes(
-          rows
-            .filter((r) => r.postalCode)
-            .map((r) => ({
-              pincode: r.postalCode,
-              district: r.adminName2,
-              sub_district: r.adminName3,
-              locality: r.placeName,
-            })),
-        );
-      });
-    }
+    gn.postalCodeSearch(form.countryCode, stateName).then((rows) => {
+      if (cancelled) return;
+      setStatePincodes(
+        rows
+          .filter((r) => r.postalCode)
+          .map((r) => ({
+            pincode: r.postalCode,
+            district: r.adminName2,
+            sub_district: r.adminName3,
+            locality: r.placeName,
+          })),
+      );
+    });
     return () => {
       cancelled = true;
     };
-  }, [isIndia, form.countryCode, stateName, form.district, form.sub_district, form.locality]);
-
-  // ─── India locality → exact pincode autofill ───
-  useEffect(() => {
-    if (!isIndia || !stateName || !form.locality.trim()) return;
-    let cancelled = false;
-    fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(form.locality.trim())}`)
-      .then((r) => r.json())
-      .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
-        if (cancelled) return;
-        const entry = j?.[0];
-        if (entry?.Status !== "Success" || !entry.PostOffice?.length) return;
-        const candidates = [...entry.PostOffice, ...knownIndianPostOffices].filter((p) => {
-          if (stateName && !sameText(p.State, stateName)) return false;
-          if (form.district && !sameText(p.District, form.district)) return false;
-          const block = usableBlock(p.Block);
-          if (form.sub_district && block && !sameText(block, form.sub_district)) return false;
-          return sameText(p.Name, form.locality);
-        });
-        const offices = candidates.length ? candidates : entry.PostOffice;
-        setIndiaPostOffices((rows) => {
-          const next = new Map(rows.map((r) => [`${r.Pincode}|${r.Name}|${usableBlock(r.Block)}`, r]));
-          for (const office of offices) next.set(`${office.Pincode}|${office.Name}|${usableBlock(office.Block)}`, office);
-          return Array.from(next.values());
-        });
-        setStatePincodes((rows) => {
-          const next = new Map(rows.map((r) => [`${r.pincode}|${r.locality}|${r.sub_district ?? ""}`, r]));
-          for (const office of offices) {
-            const row = postalOfficeToPincodeEntry(office);
-            if (row.pincode) next.set(`${row.pincode}|${row.locality}|${row.sub_district ?? ""}`, row);
-          }
-          return Array.from(next.values());
-        });
-        const codes = Array.from(
-          new Set(offices.map((p) => p.Pincode).filter((pin): pin is string => !!pin)),
-        ).sort();
-        if (codes.length === 1 && form.pincode !== codes[0]) {
-          setForm((s) => ({ ...s, pincode: codes[0] }));
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [isIndia, stateName, form.district, form.sub_district, form.locality, form.pincode]);
+  }, [isIndia, form.countryCode, stateName]);
 
   // ─── Pincode entered → reverse-fill the address ───
   useEffect(() => {
@@ -480,47 +331,43 @@ function DigitalTab() {
     setLookingUpPin(true);
 
     if (isIndia) {
-      fetch(`https://api.postalpincode.in/pincode/${pin}`)
-        .then((r) => r.json())
-        .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
-          const entry = j?.[0];
-          if (entry?.Status !== "Success" || !entry.PostOffice?.length) return;
-          const offices = [
-            ...entry.PostOffice,
-            ...knownIndianPostOffices.filter((p) => sameText(p.Pincode, pin)),
-          ];
-          setIndiaPostOffices(offices);
-          setStatePincodes((rows) => {
-            const next = new Map(
-              rows.map((r) => [`${r.pincode}|${r.locality}|${r.sub_district ?? ""}`, r]),
-            );
-            for (const office of offices) {
-              const row = postalOfficeToPincodeEntry(office);
-              if (row.pincode) {
-                next.set(`${row.pincode}|${row.locality}|${row.sub_district ?? ""}`, row);
-              }
-            }
-            return Array.from(next.values());
+      lookupPincode(pin)
+        .then((rows) => {
+          if (!rows.length) return;
+          // Score against current selections; prefer matching locality > sub > district > state.
+          const score = (r: (typeof rows)[number]) => {
+            let s = 0;
+            if (form.locality && sameText(r.officeName, form.locality)) s += 128;
+            if (form.sub_district && r.taluk && sameText(r.taluk, form.sub_district)) s += 32;
+            if (form.district && sameText(r.district, form.district)) s += 16;
+            if (stateName && sameText(r.stateName, stateName)) s += 8;
+            if (!form.locality && sameText(r.officeName, preferredLocality)) s += 4;
+            return s;
+          };
+          const best = [...rows].sort((a, b) => score(b) - score(a))[0];
+          if (!best) return;
+          // Seed the state's dataset so the dropdowns immediately reflect the chain.
+          loadStateRows(best.stateName).then((stateRows) => {
+            if (stateRows.length) setInRows(stateRows);
           });
-          const po = choosePostalOffice(offices, {
-            stateName,
-            district: form.district,
-            sub_district: form.sub_district,
-            locality: form.locality,
-          });
-          if (!po) return;
           setForm((s) => {
             const next = { ...s };
-            const st = State.getStatesOfCountry("IN").find((x) => sameText(x.name, po.State));
-            if (st) next.stateCode = st.isoCode;
-            next.district = po.District;
-            const blocks = Array.from(
-              new Set(offices.map((o) => usableBlock(o.Block)).filter(Boolean)),
+            const st = State.getStatesOfCountry("IN").find((x) =>
+              sameText(x.name, best.stateName),
             );
-            const selectedBlock = usableBlock(po.Block);
-            if (selectedBlock) next.sub_district = selectedBlock;
+            if (st) next.stateCode = st.isoCode;
+            next.district = best.district;
+            const blocks = Array.from(
+              new Set(
+                rows
+                  .filter((r) => sameText(r.district, best.district))
+                  .map((r) => r.taluk)
+                  .filter(Boolean),
+              ),
+            );
+            if (best.taluk) next.sub_district = best.taluk;
             else if (blocks.length === 1) next.sub_district = blocks[0];
-            next.locality = po.Name;
+            next.locality = best.officeName;
             return next;
           });
         })
@@ -605,18 +452,27 @@ function DigitalTab() {
   // ─── Derived dropdown options ───
   const districtOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
-    for (const d of districtList) m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
+    if (isIndia) {
+      for (const r of inRows) {
+        if (r.district && !m.has(r.district))
+          m.set(r.district, { value: r.district, label: r.district, keywords: r.district });
+      }
+    } else {
+      for (const d of districtList)
+        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
+    }
     if (form.district && !m.has(form.district))
       m.set(form.district, { value: form.district, label: form.district, keywords: form.district });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [districtList, form.district]);
+  }, [districtList, inRows, isIndia, form.district]);
 
   const subDistrictOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
     if (isIndia) {
-      for (const p of indiaPostOffices) {
-        const b = usableBlock(p.Block);
-        if (b && !m.has(b)) m.set(b, { value: b, label: b, keywords: b });
+      for (const r of inRows) {
+        if (form.district && !sameText(r.district, form.district)) continue;
+        if (r.taluk && !m.has(r.taluk))
+          m.set(r.taluk, { value: r.taluk, label: r.taluk, keywords: r.taluk });
       }
     } else {
       for (const d of subDistrictList)
@@ -629,15 +485,20 @@ function DigitalTab() {
         keywords: form.sub_district,
       });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [subDistrictList, indiaPostOffices, isIndia, form.sub_district]);
+  }, [subDistrictList, inRows, isIndia, form.district, form.sub_district]);
 
   const localityOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
     if (isIndia) {
-      for (const p of indiaPostOffices) {
-        const block = usableBlock(p.Block);
-        if (form.sub_district && block && !sameText(block, form.sub_district)) continue;
-        if (!m.has(p.Name)) m.set(p.Name, { value: p.Name, label: p.Name, keywords: p.Name });
+      for (const r of inRows) {
+        if (form.district && !sameText(r.district, form.district)) continue;
+        if (form.sub_district && r.taluk && !sameText(r.taluk, form.sub_district)) continue;
+        if (!m.has(r.officeName))
+          m.set(r.officeName, {
+            value: r.officeName,
+            label: r.officeName,
+            keywords: r.officeName,
+          });
       }
     } else {
       for (const d of localityList)
@@ -646,14 +507,21 @@ function DigitalTab() {
     if (form.locality && !m.has(form.locality))
       m.set(form.locality, { value: form.locality, label: form.locality, keywords: form.locality });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [localityList, indiaPostOffices, isIndia, form.sub_district, form.locality]);
+  }, [localityList, inRows, isIndia, form.district, form.sub_district, form.locality]);
 
   const pincodeOptions = useMemo(() => {
-    const filtered = statePincodes.filter((r) => {
+    const source: PincodeEntry[] = isIndia
+      ? inRows.map((r) => ({
+          pincode: r.pincode,
+          district: r.district,
+          sub_district: r.taluk || undefined,
+          locality: r.officeName,
+        }))
+      : statePincodes;
+    const filtered = source.filter((r) => {
       if (form.district && !sameText(r.district, form.district)) return false;
       if (form.sub_district && r.sub_district && !sameText(r.sub_district, form.sub_district))
         return false;
-      if (form.sub_district && !r.sub_district && !form.locality) return false;
       if (form.locality && !sameText(r.locality, form.locality)) return false;
       return true;
     });
@@ -662,7 +530,7 @@ function DigitalTab() {
     if (form.pincode && !arr.includes(form.pincode))
       opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
     return opts;
-  }, [statePincodes, form.district, form.sub_district, form.locality, form.pincode]);
+  }, [statePincodes, inRows, isIndia, form.district, form.sub_district, form.locality, form.pincode]);
 
   useEffect(() => {
     if (!form.locality || form.pincode) return;
@@ -700,8 +568,8 @@ function DigitalTab() {
     setSubDistrictList([]);
     setLocalityList([]);
     setPincodeList([]);
-    setIndiaPostOffices([]);
     setStatePincodes([]);
+    setInRows([]);
     lastPinRef.current = "";
     setForm({
       name: "",
@@ -789,8 +657,8 @@ function DigitalTab() {
               setSubDistrictList([]);
               setLocalityList([]);
               setPincodeList([]);
-              setIndiaPostOffices([]);
               setStatePincodes([]);
+              setInRows([]);
               lastPinRef.current = "";
               setForm((s) => ({
                 ...s,
@@ -838,17 +706,17 @@ function DigitalTab() {
             onChange={(v) =>
               setForm((s) => ({ ...s, district: v, sub_district: "", locality: "", pincode: "" }))
             }
-            disabled={!form.stateCode}
+            disabled={!form.stateCode || (isIndia && loadingIn)}
             placeholder={
               !form.stateCode
                 ? "Select state first"
-                : loadingDistricts
+                : loadingDistricts || (isIndia && loadingIn)
                   ? "Loading districts…"
                   : "Select district"
             }
             searchPlaceholder="Search district..."
-            emptyText={loadingDistricts ? "Loading…" : "No district found"}
-            loading={loadingDistricts}
+            emptyText={loadingDistricts || (isIndia && loadingIn) ? "Loading…" : "No district found"}
+            loading={loadingDistricts || (isIndia && loadingIn)}
             loadingText="Loading districts…"
             options={districtOptions}
           />
