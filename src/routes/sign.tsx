@@ -269,6 +269,54 @@ function DigitalTab() {
       .catch(() => setDistrictPostOffices([]));
   }, [form.district, form.stateCode, isIndia, states]);
 
+  // ─── Search valid pincode/postcode options from the selected country ───
+  useEffect(() => {
+    const query = pinSearch.trim();
+    if (!form.countryCode || query.length < 3) return;
+    let cancelled = false;
+
+    if (isIndia) {
+      if (!/^\d{6}$/.test(query)) return;
+      setLookingUpPin(true);
+      fetch(`https://api.postalpincode.in/pincode/${query}`)
+        .then((r) => r.json())
+        .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
+          if (cancelled) return;
+          const entry = j?.[0];
+          if (entry?.Status === "Success" && entry.PostOffice?.length) {
+            setPinPostOffices(entry.PostOffice);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setLookingUpPin(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const countryName = selectedCountry?.name ?? "";
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=10&postalcode=${encodeURIComponent(query)}${countryName ? `&country=${encodeURIComponent(countryName)}` : ""}`;
+    setLookingUpPin(true);
+    fetch(url, { headers: { Accept: "application/json" } })
+      .then((r) => r.json())
+      .then((arr: Array<{ address?: Record<string, string> }>) => {
+        if (cancelled) return;
+        const options = Array.from(
+          new Set(arr.map((x) => x.address?.postcode).filter((p): p is string => !!p)),
+        ).map((pin) => ({ value: pin, label: pin, keywords: pin }));
+        setForeignPostcodeOptions(options);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLookingUpPin(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.countryCode, isIndia, pinSearch, selectedCountry]);
+
   // ─── Pincode / Postcode → reverse-fill state/district/sub-district/locality ───
   useEffect(() => {
     const pin = form.pincode.trim();
