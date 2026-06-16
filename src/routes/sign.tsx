@@ -858,6 +858,12 @@ function ManualTab() {
     setForm((s) => ({ ...s, [k]: v }));
   }
 
+  function resetForm() {
+    setForm({ name: "", mobile_number: "", document_title: "" });
+    setFile(null);
+    setPreview(null);
+  }
+
   function acceptFile(f: File | null) {
     if (!f) {
       setFile(null);
