@@ -706,17 +706,17 @@ function DigitalTab() {
             onChange={(v) =>
               setForm((s) => ({ ...s, district: v, sub_district: "", locality: "", pincode: "" }))
             }
-            disabled={!form.stateCode}
+            disabled={!form.stateCode || (isIndia && loadingIn)}
             placeholder={
               !form.stateCode
                 ? "Select state first"
-                : loadingDistricts
+                : loadingDistricts || (isIndia && loadingIn)
                   ? "Loading districts…"
                   : "Select district"
             }
             searchPlaceholder="Search district..."
-            emptyText={loadingDistricts ? "Loading…" : "No district found"}
-            loading={loadingDistricts}
+            emptyText={loadingDistricts || (isIndia && loadingIn) ? "Loading…" : "No district found"}
+            loading={loadingDistricts || (isIndia && loadingIn)}
             loadingText="Loading districts…"
             options={districtOptions}
           />
