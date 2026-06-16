@@ -437,7 +437,9 @@ function DigitalTab() {
           }
           return Array.from(next.values());
         });
-        const codes = Array.from(new Set(offices.map((p) => p.Pincode).filter(Boolean))).sort();
+        const codes = Array.from(
+          new Set(offices.map((p) => p.Pincode).filter((pin): pin is string => !!pin)),
+        ).sort();
         if (codes.length === 1 && form.pincode !== codes[0]) {
           setForm((s) => ({ ...s, pincode: codes[0] }));
         }
