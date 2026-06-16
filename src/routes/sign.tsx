@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Country, State, City } from "country-state-city";
+import { Country, State } from "country-state-city";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
 import heroImg from "@/assets/vallalar_with_animals_2.jpeg";
@@ -24,6 +23,7 @@ import {
   submitManualSignature,
   listManualSignatures,
 } from "@/lib/petition.functions";
+import * as gn from "@/lib/geonames";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
