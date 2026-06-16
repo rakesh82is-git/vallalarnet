@@ -419,6 +419,7 @@ function AdminGallery() {
               type="text"
               value={draft.title_ta}
               onChange={(e) => setDraft({ ...draft, title_ta: e.target.value })}
+              placeholder={tab === "fieldwork" ? "Leave blank to use event title" : ""}
               className={inputCls}
             />
           </Field>
@@ -427,6 +428,7 @@ function AdminGallery() {
               type="text"
               value={draft.title_en}
               onChange={(e) => setDraft({ ...draft, title_en: e.target.value })}
+              placeholder={tab === "fieldwork" ? "Leave blank to use event title" : ""}
               className={inputCls}
             />
           </Field>
