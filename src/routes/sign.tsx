@@ -521,18 +521,27 @@ function DigitalTab() {
   // ─── Derived dropdown options ───
   const districtOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
-    for (const d of districtList) m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
+    if (isIndia) {
+      for (const r of inRows) {
+        if (r.district && !m.has(r.district))
+          m.set(r.district, { value: r.district, label: r.district, keywords: r.district });
+      }
+    } else {
+      for (const d of districtList)
+        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
+    }
     if (form.district && !m.has(form.district))
       m.set(form.district, { value: form.district, label: form.district, keywords: form.district });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [districtList, form.district]);
+  }, [districtList, inRows, isIndia, form.district]);
 
   const subDistrictOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
     if (isIndia) {
-      for (const p of indiaPostOffices) {
-        const b = usableBlock(p.Block);
-        if (b && !m.has(b)) m.set(b, { value: b, label: b, keywords: b });
+      for (const r of inRows) {
+        if (form.district && !sameText(r.district, form.district)) continue;
+        if (r.taluk && !m.has(r.taluk))
+          m.set(r.taluk, { value: r.taluk, label: r.taluk, keywords: r.taluk });
       }
     } else {
       for (const d of subDistrictList)
@@ -545,15 +554,20 @@ function DigitalTab() {
         keywords: form.sub_district,
       });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [subDistrictList, indiaPostOffices, isIndia, form.sub_district]);
+  }, [subDistrictList, inRows, isIndia, form.district, form.sub_district]);
 
   const localityOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
     if (isIndia) {
-      for (const p of indiaPostOffices) {
-        const block = usableBlock(p.Block);
-        if (form.sub_district && block && !sameText(block, form.sub_district)) continue;
-        if (!m.has(p.Name)) m.set(p.Name, { value: p.Name, label: p.Name, keywords: p.Name });
+      for (const r of inRows) {
+        if (form.district && !sameText(r.district, form.district)) continue;
+        if (form.sub_district && r.taluk && !sameText(r.taluk, form.sub_district)) continue;
+        if (!m.has(r.officeName))
+          m.set(r.officeName, {
+            value: r.officeName,
+            label: r.officeName,
+            keywords: r.officeName,
+          });
       }
     } else {
       for (const d of localityList)
@@ -562,14 +576,21 @@ function DigitalTab() {
     if (form.locality && !m.has(form.locality))
       m.set(form.locality, { value: form.locality, label: form.locality, keywords: form.locality });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [localityList, indiaPostOffices, isIndia, form.sub_district, form.locality]);
+  }, [localityList, inRows, isIndia, form.district, form.sub_district, form.locality]);
 
   const pincodeOptions = useMemo(() => {
-    const filtered = statePincodes.filter((r) => {
+    const source: PincodeEntry[] = isIndia
+      ? inRows.map((r) => ({
+          pincode: r.pincode,
+          district: r.district,
+          sub_district: r.taluk || undefined,
+          locality: r.officeName,
+        }))
+      : statePincodes;
+    const filtered = source.filter((r) => {
       if (form.district && !sameText(r.district, form.district)) return false;
       if (form.sub_district && r.sub_district && !sameText(r.sub_district, form.sub_district))
         return false;
-      if (form.sub_district && !r.sub_district && !form.locality) return false;
       if (form.locality && !sameText(r.locality, form.locality)) return false;
       return true;
     });
@@ -578,7 +599,7 @@ function DigitalTab() {
     if (form.pincode && !arr.includes(form.pincode))
       opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
     return opts;
-  }, [statePincodes, form.district, form.sub_district, form.locality, form.pincode]);
+  }, [statePincodes, inRows, isIndia, form.district, form.sub_district, form.locality, form.pincode]);
 
   useEffect(() => {
     if (!form.locality || form.pincode) return;
