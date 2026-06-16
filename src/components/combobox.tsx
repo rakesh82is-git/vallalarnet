@@ -121,7 +121,7 @@ export function Combobox({
                 <CommandItem
                   key={o.value}
                   value={o.value}
-                  onSelect={(v) => commit(v)}
+                  onSelect={() => commit(o.value)}
                 >
                   <Check
                     className={cn(
