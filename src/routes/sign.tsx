@@ -486,7 +486,13 @@ function DigitalTab() {
         <Field label="Country / நாடு">
           <Combobox
             value={form.countryCode}
-            onChange={(v) =>
+            onChange={(v) => {
+              setPinSearch("");
+              setPinPostOffices([]);
+              setDistrictPostOffices([]);
+              setForeignPostcodeOptions([]);
+              lastPinRef.current = "";
+              lastDistrictRef.current = "";
               setForm((s) => ({
                 ...s,
                 countryCode: v,
@@ -495,8 +501,8 @@ function DigitalTab() {
                 sub_district: "",
                 locality: "",
                 pincode: "",
-              }))
-            }
+              }));
+            }}
             placeholder="Select country"
             searchPlaceholder="Search country..."
             emptyText="No country found"
