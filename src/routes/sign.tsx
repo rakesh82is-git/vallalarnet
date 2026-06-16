@@ -463,6 +463,26 @@ function DigitalTab() {
     setSignOpen(true);
   }
 
+  function resetForm() {
+    setPinSearch("");
+    setPinPostOffices([]);
+    setDistrictPostOffices([]);
+    setForeignPostcodeOptions([]);
+    lastPinRef.current = "";
+    lastDistrictRef.current = "";
+    setForm({
+      name: "",
+      age: "",
+      countryCode: "IN",
+      stateCode: "",
+      district: "",
+      sub_district: "",
+      locality: "",
+      pincode: "",
+      mobile_local: "",
+    });
+  }
+
   async function handleSubmit(sig: string) {
     const { name, age, district, mobile_local, pincode, sub_district, locality } = form;
     const country = selectedCountry?.name ?? "";
@@ -764,9 +784,14 @@ function DigitalTab() {
         </Field>
       </fieldset>
 
-      <Button onClick={openSignDialog} disabled={busy} size="lg" className="w-full">
-        Review & Sign
-      </Button>
+      <div className="flex gap-3">
+        <Button onClick={openSignDialog} disabled={busy} size="lg" className="flex-1">
+          Review & Sign
+        </Button>
+        <Button type="button" variant="outline" onClick={resetForm} disabled={busy} size="lg">
+          Reset
+        </Button>
+      </div>
 
       <Dialog
         open={signOpen}
@@ -831,6 +856,12 @@ function ManualTab() {
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((s) => ({ ...s, [k]: v }));
+  }
+
+  function resetForm() {
+    setForm({ name: "", mobile_number: "", document_title: "" });
+    setFile(null);
+    setPreview(null);
   }
 
   function acceptFile(f: File | null) {
@@ -980,9 +1011,14 @@ function ManualTab() {
           )}
         </div>
 
-        <Button onClick={handleSubmit} disabled={busy} size="lg" className="w-full">
-          {busy ? "Uploading…" : "Upload Signature"}
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={handleSubmit} disabled={busy} size="lg" className="flex-1">
+            {busy ? "Uploading…" : "Upload Signature"}
+          </Button>
+          <Button type="button" variant="outline" onClick={resetForm} disabled={busy} size="lg">
+            Reset
+          </Button>
+        </div>
       </div>
 
       <ManualFeed />
