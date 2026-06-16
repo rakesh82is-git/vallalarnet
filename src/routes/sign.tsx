@@ -366,6 +366,51 @@ function DigitalTab() {
             />
           )}
         </Field>
+        <Field
+          label={
+            isIndia
+              ? "Sub-District / வட்டம்"
+              : "Sub-District / County (optional)"
+          }
+        >
+          <Input
+            value={form.sub_district}
+            onChange={(e) => set("sub_district", e.target.value)}
+            maxLength={120}
+            placeholder={isIndia ? "Taluk / Block" : "Optional"}
+          />
+        </Field>
+        <Field
+          label={isIndia ? "Locality / ஊர்" : "Locality / City (optional)"}
+        >
+          <Input
+            value={form.locality}
+            onChange={(e) => set("locality", e.target.value)}
+            maxLength={160}
+            placeholder={isIndia ? "Village / Town / Area" : "Optional"}
+          />
+        </Field>
+        <Field
+          label={
+            isIndia
+              ? "Pincode / அஞ்சல் குறியீடு"
+              : "Postcode (optional)"
+          }
+        >
+          <Input
+            inputMode="numeric"
+            value={form.pincode}
+            onChange={(e) => set("pincode", e.target.value)}
+            maxLength={20}
+            placeholder={
+              isIndia
+                ? lookingUpPin
+                  ? "Looking up…"
+                  : "6-digit pincode (auto-fills state & district)"
+                : "Optional"
+            }
+          />
+        </Field>
         <Field label="Mobile Number / கைபேசி எண்">
           <div className="flex">
             <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-secondary text-sm font-mono text-muted-foreground min-w-[64px] justify-center">
