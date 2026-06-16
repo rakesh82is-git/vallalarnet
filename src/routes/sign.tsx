@@ -684,10 +684,10 @@ function DigitalTab() {
         >
           <Combobox
             value={form.locality}
-            onChange={(v) => setForm((s) => ({ ...s, locality: v, pincode: "" }))}
-            disabled={!subSelected}
+            onChange={(v) => setForm((s) => ({ ...s, locality: v }))}
+            disabled={!subSelected && localityOptions.length === 0}
             placeholder={
-              !subSelected
+              !subSelected && localityOptions.length === 0
                 ? "Select sub-district first"
                 : loadingLocality
                   ? "Loading…"
