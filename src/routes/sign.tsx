@@ -115,6 +115,9 @@ function DigitalTab() {
   const [geoTried, setGeoTried] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
   const lastPinRef = useRef<string>("");
+  const [pinPostOffices, setPinPostOffices] = useState<
+    Array<{ State: string; District: string; Block: string; Name: string }>
+  >([]);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((s) => ({ ...s, [k]: v }));
@@ -207,7 +210,9 @@ function DigitalTab() {
       .then((j: Array<{ Status: string; PostOffice?: Array<{ State: string; District: string; Block: string; Name: string; Division: string }> }>) => {
         const entry = j?.[0];
         if (!entry || entry.Status !== "Success" || !entry.PostOffice?.length) return;
-        const po = entry.PostOffice[0];
+        const offices = entry.PostOffice;
+        setPinPostOffices(offices);
+        const po = offices[0];
         setForm((s) => {
           const next = { ...s };
           if (!next.stateCode) {
@@ -217,8 +222,12 @@ function DigitalTab() {
             if (st) next.stateCode = st.isoCode;
           }
           if (!next.district) next.district = po.District;
-          if (!next.sub_district && po.Block && po.Block !== "NA") next.sub_district = po.Block;
-          if (!next.locality) next.locality = po.Name;
+          // Only auto-pick if unambiguous; otherwise let the user choose from the dropdown
+          const blocks = Array.from(
+            new Set(offices.map((o) => o.Block).filter((b) => b && b !== "NA")),
+          );
+          if (!next.sub_district && blocks.length === 1) next.sub_district = blocks[0];
+          if (!next.locality && offices.length === 1) next.locality = offices[0].Name;
           return next;
         });
       })
@@ -373,22 +382,61 @@ function DigitalTab() {
               : "Sub-District / County (optional)"
           }
         >
-          <Input
-            value={form.sub_district}
-            onChange={(e) => set("sub_district", e.target.value)}
-            maxLength={120}
-            placeholder={isIndia ? "Taluk / Block" : "Optional"}
-          />
+          {isIndia && pinPostOffices.length > 0 ? (
+            <Combobox
+              value={form.sub_district}
+              onChange={(v) => set("sub_district", v)}
+              placeholder="Select sub-district"
+              searchPlaceholder="Search sub-district..."
+              emptyText="No sub-district found"
+              options={Array.from(
+                new Set(
+                  pinPostOffices
+                    .map((o) => o.Block)
+                    .filter((b) => b && b !== "NA"),
+                ),
+              ).map((b) => ({ value: b, label: b, keywords: b }))}
+            />
+          ) : (
+            <Input
+              value={form.sub_district}
+              onChange={(e) => set("sub_district", e.target.value)}
+              maxLength={120}
+              placeholder={isIndia ? "Enter pincode to load options" : "Optional"}
+            />
+          )}
         </Field>
         <Field
           label={isIndia ? "Locality / ஊர்" : "Locality / City (optional)"}
         >
-          <Input
-            value={form.locality}
-            onChange={(e) => set("locality", e.target.value)}
-            maxLength={160}
-            placeholder={isIndia ? "Village / Town / Area" : "Optional"}
-          />
+          {isIndia && pinPostOffices.length > 0 ? (
+            <Combobox
+              value={form.locality}
+              onChange={(v) => set("locality", v)}
+              placeholder="Select locality"
+              searchPlaceholder="Search locality..."
+              emptyText="No locality found"
+              options={Array.from(
+                new Map(
+                  pinPostOffices
+                    .filter(
+                      (o) =>
+                        !form.sub_district ||
+                        o.Block === form.sub_district ||
+                        o.Block === "NA",
+                    )
+                    .map((o) => [o.Name, { value: o.Name, label: o.Name, keywords: o.Name }]),
+                ).values(),
+              )}
+            />
+          ) : (
+            <Input
+              value={form.locality}
+              onChange={(e) => set("locality", e.target.value)}
+              maxLength={160}
+              placeholder={isIndia ? "Enter pincode to load options" : "Optional"}
+            />
+          )}
         </Field>
         <Field
           label={
