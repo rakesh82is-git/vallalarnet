@@ -130,27 +130,21 @@ function DigitalTab() {
     Array<{ value: string; label: string; keywords: string }>
   >([]);
   const lastDistrictRef = useRef<string>("");
-  const [subDistrictSearch, setSubDistrictSearch] = useState("");
-  const [localitySearch, setLocalitySearch] = useState("");
-  const [indiaDistrictsByState, setIndiaDistrictsByState] = useState<Record<string, string[]>>({});
-
-  // India source-of-truth dataset for state→districts. Naming matches the
-  // India Post (postalpincode.in) corpus, so pincode reverse-fill values
-  // line up with the dropdown options.
+  // India source-of-truth: a sliced India Post directory bundled at
+  // /india-po/. index.json maps State -> { District -> sliceFile }. Each
+  // slice is a JSON array of post-office records (Pincode/Name/Block/...)
+  // for that district. Naming matches India Post, so reverse-fill values
+  // line up with dropdown options.
+  const [indiaPoIndex, setIndiaPoIndex] = useState<Record<string, Record<string, string>>>({});
   useEffect(() => {
     let cancelled = false;
-    fetch(
-      "https://raw.githubusercontent.com/sab99r/Indian-States-And-Districts/master/states-and-districts.json",
-    )
+    fetch("/india-po/index.json")
       .then((r) => r.json())
-      .then((j: { states: Array<{ state: string; districts: string[] }> }) => {
-        if (cancelled) return;
-        const map: Record<string, string[]> = {};
-        for (const s of j.states ?? []) map[s.state] = s.districts ?? [];
-        setIndiaDistrictsByState(map);
+      .then((j: Record<string, Record<string, string>>) => {
+        if (!cancelled) setIndiaPoIndex(j ?? {});
       })
       .catch(() => {
-        /* fall back to country-state-city cities */
+        /* dataset missing — district dropdown falls back to cities */
       });
     return () => {
       cancelled = true;
