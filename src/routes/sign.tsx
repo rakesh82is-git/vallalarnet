@@ -166,17 +166,18 @@ function DigitalTab() {
   }, [districtPostOffices, pinPostOffices]);
 
   const pincodeOptions = useMemo(() => {
-    const options = isIndia
-      ? Array.from(
-          new Set(
-            availablePostOffices
-              .map((o) => o.Pincode)
-              .filter((pin): pin is string => !!pin),
-          ),
-        )
-          .sort((a, b) => a.localeCompare(b))
-          .map((pin) => ({ value: pin, label: pin, keywords: pin }))
-      : foreignPostcodeOptions;
+    let options: { value: string; label: string; keywords: string }[];
+    if (isIndia) {
+      const fromPostOffices = availablePostOffices
+        .map((o) => o.Pincode)
+        .filter((pin): pin is string => !!pin);
+      const fromPrefix = foreignPostcodeOptions.map((o) => o.value);
+      options = Array.from(new Set([...fromPostOffices, ...fromPrefix]))
+        .sort((a, b) => a.localeCompare(b))
+        .map((pin) => ({ value: pin, label: pin, keywords: pin }));
+    } else {
+      options = foreignPostcodeOptions;
+    }
     if (form.pincode && !options.some((o) => o.value === form.pincode)) {
       return [{ value: form.pincode, label: form.pincode, keywords: form.pincode }, ...options];
     }
