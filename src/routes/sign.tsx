@@ -726,7 +726,11 @@ function DigitalTab() {
                   : "Select or type postcode"
             }
             searchPlaceholder={isIndia ? "Type 6-digit pincode..." : "Type postcode..."}
-            emptyText={isIndia ? "Type a valid 6-digit pincode" : "Type a valid postcode"}
+            emptyText={
+              isIndia
+                ? "Type the first 3 digits of your pincode"
+                : "Type the first few characters of your postcode"
+            }
             loading={lookingUpPin}
             loadingText="Looking up…"
             onSearchChange={setPinSearch}
