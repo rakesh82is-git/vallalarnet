@@ -330,7 +330,9 @@ function DigitalTab() {
               next.district = po.District;
               const blocks = Array.from(
                 new Set(
-                  offices.map((o) => o.Block).filter((b) => b && b !== "NA"),
+                  offices
+                    .map((o) => o.Block)
+                    .filter((b): b is string => !!b && b !== "NA"),
                 ),
               );
               if (blocks.length === 1) next.sub_district = blocks[0];
