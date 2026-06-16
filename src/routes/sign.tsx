@@ -130,6 +130,30 @@ function DigitalTab() {
     Array<{ value: string; label: string; keywords: string }>
   >([]);
   const lastDistrictRef = useRef<string>("");
+  const [indiaDistrictsByState, setIndiaDistrictsByState] = useState<Record<string, string[]>>({});
+
+  // India source-of-truth dataset for state→districts. Naming matches the
+  // India Post (postalpincode.in) corpus, so pincode reverse-fill values
+  // line up with the dropdown options.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(
+      "https://raw.githubusercontent.com/sab99r/Indian-States-And-Districts/master/states-and-districts.json",
+    )
+      .then((r) => r.json())
+      .then((j: { states: Array<{ state: string; districts: string[] }> }) => {
+        if (cancelled) return;
+        const map: Record<string, string[]> = {};
+        for (const s of j.states ?? []) map[s.state] = s.districts ?? [];
+        setIndiaDistrictsByState(map);
+      })
+      .catch(() => {
+        /* fall back to country-state-city cities */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((s) => ({ ...s, [k]: v }));
@@ -597,8 +621,17 @@ function DigitalTab() {
         </Field>
         <Field label="District / மாவட்டம்">
           {(() => {
+            let sourceNames: string[] = [];
+            if (isIndia) {
+              const stateName = states.find((s) => s.isoCode === form.stateCode)?.name;
+              sourceNames = (stateName && indiaDistrictsByState[stateName]) || [];
+            } else {
+              sourceNames = cities.map((c) => c.name);
+            }
             const districtOptions = Array.from(
-              new Map(cities.map((c) => [c.name, { value: c.name, label: c.name, keywords: c.name }])).values(),
+              new Map(
+                sourceNames.map((n) => [n, { value: n, label: n, keywords: n }]),
+              ).values(),
             );
             if (form.district && !districtOptions.some((o) => o.value.toLowerCase() === form.district.toLowerCase())) {
               districtOptions.unshift({ value: form.district, label: form.district, keywords: form.district });
