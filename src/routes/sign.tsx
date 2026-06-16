@@ -53,6 +53,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+type PostalOffice = {
+  State: string;
+  District: string;
+  Block?: string;
+  Name: string;
+  Pincode?: string;
+};
+
 function SignPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
@@ -114,12 +122,12 @@ function DigitalTab() {
   const [result, setResult] = useState<{ id: string; name: string; voteNumber: number } | null>(null);
   const [geoTried, setGeoTried] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
+  const [pinSearch, setPinSearch] = useState("");
   const lastPinRef = useRef<string>("");
-  const [pinPostOffices, setPinPostOffices] = useState<
-    Array<{ State: string; District: string; Block: string; Name: string }>
-  >([]);
-  const [districtPostOffices, setDistrictPostOffices] = useState<
-    Array<{ State: string; District: string; Block: string; Name: string }>
+  const [pinPostOffices, setPinPostOffices] = useState<PostalOffice[]>([]);
+  const [districtPostOffices, setDistrictPostOffices] = useState<PostalOffice[]>([]);
+  const [foreignPostcodeOptions, setForeignPostcodeOptions] = useState<
+    Array<{ value: string; label: string; keywords: string }>
   >([]);
   const lastDistrictRef = useRef<string>("");
 
@@ -150,12 +158,30 @@ function DigitalTab() {
 
   // Merge district-derived + pincode-derived post offices for the dropdowns.
   const availablePostOffices = useMemo(() => {
-    const map = new Map<string, { State: string; District: string; Block: string; Name: string }>();
+    const map = new Map<string, PostalOffice>();
     for (const o of [...districtPostOffices, ...pinPostOffices]) {
-      map.set(`${o.Block}::${o.Name}`, o);
+      map.set(`${o.Pincode ?? ""}::${o.Block}::${o.Name}`, o);
     }
     return Array.from(map.values());
   }, [districtPostOffices, pinPostOffices]);
+
+  const pincodeOptions = useMemo(() => {
+    const options = isIndia
+      ? Array.from(
+          new Set(
+            availablePostOffices
+              .map((o) => o.Pincode)
+              .filter((pin): pin is string => !!pin),
+          ),
+        )
+          .sort((a, b) => a.localeCompare(b))
+          .map((pin) => ({ value: pin, label: pin, keywords: pin }))
+      : foreignPostcodeOptions;
+    if (form.pincode && !options.some((o) => o.value === form.pincode)) {
+      return [{ value: form.pincode, label: form.pincode, keywords: form.pincode }, ...options];
+    }
+    return options;
+  }, [availablePostOffices, foreignPostcodeOptions, form.pincode, isIndia]);
 
   // ─── Auto-fill via geolocation (one-shot, on mount) ───
   useEffect(() => {
@@ -242,6 +268,58 @@ function DigitalTab() {
       })
       .catch(() => setDistrictPostOffices([]));
   }, [form.district, form.stateCode, isIndia, states]);
+
+  // ─── Search valid pincode/postcode options from the selected country ───
+  useEffect(() => {
+    const query = pinSearch.trim();
+    if (!form.countryCode || query.length < 3) return;
+    let cancelled = false;
+
+    if (isIndia) {
+      if (!/^\d{6}$/.test(query)) return;
+      setLookingUpPin(true);
+      fetch(`https://api.postalpincode.in/pincode/${query}`)
+        .then((r) => r.json())
+        .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
+          if (cancelled) return;
+          const entry = j?.[0];
+          if (entry?.Status === "Success" && entry.PostOffice?.length) {
+            setPinPostOffices(entry.PostOffice);
+            setForm((s) => (s.pincode === query ? s : { ...s, pincode: query }));
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setLookingUpPin(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const countryName = selectedCountry?.name ?? "";
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=10&postalcode=${encodeURIComponent(query)}${countryName ? `&country=${encodeURIComponent(countryName)}` : ""}`;
+    setLookingUpPin(true);
+    fetch(url, { headers: { Accept: "application/json" } })
+      .then((r) => r.json())
+      .then((arr: Array<{ address?: Record<string, string> }>) => {
+        if (cancelled) return;
+        const options = Array.from(
+          new Set(arr.map((x) => x.address?.postcode).filter((p): p is string => !!p)),
+        ).map((pin) => ({ value: pin, label: pin, keywords: pin }));
+        setForeignPostcodeOptions(options);
+        if (options.some((o) => o.value === query)) {
+          setForm((s) => (s.pincode === query ? s : { ...s, pincode: query }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLookingUpPin(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.countryCode, isIndia, pinSearch, selectedCountry]);
 
   // ─── Pincode / Postcode → reverse-fill state/district/sub-district/locality ───
   useEffect(() => {
@@ -412,7 +490,13 @@ function DigitalTab() {
         <Field label="Country / நாடு">
           <Combobox
             value={form.countryCode}
-            onChange={(v) =>
+            onChange={(v) => {
+              setPinSearch("");
+              setPinPostOffices([]);
+              setDistrictPostOffices([]);
+              setForeignPostcodeOptions([]);
+              lastPinRef.current = "";
+              lastDistrictRef.current = "";
               setForm((s) => ({
                 ...s,
                 countryCode: v,
@@ -421,8 +505,8 @@ function DigitalTab() {
                 sub_district: "",
                 locality: "",
                 pincode: "",
-              }))
-            }
+              }));
+            }}
             placeholder="Select country"
             searchPlaceholder="Search country..."
             emptyText="No country found"
@@ -454,40 +538,39 @@ function DigitalTab() {
         </Field>
         <Field label="District / மாவட்டம்">
           {(() => {
-            const cityNames = Array.from(new Set(cities.map((c) => c.name)));
-            const hasMatch =
-              !form.district ||
-              cityNames.some(
-                (n) => n.toLowerCase() === form.district.toLowerCase(),
-              );
-            return cities.length > 0 && hasMatch ? (
-            <Combobox
-              value={form.district}
-              onChange={(v) =>
-                setForm((s) => ({ ...s, district: v, sub_district: "", locality: "" }))
-              }
-              placeholder="Select district"
-              searchPlaceholder="Search district..."
-              emptyText="No district found"
-              options={Array.from(
-                new Map(cities.map((c) => [c.name, { value: c.name, label: c.name }])).values(),
-              )}
-            />
-          ) : (
-            <Input
-              value={form.district}
-              onChange={(e) =>
-                setForm((s) => ({
-                  ...s,
-                  district: e.target.value,
-                  sub_district: "",
-                  locality: "",
-                }))
-              }
-              maxLength={80}
-              placeholder={form.stateCode ? "Enter district" : "Select state first"}
-              disabled={!form.stateCode}
-            />
+            const districtOptions = Array.from(
+              new Map(cities.map((c) => [c.name, { value: c.name, label: c.name, keywords: c.name }])).values(),
+            );
+            if (form.district && !districtOptions.some((o) => o.value.toLowerCase() === form.district.toLowerCase())) {
+              districtOptions.unshift({ value: form.district, label: form.district, keywords: form.district });
+            }
+            return districtOptions.length > 0 ? (
+              <Combobox
+                value={form.district}
+                onChange={(v) =>
+                  setForm((s) => ({ ...s, district: v, sub_district: "", locality: "" }))
+                }
+                placeholder="Select district"
+                searchPlaceholder="Search district..."
+                emptyText="No district found"
+                options={districtOptions}
+                disabled={!form.stateCode}
+              />
+            ) : (
+              <Input
+                value={form.district}
+                onChange={(e) =>
+                  setForm((s) => ({
+                    ...s,
+                    district: e.target.value,
+                    sub_district: "",
+                    locality: "",
+                  }))
+                }
+                maxLength={80}
+                placeholder={form.stateCode ? "Enter district" : "Select state first"}
+                disabled={!form.stateCode}
+              />
             );
           })()}
         </Field>
@@ -503,7 +586,7 @@ function DigitalTab() {
               new Set(
                 availablePostOffices
                   .map((o) => o.Block)
-                  .filter((b) => b && b !== "NA"),
+                  .filter((b): b is string => !!b && b !== "NA"),
               ),
             ).map((b) => ({ value: b, label: b, keywords: b }));
             const districtSelected = !!form.district.trim();
@@ -601,21 +684,17 @@ function DigitalTab() {
               : "Pincode / Postcode"
           }
         >
-          <Input
-            inputMode="numeric"
+          <Combobox
             value={form.pincode}
-            onChange={(e) => set("pincode", e.target.value)}
-            maxLength={20}
+            onChange={(v) => set("pincode", v)}
             disabled={!form.countryCode}
-            placeholder={
-              !form.countryCode
-                ? "Select country first"
-                : lookingUpPin
-                  ? "Looking up…"
-                  : isIndia
-                    ? "6-digit pincode (auto-fills location)"
-                    : "Postcode (auto-fills location)"
-            }
+            placeholder={!form.countryCode ? "Select country first" : "Select pincode/postcode"}
+            searchPlaceholder={isIndia ? "Type 6-digit pincode..." : "Type postcode..."}
+            emptyText={isIndia ? "Type a valid 6-digit pincode" : "Type a valid postcode"}
+            loading={lookingUpPin}
+            loadingText="Looking up…"
+            onSearchChange={setPinSearch}
+            options={pincodeOptions}
           />
         </Field>
         <Field label="Mobile Number / கைபேசி எண்">
