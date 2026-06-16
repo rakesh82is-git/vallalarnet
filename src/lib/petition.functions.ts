@@ -78,7 +78,13 @@ const DigitalSignaturePayload = z.object({
   district: z.string().trim().min(1).max(80),
   mobile_number: z.string().trim().min(6).max(20),
   signature_image: z.string().max(800_000),
-});
+  sub_district: z.string().trim().max(120).optional().nullable(),
+  locality: z.string().trim().max(160).optional().nullable(),
+  pincode: z.string().trim().max(20).optional().nullable(),
+}).refine(
+  (d) => d.country.toLowerCase() !== "india" || (d.pincode && d.pincode.length >= 4),
+  { message: "Pincode is required for India", path: ["pincode"] },
+);
 
 const ManualSignaturePayload = z.object({
   name: z.string().trim().min(1).max(100),
@@ -123,6 +129,9 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
         country: data.country,
         state: data.state,
         district: data.district,
+        sub_district: data.sub_district ?? null,
+        locality: data.locality ?? null,
+        pincode: data.pincode ?? null,
         mobile_number: data.mobile_number,
         phone_number: data.mobile_number,
         signature_image: data.signature_image,
