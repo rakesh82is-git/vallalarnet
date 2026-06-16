@@ -463,6 +463,26 @@ function DigitalTab() {
     setSignOpen(true);
   }
 
+  function resetForm() {
+    setPinSearch("");
+    setPinPostOffices([]);
+    setDistrictPostOffices([]);
+    setForeignPostcodeOptions([]);
+    lastPinRef.current = "";
+    lastDistrictRef.current = "";
+    setForm({
+      name: "",
+      age: "",
+      countryCode: "IN",
+      stateCode: "",
+      district: "",
+      sub_district: "",
+      locality: "",
+      pincode: "",
+      mobile_local: "",
+    });
+  }
+
   async function handleSubmit(sig: string) {
     const { name, age, district, mobile_local, pincode, sub_district, locality } = form;
     const country = selectedCountry?.name ?? "";
