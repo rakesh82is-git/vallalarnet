@@ -723,7 +723,20 @@ function DigitalTab() {
               ),
             ).map((b) => ({ value: b, label: b, keywords: b }));
             const districtSelected = !!form.district.trim();
-            if (isIndia && blockOptions.length > 0) {
+            if (isIndia && districtSelected) {
+              // Always include the current value so it stays selected
+              if (
+                form.sub_district &&
+                !blockOptions.some(
+                  (o) => o.value.toLowerCase() === form.sub_district.toLowerCase(),
+                )
+              ) {
+                blockOptions.unshift({
+                  value: form.sub_district,
+                  label: form.sub_district,
+                  keywords: form.sub_district,
+                });
+              }
               return (
                 <Combobox
                   value={form.sub_district}
@@ -731,9 +744,14 @@ function DigitalTab() {
                     setForm((s) => ({ ...s, sub_district: v, locality: "" }))
                   }
                   placeholder="Select sub-district"
-                  searchPlaceholder="Search sub-district..."
-                  emptyText="No sub-district found"
+                  searchPlaceholder="Type sub-district name (3+ chars)..."
+                  emptyText={
+                    subDistrictSearch.trim().length < 3
+                      ? "Type 3+ characters to search"
+                      : "No sub-district found"
+                  }
                   options={blockOptions}
+                  onSearchChange={setSubDistrictSearch}
                   disabled={!districtSelected}
                 />
               );
@@ -778,15 +796,32 @@ function DigitalTab() {
             );
             // Locality depends on sub-district being filled
             const disabled = !districtSelected || !subSelected;
-            if (isIndia && subSelected && localityOptions.length > 0) {
+            if (isIndia && subSelected) {
+              if (
+                form.locality &&
+                !localityOptions.some(
+                  (o) => o.value.toLowerCase() === form.locality.toLowerCase(),
+                )
+              ) {
+                localityOptions.unshift({
+                  value: form.locality,
+                  label: form.locality,
+                  keywords: form.locality,
+                });
+              }
               return (
                 <Combobox
                   value={form.locality}
                   onChange={(v) => set("locality", v)}
                   placeholder="Select locality"
-                  searchPlaceholder="Search locality..."
-                  emptyText="No locality found"
+                  searchPlaceholder="Type locality name (3+ chars)..."
+                  emptyText={
+                    localitySearch.trim().length < 3
+                      ? "Type 3+ characters to search"
+                      : "No locality found"
+                  }
                   options={localityOptions}
+                  onSearchChange={setLocalitySearch}
                   disabled={disabled}
                 />
               );
