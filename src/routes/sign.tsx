@@ -298,19 +298,19 @@ function DigitalTab() {
         const po = offices[0];
         setForm((s) => {
           const next = { ...s };
-          if (!next.stateCode) {
-            const st = State.getStatesOfCountry("IN").find(
-              (x) => x.name.toLowerCase() === po.State.toLowerCase(),
-            );
-            if (st) next.stateCode = st.isoCode;
-          }
-          if (!next.district) next.district = po.District;
-          // Only auto-pick if unambiguous; otherwise let the user choose from the dropdown
+          // Pincode entry is explicit — overwrite location fields to match.
+          const st = State.getStatesOfCountry("IN").find(
+            (x) => x.name.toLowerCase() === po.State.toLowerCase(),
+          );
+          if (st) next.stateCode = st.isoCode;
+          next.district = po.District;
+          // Suppress the district-effect refetch since we already have offices for it.
+          lastDistrictRef.current = po.District;
           const blocks = Array.from(
             new Set(offices.map((o) => o.Block).filter((b) => b && b !== "NA")),
           );
-          if (!next.sub_district && blocks.length === 1) next.sub_district = blocks[0];
-          if (!next.locality && offices.length === 1) next.locality = offices[0].Name;
+          next.sub_district = blocks.length === 1 ? blocks[0] : "";
+          next.locality = offices.length === 1 ? offices[0].Name : "";
           return next;
         });
       })
