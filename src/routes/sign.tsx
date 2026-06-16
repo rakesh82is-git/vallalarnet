@@ -137,6 +137,17 @@ function DigitalTab() {
   // India-only enrichment via api.postalpincode.in (Tiruvallur etc. with
   // authoritative block + pincode mapping). Augments the GeoNames lists.
   const [indiaPostOffices, setIndiaPostOffices] = useState<PostalOffice[]>([]);
+  // State-scoped pincode dataset that powers the Pincode dropdown only.
+  // Loaded once per State selection and then filtered down by District /
+  // Sub-District / Locality in `pincodeOptions`. Keeping it separate from
+  // `indiaPostOffices` preserves existing sub-district / locality logic.
+  type PincodeEntry = {
+    pincode: string;
+    district?: string;
+    sub_district?: string;
+    locality?: string;
+  };
+  const [statePincodes, setStatePincodes] = useState<PincodeEntry[]>([]);
   const lastPinRef = useRef<string>("");
 
   function set<K extends keyof typeof form>(k: K, v: string) {
@@ -305,6 +316,58 @@ function DigitalTab() {
       cancelled = true;
     };
   }, [isIndia, form.district, form.locality, stateName]);
+
+  // ─── State → full pincode dataset for the Pincode dropdown ───
+  // India: api.postalpincode.in/postoffice/{stateName} returns every post
+  // office in the state. Non-India: GeoNames postalCodeSearch by state name.
+  useEffect(() => {
+    if (!form.countryCode || !stateName) {
+      setStatePincodes([]);
+      return;
+    }
+    let cancelled = false;
+    if (isIndia) {
+      fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(stateName)}`)
+        .then((r) => r.json())
+        .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
+          if (cancelled) return;
+          const entry = j?.[0];
+          if (entry?.Status !== "Success" || !entry.PostOffice?.length) {
+            setStatePincodes([]);
+            return;
+          }
+          const rows: PincodeEntry[] = entry.PostOffice.filter(
+            (p) => p.State?.toLowerCase() === stateName.toLowerCase(),
+          ).map((p) => ({
+            pincode: p.Pincode ?? "",
+            district: p.District,
+            sub_district: p.Block && p.Block !== "NA" ? p.Block : undefined,
+            locality: p.Name,
+          }));
+          setStatePincodes(rows.filter((r) => r.pincode));
+        })
+        .catch(() => {
+          if (!cancelled) setStatePincodes([]);
+        });
+    } else {
+      gn.postalCodeSearch(form.countryCode, stateName).then((rows) => {
+        if (cancelled) return;
+        setStatePincodes(
+          rows
+            .filter((r) => r.postalCode)
+            .map((r) => ({
+              pincode: r.postalCode,
+              district: r.adminName2,
+              sub_district: r.adminName3,
+              locality: r.placeName,
+            })),
+        );
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [isIndia, form.countryCode, stateName]);
 
   // ─── Pincode entered → reverse-fill the address ───
   useEffect(() => {
