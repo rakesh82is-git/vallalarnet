@@ -719,10 +719,15 @@ function DigitalTab() {
                   : "Select or type postcode"
             }
             searchPlaceholder={isIndia ? "Type 6-digit pincode..." : "Type postcode..."}
-            emptyText="Pick locality first or type your pincode"
+            emptyText={
+              isIndia
+                ? "Type a 6-digit pincode and press Enter"
+                : "Type your postcode and press Enter"
+            }
             loading={lookingUpPin}
             loadingText="Looking up…"
             options={pincodeOptions}
+            allowCustomValue
           />
         </Field>
         <Field label="Mobile Number / கைபேசி எண்">
