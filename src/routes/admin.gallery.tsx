@@ -6,6 +6,9 @@ import {
   adminSaveGalleryItem,
   adminDeleteGalleryItem,
   adminUploadGalleryFile,
+  adminListFieldworkEvents,
+  adminSaveFieldworkEvent,
+  adminDeleteFieldworkEvent,
 } from "@/lib/admin.functions";
 import { toast } from "sonner";
 
@@ -19,6 +22,19 @@ type Item = {
   thumb_url: string | null;
   sort_order: number;
   created_at: string;
+  event_id?: string | null;
+};
+
+type FwEvent = {
+  id: string;
+  title_ta: string;
+  title_en: string;
+  caption_ta: string | null;
+  caption_en: string | null;
+  event_date: string | null;
+  location: string | null;
+  sort_order: number;
+  created_at: string;
 };
 
 type Draft = {
@@ -29,6 +45,7 @@ type Draft = {
   url: string;
   thumb_url: string;
   sort_order: number;
+  event_id: string | null;
 };
 
 const emptyDraft = (kind: Kind): Draft => ({
@@ -38,6 +55,29 @@ const emptyDraft = (kind: Kind): Draft => ({
   title_en: "",
   url: "",
   thumb_url: "",
+  sort_order: 0,
+  event_id: null,
+});
+
+type EventDraft = {
+  id?: string | null;
+  title_ta: string;
+  title_en: string;
+  caption_ta: string;
+  caption_en: string;
+  event_date: string;
+  location: string;
+  sort_order: number;
+};
+
+const emptyEventDraft = (): EventDraft => ({
+  id: null,
+  title_ta: "",
+  title_en: "",
+  caption_ta: "",
+  caption_en: "",
+  event_date: "",
+  location: "",
   sort_order: 0,
 });
 
@@ -50,6 +90,9 @@ function AdminGallery() {
   const save = useServerFn(adminSaveGalleryItem);
   const del = useServerFn(adminDeleteGalleryItem);
   const upload = useServerFn(adminUploadGalleryFile);
+  const listEvents = useServerFn(adminListFieldworkEvents);
+  const saveEvent = useServerFn(adminSaveFieldworkEvent);
+  const delEvent = useServerFn(adminDeleteFieldworkEvent);
 
   const [tab, setTab] = useState<Kind>("photo");
   const [items, setItems] = useState<Item[]>([]);
@@ -57,12 +100,16 @@ function AdminGallery() {
   const [draft, setDraft] = useState<Draft>(emptyDraft("photo"));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [events, setEvents] = useState<FwEvent[]>([]);
+  const [eventDraft, setEventDraft] = useState<EventDraft>(emptyEventDraft());
+  const [savingEvent, setSavingEvent] = useState(false);
 
   async function refresh() {
     setLoading(true);
     try {
-      const r = await list();
+      const [r, ev] = await Promise.all([list(), listEvents().catch(() => ({ items: [] as FwEvent[] }))]);
       setItems(r.items as Item[]);
+      setEvents((ev.items ?? []) as FwEvent[]);
     } catch (e) {
       console.error(e);
       toast.error("Could not load gallery");
@@ -91,6 +138,7 @@ function AdminGallery() {
       url: it.url,
       thumb_url: it.thumb_url ?? "",
       sort_order: it.sort_order ?? 0,
+      event_id: it.event_id ?? null,
     });
     setTab(it.kind);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -117,6 +165,7 @@ function AdminGallery() {
           url: draft.url.trim(),
           thumb_url: draft.thumb_url.trim() || null,
           sort_order: Number(draft.sort_order) || 0,
+          event_id: draft.kind === "fieldwork" ? draft.event_id : null,
         },
       });
       toast.success(draft.id ? "Updated" : "Added");
@@ -140,6 +189,63 @@ function AdminGallery() {
       console.error(e);
       toast.error("Delete failed");
     }
+  }
+
+  async function handleSaveEvent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!eventDraft.title_ta.trim() || !eventDraft.title_en.trim()) {
+      toast.error("Event title (TA/EN) required");
+      return;
+    }
+    setSavingEvent(true);
+    try {
+      await saveEvent({
+        data: {
+          id: eventDraft.id || undefined,
+          title_ta: eventDraft.title_ta.trim(),
+          title_en: eventDraft.title_en.trim(),
+          caption_ta: eventDraft.caption_ta.trim() || null,
+          caption_en: eventDraft.caption_en.trim() || null,
+          event_date: eventDraft.event_date.trim() || null,
+          location: eventDraft.location.trim() || null,
+          sort_order: Number(eventDraft.sort_order) || 0,
+        },
+      });
+      toast.success(eventDraft.id ? "Event updated" : "Event created");
+      setEventDraft(emptyEventDraft());
+      await refresh();
+    } catch (e) {
+      console.error(e);
+      toast.error("Save event failed — did you run the SQL?");
+    } finally {
+      setSavingEvent(false);
+    }
+  }
+
+  async function handleDeleteEvent(id: string) {
+    if (!confirm("Delete this event? Its items become un-grouped.")) return;
+    try {
+      await delEvent({ data: { id } });
+      toast.success("Event deleted");
+      await refresh();
+    } catch (e) {
+      console.error(e);
+      toast.error("Delete failed");
+    }
+  }
+
+  function startEditEvent(ev: FwEvent) {
+    setEventDraft({
+      id: ev.id,
+      title_ta: ev.title_ta,
+      title_en: ev.title_en,
+      caption_ta: ev.caption_ta ?? "",
+      caption_en: ev.caption_en ?? "",
+      event_date: ev.event_date ?? "",
+      location: ev.location ?? "",
+      sort_order: ev.sort_order ?? 0,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function handleFile(file: File, target: "url" | "thumb_url") {
@@ -190,6 +296,92 @@ function AdminGallery() {
           </button>
         ))}
       </div>
+
+      {tab === "fieldwork" && (
+        <section className="rounded-3xl bg-card ring-1 ring-border p-5 md:p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-bold">
+              {eventDraft.id ? "Edit event" : "Add fieldwork event"}
+            </h2>
+            {eventDraft.id && (
+              <button
+                type="button"
+                onClick={() => setEventDraft(emptyEventDraft())}
+                className="text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground"
+              >
+                Cancel edit
+              </button>
+            )}
+          </div>
+          <form onSubmit={handleSaveEvent} className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-3">
+              <Field label="Title (Tamil)">
+                <input type="text" value={eventDraft.title_ta}
+                  onChange={(e) => setEventDraft({ ...eventDraft, title_ta: e.target.value })}
+                  className={inputCls} />
+              </Field>
+              <Field label="Title (English)">
+                <input type="text" value={eventDraft.title_en}
+                  onChange={(e) => setEventDraft({ ...eventDraft, title_en: e.target.value })}
+                  className={inputCls} />
+              </Field>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+              <Field label="Caption (Tamil)">
+                <textarea rows={3} value={eventDraft.caption_ta}
+                  onChange={(e) => setEventDraft({ ...eventDraft, caption_ta: e.target.value })}
+                  className={inputCls} />
+              </Field>
+              <Field label="Caption (English)">
+                <textarea rows={3} value={eventDraft.caption_en}
+                  onChange={(e) => setEventDraft({ ...eventDraft, caption_en: e.target.value })}
+                  className={inputCls} />
+              </Field>
+            </div>
+            <div className="grid md:grid-cols-3 gap-3">
+              <Field label="Date">
+                <input type="date" value={eventDraft.event_date}
+                  onChange={(e) => setEventDraft({ ...eventDraft, event_date: e.target.value })}
+                  className={inputCls} />
+              </Field>
+              <Field label="Location">
+                <input type="text" value={eventDraft.location}
+                  onChange={(e) => setEventDraft({ ...eventDraft, location: e.target.value })}
+                  className={inputCls} />
+              </Field>
+              <Field label="Sort order">
+                <input type="number" value={eventDraft.sort_order}
+                  onChange={(e) => setEventDraft({ ...eventDraft, sort_order: Number(e.target.value) })}
+                  className={inputCls} />
+              </Field>
+            </div>
+            <button type="submit" disabled={savingEvent}
+              className="rounded-full bg-primary text-primary-foreground px-6 py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-50">
+              {savingEvent ? "Saving…" : eventDraft.id ? "Save event" : "Add event"}
+            </button>
+          </form>
+
+          {events.length > 0 && (
+            <ul className="grid sm:grid-cols-2 gap-2 pt-2">
+              {events.map((ev) => (
+                <li key={ev.id} className="rounded-xl ring-1 ring-border p-3 text-sm">
+                  <p className="font-medium">{ev.title_en}</p>
+                  <p className="text-xs text-muted-foreground">{ev.title_ta}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {[ev.event_date, ev.location].filter(Boolean).join(" · ") || "—"}
+                  </p>
+                  <div className="flex gap-2 pt-2">
+                    <button onClick={() => startEditEvent(ev)}
+                      className="text-xs rounded-full px-3 py-1 ring-1 ring-border hover:bg-secondary">Edit</button>
+                    <button onClick={() => handleDeleteEvent(ev.id)}
+                      className="text-xs rounded-full px-3 py-1 ring-1 ring-destructive/40 text-destructive hover:bg-destructive/10">Delete</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <form
         onSubmit={handleSave}
@@ -258,6 +450,24 @@ function AdminGallery() {
             className="text-sm"
           />
         </Field>
+
+        {tab === "fieldwork" && (
+          <Field label="Event (group this media under a fieldwork event)">
+            <select
+              value={draft.event_id ?? ""}
+              onChange={(e) => setDraft({ ...draft, event_id: e.target.value || null })}
+              className={inputCls}
+            >
+              <option value="">— Ungrouped —</option>
+              {events.map((ev) => (
+                <option key={ev.id} value={ev.id}>
+                  {ev.title_en}
+                  {ev.event_date ? ` (${ev.event_date})` : ""}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
 
         {tab !== "photo" && (
           <>

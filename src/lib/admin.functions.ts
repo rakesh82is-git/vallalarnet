@@ -132,6 +132,7 @@ type GalleryItem = {
   thumb_url: string | null;
   sort_order: number;
   created_at: string;
+  event_id?: string | null;
 };
 
 export const adminListGallery = createServerFn({ method: "GET" }).handler(
@@ -157,6 +158,7 @@ const GalleryUpsert = z.object({
   url: z.string().trim().min(1).max(2000),
   thumb_url: z.string().trim().max(2000).optional().nullable(),
   sort_order: z.number().int().min(0).max(9999).default(0),
+  event_id: z.string().uuid().optional().nullable(),
 });
 
 function extractYouTubeId(url: string): string | null {
@@ -186,6 +188,7 @@ export const adminSaveGalleryItem = createServerFn({ method: "POST" })
       url: data.url,
       thumb_url: thumb,
       sort_order: data.sort_order ?? 0,
+      event_id: data.kind === "fieldwork" ? (data.event_id ?? null) : null,
     };
     if (data.id) {
       const { error } = await sb
@@ -252,4 +255,94 @@ export const adminUploadGalleryFile = createServerFn({ method: "POST" })
 
     const { data: pub } = sb.storage.from("gallery").getPublicUrl(path);
     return { ok: true as const, url: pub.publicUrl, path };
+  });
+
+// ---- Fieldwork events --------------------------------------------------
+
+type FieldworkEvent = {
+  id: string;
+  title_ta: string;
+  title_en: string;
+  caption_ta: string | null;
+  caption_en: string | null;
+  event_date: string | null;
+  location: string | null;
+  sort_order: number;
+  created_at: string;
+};
+
+export const adminListFieldworkEvents = createServerFn({ method: "GET" }).handler(
+  async () => {
+    await requireAdmin();
+    const sb = await getBackend();
+    const { data, error } = await sb
+      .from("fieldwork_events")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("event_date", { ascending: false });
+    if (error) return { items: [] as FieldworkEvent[], error: error.message };
+    return { items: (data ?? []) as FieldworkEvent[] };
+  },
+);
+
+const FieldworkEventUpsert = z.object({
+  id: z.string().uuid().optional().nullable(),
+  title_ta: z.string().trim().min(1).max(300),
+  title_en: z.string().trim().min(1).max(300),
+  caption_ta: z.string().trim().max(4000).optional().nullable(),
+  caption_en: z.string().trim().max(4000).optional().nullable(),
+  event_date: z.string().trim().max(20).optional().nullable(),
+  location: z.string().trim().max(200).optional().nullable(),
+  sort_order: z.number().int().min(0).max(9999).default(0),
+});
+
+export const adminSaveFieldworkEvent = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => FieldworkEventUpsert.parse(d))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const sb = await getBackend();
+    const payload = {
+      title_ta: data.title_ta,
+      title_en: data.title_en,
+      caption_ta: data.caption_ta?.trim() || null,
+      caption_en: data.caption_en?.trim() || null,
+      event_date: data.event_date?.trim() || null,
+      location: data.location?.trim() || null,
+      sort_order: data.sort_order ?? 0,
+    };
+    if (data.id) {
+      const { error } = await sb
+        .from("fieldwork_events")
+        .update(payload)
+        .eq("id", data.id);
+      if (error) throw new Error(error.message);
+      return { ok: true as const, id: data.id };
+    }
+    const { data: row, error } = await sb
+      .from("fieldwork_events")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { ok: true as const, id: row.id as string };
+  });
+
+export const adminDeleteFieldworkEvent = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const sb = await getBackend();
+    // Detach items first so they aren't deleted by FK
+    await sb
+      .from("gallery_items")
+      .update({ event_id: null })
+      .eq("event_id", data.id);
+    const { error } = await sb
+      .from("fieldwork_events")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
   });

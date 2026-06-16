@@ -4,7 +4,7 @@ import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useT, useLang } from "@/i18n/context";
-import { listGallery } from "@/lib/petition.functions";
+import { listGallery, listFieldworkEvents } from "@/lib/petition.functions";
 
 // Map seeded `/seed/<name>.jpg` paths to bundled assets (URL strings)
 import sanctuaryImg from "@/assets/sanctuary.jpg";
@@ -31,6 +31,10 @@ function extractYouTubeId(url: string): string | null {
 }
 
 const opts = queryOptions({ queryKey: ["gallery"], queryFn: () => listGallery() });
+const fwOpts = queryOptions({
+  queryKey: ["fieldwork-events"],
+  queryFn: () => listFieldworkEvents(),
+});
 
 export const Route = createFileRoute("/gallery")({
   head: () => ({
@@ -41,7 +45,10 @@ export const Route = createFileRoute("/gallery")({
       { property: "og:image", content: gatheringImg },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(opts),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(opts);
+    context.queryClient.ensureQueryData(fwOpts);
+  },
   component: GalleryPage,
 });
 
@@ -51,15 +58,54 @@ function GalleryPage() {
   const t = useT();
   const { lang } = useLang();
   const { data } = useSuspenseQuery(opts);
+  const { data: fw } = useSuspenseQuery(fwOpts);
   const [lightbox, setLightbox] = useState<Item | null>(null);
 
   const groups = useMemo(() => ({
     photo: data.filter((i) => i.kind === "photo"),
     video: data.filter((i) => i.kind === "video"),
-    fieldwork: data.filter((i) => i.kind === "fieldwork"),
   }), [data]);
 
   const title = (it: Item) => (lang === "ta" ? it.title_ta : it.title_en);
+  const fmtDate = (d: string | null) => {
+    if (!d) return null;
+    try {
+      return new Date(d).toLocaleDateString(lang === "ta" ? "ta-IN" : "en-IN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return d;
+    }
+  };
+
+  const renderItem = (it: Item, i: number) => (
+    <button
+      key={it.id}
+      onClick={() => setLightbox(it)}
+      className="group relative aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-border bg-secondary text-left animate-reveal"
+      style={{ animationDelay: `${i * 40}ms` }}
+    >
+      <img
+        src={resolve(it.thumb_url || it.url)}
+        alt={title(it)}
+        loading="lazy"
+        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-background/0 to-transparent" />
+      {/\.(mp4|webm|mov)(\?|$)/i.test(it.url) || it.kind === "video" ? (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="size-12 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-xl">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          </div>
+        </div>
+      ) : null}
+      <div className="absolute bottom-3 left-3 right-3">
+        <p className="text-sm font-medium text-foreground line-clamp-1">{title(it)}</p>
+      </div>
+    </button>
+  );
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
@@ -76,42 +122,64 @@ function GalleryPage() {
           <TabsTrigger value="fieldwork">{t.gallery.tabFieldwork}</TabsTrigger>
         </TabsList>
 
-        {(["photo", "video", "fieldwork"] as const).map((k) => (
+        {(["photo", "video"] as const).map((k) => (
           <TabsContent key={k} value={k}>
             {groups[k].length === 0 ? (
               <p className="text-center text-muted-foreground py-12 italic">{t.gallery.empty}</p>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {groups[k].map((it, i) => (
-                  <button
-                    key={it.id}
-                    onClick={() => setLightbox(it)}
-                    className="group relative aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-border bg-secondary text-left animate-reveal"
-                    style={{ animationDelay: `${i * 50}ms` }}
-                  >
-                    <img
-                      src={resolve(it.thumb_url || it.url)}
-                      alt={title(it)}
-                      loading="lazy"
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-background/0 to-transparent" />
-                    {it.kind === "video" && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="size-12 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-xl">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                        </div>
-                      </div>
-                    )}
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <p className="text-sm font-medium text-foreground line-clamp-1">{title(it)}</p>
-                    </div>
-                  </button>
-                ))}
+                {groups[k].map((it, i) => renderItem(it as Item, i))}
               </div>
             )}
           </TabsContent>
         ))}
+
+        <TabsContent value="fieldwork">
+          {fw.events.length === 0 && fw.ungrouped.length === 0 ? (
+            <p className="text-center text-muted-foreground py-12 italic">{t.gallery.empty}</p>
+          ) : (
+            <div className="space-y-12">
+              {fw.events.map((ev) => (
+                <section key={ev.id} className="animate-reveal">
+                  <header className="mb-4 border-l-2 border-accent pl-4">
+                    <h2 className="text-xl md:text-2xl font-display font-bold">
+                      {lang === "ta" ? ev.title_ta : ev.title_en}
+                    </h2>
+                    {(ev.event_date || ev.location) && (
+                      <p className="mt-1 text-xs font-mono uppercase tracking-[0.2em] text-accent">
+                        {[fmtDate(ev.event_date), ev.location].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                    {(lang === "ta" ? ev.caption_ta : ev.caption_en) && (
+                      <p className="mt-2 text-sm text-muted-foreground max-w-3xl">
+                        {lang === "ta" ? ev.caption_ta : ev.caption_en}
+                      </p>
+                    )}
+                  </header>
+                  {ev.items.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">—</p>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {ev.items.map((it, i) => renderItem(it as Item, i))}
+                    </div>
+                  )}
+                </section>
+              ))}
+              {fw.ungrouped.length > 0 && (
+                <section className="animate-reveal">
+                  <header className="mb-4 border-l-2 border-border pl-4">
+                    <h2 className="text-xl md:text-2xl font-display font-bold text-muted-foreground">
+                      {lang === "ta" ? "மற்றவை" : "Other"}
+                    </h2>
+                  </header>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {fw.ungrouped.map((it, i) => renderItem(it as Item, i))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>

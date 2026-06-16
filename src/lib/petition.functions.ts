@@ -38,6 +38,18 @@ type GalleryItem = {
   title_ta: string;
   title_en: string;
   sort_order: number;
+  event_id?: string | null;
+};
+
+type FieldworkEvent = {
+  id: string;
+  title_ta: string;
+  title_en: string;
+  caption_ta: string | null;
+  caption_en: string | null;
+  event_date: string | null;
+  location: string | null;
+  sort_order: number;
 };
 
 function emptyStats() {
@@ -388,3 +400,39 @@ export const listGallery = createServerFn({ method: "GET" }).handler(async () =>
   if (error) return [];
   return (data ?? []) as GalleryItem[];
 });
+
+export const listFieldworkEvents = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const sb = await getBackendClient();
+    if (!sb) return { events: [] as Array<FieldworkEvent & { items: GalleryItem[] }>, ungrouped: [] as GalleryItem[] };
+
+    const { data: events, error: evErr } = await sb
+      .from("fieldwork_events")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("event_date", { ascending: false });
+
+    // Table may not exist yet — degrade to a flat ungrouped list.
+    if (evErr) {
+      const { data: items } = await sb
+        .from("gallery_items")
+        .select("*")
+        .eq("kind", "fieldwork")
+        .order("sort_order", { ascending: true });
+      return { events: [], ungrouped: (items ?? []) as GalleryItem[] };
+    }
+
+    const { data: items } = await sb
+      .from("gallery_items")
+      .select("*")
+      .eq("kind", "fieldwork")
+      .order("sort_order", { ascending: true });
+    const all = (items ?? []) as GalleryItem[];
+    const grouped = (events ?? []).map((e: FieldworkEvent) => ({
+      ...e,
+      items: all.filter((it) => it.event_id === e.id),
+    }));
+    const ungrouped = all.filter((it) => !it.event_id);
+    return { events: grouped, ungrouped };
+  },
+);
