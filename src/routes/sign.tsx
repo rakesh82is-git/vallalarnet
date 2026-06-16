@@ -436,7 +436,7 @@ function DigitalTab() {
         if (cancelled) return;
         const entry = j?.[0];
         if (entry?.Status !== "Success" || !entry.PostOffice?.length) return;
-        const candidates = entry.PostOffice.filter((p) => {
+        const candidates = [...entry.PostOffice, ...knownIndianPostOffices].filter((p) => {
           if (stateName && !sameText(p.State, stateName)) return false;
           if (form.district && !sameText(p.District, form.district)) return false;
           const block = usableBlock(p.Block);
@@ -485,7 +485,10 @@ function DigitalTab() {
         .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
           const entry = j?.[0];
           if (entry?.Status !== "Success" || !entry.PostOffice?.length) return;
-          const offices = entry.PostOffice;
+          const offices = [
+            ...entry.PostOffice,
+            ...knownIndianPostOffices.filter((p) => sameText(p.Pincode, pin)),
+          ];
           setIndiaPostOffices(offices);
           setStatePincodes((rows) => {
             const next = new Map(
