@@ -453,7 +453,14 @@ function DigitalTab() {
           />
         </Field>
         <Field label="District / மாவட்டம்">
-          {cities.length > 0 ? (
+          {(() => {
+            const cityNames = Array.from(new Set(cities.map((c) => c.name)));
+            const hasMatch =
+              !form.district ||
+              cityNames.some(
+                (n) => n.toLowerCase() === form.district.toLowerCase(),
+              );
+            return cities.length > 0 && hasMatch ? (
             <Combobox
               value={form.district}
               onChange={(v) =>
@@ -481,7 +488,8 @@ function DigitalTab() {
               placeholder={form.stateCode ? "Enter district" : "Select state first"}
               disabled={!form.stateCode}
             />
-          )}
+            );
+          })()}
         </Field>
         <Field
           label={
