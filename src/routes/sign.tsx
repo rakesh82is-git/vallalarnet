@@ -104,11 +104,17 @@ function DigitalTab() {
     countryCode: "IN",
     stateCode: "",
     district: "",
+    sub_district: "",
+    locality: "",
+    pincode: "",
     mobile_local: "",
   });
   const [signOpen, setSignOpen] = useState(false);
   const [pendingSig, setPendingSig] = useState<string | null>(null);
   const [result, setResult] = useState<{ id: string; name: string; voteNumber: number } | null>(null);
+  const [geoTried, setGeoTried] = useState(false);
+  const [lookingUpPin, setLookingUpPin] = useState(false);
+  const lastPinRef = useRef<string>("");
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((s) => ({ ...s, [k]: v }));
@@ -133,13 +139,105 @@ function DigitalTab() {
   const dialCode = selectedCountry?.phonecode
     ? `+${selectedCountry.phonecode.replace(/^\+/, "")}`
     : "";
+  const isIndia = form.countryCode === "IN";
+
+  // ─── Auto-fill via geolocation (one-shot, on mount) ───
+  useEffect(() => {
+    if (geoTried) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    setGeoTried(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`,
+            { headers: { Accept: "application/json" } },
+          );
+          if (!r.ok) return;
+          const j = (await r.json()) as {
+            address?: Record<string, string>;
+          };
+          const a = j.address ?? {};
+          const iso = (a.country_code || "").toUpperCase();
+          const stateName = a.state || a.region || "";
+          const districtName =
+            a.state_district || a.county || a.district || a.city_district || a.city || "";
+          const subDistrict =
+            a.suburb || a.town || a.village || a.municipality || a.subdistrict || "";
+          const localityName = a.neighbourhood || a.hamlet || a.suburb || a.locality || a.road || "";
+          const pin = a.postcode || "";
+          setForm((s) => {
+            const next = { ...s };
+            if (iso && !next.stateCode && !next.district) next.countryCode = iso;
+            if (!next.pincode && pin) next.pincode = pin;
+            if (!next.sub_district && subDistrict) next.sub_district = subDistrict;
+            if (!next.locality && localityName) next.locality = localityName;
+            // Try to map state name → ISO code in the target country
+            const targetIso = iso || next.countryCode;
+            if (targetIso && stateName && !next.stateCode) {
+              const st = State.getStatesOfCountry(targetIso).find(
+                (x) => x.name.toLowerCase() === stateName.toLowerCase(),
+              );
+              if (st) next.stateCode = st.isoCode;
+            }
+            if (!next.district && districtName) next.district = districtName;
+            return next;
+          });
+        } catch {
+          /* ignore */
+        }
+      },
+      () => {
+        /* permission denied or unavailable — silent fallback to pincode entry */
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 600_000 },
+    );
+  }, [geoTried]);
+
+  // ─── India pincode → state/district/sub-district/locality lookup ───
+  useEffect(() => {
+    if (!isIndia) return;
+    const pin = form.pincode.trim();
+    if (!/^\d{6}$/.test(pin)) return;
+    if (pin === lastPinRef.current) return;
+    lastPinRef.current = pin;
+    setLookingUpPin(true);
+    fetch(`https://api.postalpincode.in/pincode/${pin}`)
+      .then((r) => r.json())
+      .then((j: Array<{ Status: string; PostOffice?: Array<{ State: string; District: string; Block: string; Name: string; Division: string }> }>) => {
+        const entry = j?.[0];
+        if (!entry || entry.Status !== "Success" || !entry.PostOffice?.length) return;
+        const po = entry.PostOffice[0];
+        setForm((s) => {
+          const next = { ...s };
+          if (!next.stateCode) {
+            const st = State.getStatesOfCountry("IN").find(
+              (x) => x.name.toLowerCase() === po.State.toLowerCase(),
+            );
+            if (st) next.stateCode = st.isoCode;
+          }
+          if (!next.district) next.district = po.District;
+          if (!next.sub_district && po.Block && po.Block !== "NA") next.sub_district = po.Block;
+          if (!next.locality) next.locality = po.Name;
+          return next;
+        });
+      })
+      .catch(() => {
+        /* ignore */
+      })
+      .finally(() => setLookingUpPin(false));
+  }, [form.pincode, isIndia]);
 
   function validateForm(): boolean {
-    const { name, age, district, mobile_local } = form;
+    const { name, age, district, mobile_local, pincode, sub_district, locality } = form;
     const country = selectedCountry?.name ?? "";
     const state = states.find((s) => s.isoCode === form.stateCode)?.name ?? "";
     if (!name || !age || !country || !state || !district || !mobile_local) {
       toast.error("Please fill in all fields");
+      return false;
+    }
+    if (isIndia && (!pincode || !sub_district || !locality)) {
+      toast.error("Pincode, Sub-District and Locality are required for India");
       return false;
     }
     const ageNum = Number(age);
@@ -157,7 +255,7 @@ function DigitalTab() {
   }
 
   async function handleSubmit(sig: string) {
-    const { name, age, district, mobile_local } = form;
+    const { name, age, district, mobile_local, pincode, sub_district, locality } = form;
     const country = selectedCountry?.name ?? "";
     const state = states.find((s) => s.isoCode === form.stateCode)?.name ?? "";
     const ageNum = Number(age);
@@ -171,6 +269,9 @@ function DigitalTab() {
           country,
           state,
           district,
+          sub_district: sub_district || null,
+          locality: locality || null,
+          pincode: pincode || null,
           mobile_number,
           signature_image: sig,
         },
@@ -264,6 +365,51 @@ function DigitalTab() {
               disabled={!form.stateCode}
             />
           )}
+        </Field>
+        <Field
+          label={
+            isIndia
+              ? "Sub-District / வட்டம்"
+              : "Sub-District / County (optional)"
+          }
+        >
+          <Input
+            value={form.sub_district}
+            onChange={(e) => set("sub_district", e.target.value)}
+            maxLength={120}
+            placeholder={isIndia ? "Taluk / Block" : "Optional"}
+          />
+        </Field>
+        <Field
+          label={isIndia ? "Locality / ஊர்" : "Locality / City (optional)"}
+        >
+          <Input
+            value={form.locality}
+            onChange={(e) => set("locality", e.target.value)}
+            maxLength={160}
+            placeholder={isIndia ? "Village / Town / Area" : "Optional"}
+          />
+        </Field>
+        <Field
+          label={
+            isIndia
+              ? "Pincode / அஞ்சல் குறியீடு"
+              : "Postcode (optional)"
+          }
+        >
+          <Input
+            inputMode="numeric"
+            value={form.pincode}
+            onChange={(e) => set("pincode", e.target.value)}
+            maxLength={20}
+            placeholder={
+              isIndia
+                ? lookingUpPin
+                  ? "Looking up…"
+                  : "6-digit pincode (auto-fills state & district)"
+                : "Optional"
+            }
+          />
         </Field>
         <Field label="Mobile Number / கைபேசி எண்">
           <div className="flex">
