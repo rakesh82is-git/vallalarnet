@@ -47,12 +47,12 @@ function Index() {
         <div className="absolute top-32 left-1/2 size-[680px] -translate-x-1/2 rounded-full bg-accent/25 blur-[140px] animate-glow pointer-events-none" />
         <div className="relative max-w-6xl mx-auto">
           <p className="text-center text-xs font-mono uppercase tracking-[0.3em] text-accent mb-5">
-            ── {t.home.eyebrow.map((line, i) => (
+            {t.home.eyebrow.map((line, i) => (
               <span key={i}>
                 {line}
                 {i < t.home.eyebrow.length - 1 && <br />}
               </span>
-            ))} ──
+            ))}
           </p>
           <div className="relative aspect-[16/7] rounded-3xl overflow-hidden ring-1 ring-border shadow-2xl shadow-primary/10 mb-10 animate-reveal">
             <img
