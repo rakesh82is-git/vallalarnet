@@ -213,6 +213,12 @@ function DigitalTab() {
   // from the best available selection level, then filtered by the current
   // State / District / Sub-District / Locality in `pincodeOptions`.
   const [statePincodes, setStatePincodes] = useState<PincodeEntry[]>([]);
+  // India-only: full static post-office dataset for the selected state.
+  // Same source powers District / Sub-District / Locality / Pincode dropdowns
+  // and the reverse pincode lookup, keeping the forward cascade and the
+  // reverse fill 100% consistent.
+  const [inRows, setInRows] = useState<InRow[]>([]);
+  const [loadingIn, setLoadingIn] = useState(false);
   const lastPinRef = useRef<string>("");
 
   function set<K extends keyof typeof form>(k: K, v: string) {
