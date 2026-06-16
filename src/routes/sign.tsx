@@ -206,12 +206,7 @@ function DigitalTab() {
   const [loadingLocality, setLoadingLocality] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
 
-  // India-only enrichment via api.postalpincode.in (Tiruvallur etc. with
-  // authoritative block + pincode mapping). Augments the GeoNames lists.
-  const [indiaPostOffices, setIndiaPostOffices] = useState<PostalOffice[]>([]);
-  // Pincode dataset that powers the Pincode dropdown only. It is widened
-  // from the best available selection level, then filtered by the current
-  // State / District / Sub-District / Locality in `pincodeOptions`.
+  // Pincode dataset (non-India) — for India, see `inRows` below.
   const [statePincodes, setStatePincodes] = useState<PincodeEntry[]>([]);
   // India-only: full static post-office dataset for the selected state.
   // Same source powers District / Sub-District / Locality / Pincode dropdowns
