@@ -621,8 +621,17 @@ function DigitalTab() {
         </Field>
         <Field label="District / மாவட்டம்">
           {(() => {
+            let sourceNames: string[] = [];
+            if (isIndia) {
+              const stateName = states.find((s) => s.isoCode === form.stateCode)?.name;
+              sourceNames = (stateName && indiaDistrictsByState[stateName]) || [];
+            } else {
+              sourceNames = cities.map((c) => c.name);
+            }
             const districtOptions = Array.from(
-              new Map(cities.map((c) => [c.name, { value: c.name, label: c.name, keywords: c.name }])).values(),
+              new Map(
+                sourceNames.map((n) => [n, { value: n, label: n, keywords: n }]),
+              ).values(),
             );
             if (form.district && !districtOptions.some((o) => o.value.toLowerCase() === form.district.toLowerCase())) {
               districtOptions.unshift({ value: form.district, label: form.district, keywords: form.district });
