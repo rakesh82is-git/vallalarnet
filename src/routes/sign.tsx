@@ -528,40 +528,39 @@ function DigitalTab() {
         </Field>
         <Field label="District / மாவட்டம்">
           {(() => {
-            const cityNames = Array.from(new Set(cities.map((c) => c.name)));
-            const hasMatch =
-              !form.district ||
-              cityNames.some(
-                (n) => n.toLowerCase() === form.district.toLowerCase(),
-              );
-            return cities.length > 0 && hasMatch ? (
-            <Combobox
-              value={form.district}
-              onChange={(v) =>
-                setForm((s) => ({ ...s, district: v, sub_district: "", locality: "" }))
-              }
-              placeholder="Select district"
-              searchPlaceholder="Search district..."
-              emptyText="No district found"
-              options={Array.from(
-                new Map(cities.map((c) => [c.name, { value: c.name, label: c.name }])).values(),
-              )}
-            />
-          ) : (
-            <Input
-              value={form.district}
-              onChange={(e) =>
-                setForm((s) => ({
-                  ...s,
-                  district: e.target.value,
-                  sub_district: "",
-                  locality: "",
-                }))
-              }
-              maxLength={80}
-              placeholder={form.stateCode ? "Enter district" : "Select state first"}
-              disabled={!form.stateCode}
-            />
+            const districtOptions = Array.from(
+              new Map(cities.map((c) => [c.name, { value: c.name, label: c.name, keywords: c.name }])).values(),
+            );
+            if (form.district && !districtOptions.some((o) => o.value.toLowerCase() === form.district.toLowerCase())) {
+              districtOptions.unshift({ value: form.district, label: form.district, keywords: form.district });
+            }
+            return districtOptions.length > 0 ? (
+              <Combobox
+                value={form.district}
+                onChange={(v) =>
+                  setForm((s) => ({ ...s, district: v, sub_district: "", locality: "" }))
+                }
+                placeholder="Select district"
+                searchPlaceholder="Search district..."
+                emptyText="No district found"
+                options={districtOptions}
+                disabled={!form.stateCode}
+              />
+            ) : (
+              <Input
+                value={form.district}
+                onChange={(e) =>
+                  setForm((s) => ({
+                    ...s,
+                    district: e.target.value,
+                    sub_district: "",
+                    locality: "",
+                  }))
+                }
+                maxLength={80}
+                placeholder={form.stateCode ? "Enter district" : "Select state first"}
+                disabled={!form.stateCode}
+              />
             );
           })()}
         </Field>
