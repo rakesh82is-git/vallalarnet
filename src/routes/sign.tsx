@@ -54,11 +54,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 type PostalOffice = {
-  State: string;
-  District: string;
-  Block?: string;
-  Name: string;
-  Pincode?: string;
+  State: string | null;
+  District: string | null;
+  Block?: string | null;
+  Name: string | null;
+  Pincode?: string | null;
 };
 
 type PincodeEntry = {
@@ -70,10 +70,35 @@ type PincodeEntry = {
 
 const clean = (value?: string | null) => (value ?? "").trim().toLowerCase();
 const sameText = (a?: string | null, b?: string | null) => !!clean(a) && clean(a) === clean(b);
+const preferredLocality = "Vadalur";
 const usableBlock = (block?: string | null) => {
   const value = (block ?? "").trim();
   return value && value.toLowerCase() !== "na" ? value : "";
 };
+
+function scorePostalOffice(
+  office: PostalOffice,
+  address: { stateName?: string; district?: string; sub_district?: string; locality?: string },
+) {
+  let score = 0;
+  if (address.stateName && sameText(office.State, address.stateName)) score += 8;
+  if (address.district && sameText(office.District, address.district)) score += 16;
+  if (address.sub_district && sameText(usableBlock(office.Block), address.sub_district)) score += 32;
+  if (address.locality && sameText(office.Name, address.locality)) score += 128;
+  if (!address.locality && sameText(office.Name, preferredLocality)) score += 4;
+  return score;
+}
+
+function choosePostalOffice(
+  offices: PostalOffice[],
+  address: { stateName?: string; district?: string; sub_district?: string; locality?: string },
+) {
+  return [...offices].sort(
+    (a, b) =>
+      scorePostalOffice(b, address) - scorePostalOffice(a, address) ||
+      Number(sameText(b.Name, preferredLocality)) - Number(sameText(a.Name, preferredLocality)),
+  )[0];
+}
 
 function postalOfficeToPincodeEntry(po: PostalOffice): PincodeEntry {
   return {
