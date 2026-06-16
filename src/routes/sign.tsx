@@ -122,13 +122,10 @@ function DigitalTab() {
   const [result, setResult] = useState<{ id: string; name: string; voteNumber: number } | null>(null);
   const [geoTried, setGeoTried] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
+  const [pinSearch, setPinSearch] = useState("");
   const lastPinRef = useRef<string>("");
-  const [pinPostOffices, setPinPostOffices] = useState<
-    Array<{ State: string; District: string; Block: string; Name: string }>
-  >([]);
-  const [districtPostOffices, setDistrictPostOffices] = useState<
-    Array<{ State: string; District: string; Block: string; Name: string }>
-  >([]);
+  const [pinPostOffices, setPinPostOffices] = useState<PostalOffice[]>([]);
+  const [districtPostOffices, setDistrictPostOffices] = useState<PostalOffice[]>([]);
   const lastDistrictRef = useRef<string>("");
 
   function set<K extends keyof typeof form>(k: K, v: string) {
