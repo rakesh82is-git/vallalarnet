@@ -359,7 +359,10 @@ function DigitalTab() {
           if (form.district && !sameText(p.District, form.district)) return false;
           return true;
         });
-        setIndiaPostOffices(wanted.length ? wanted : entry.PostOffice);
+        const known = knownIndianPostOffices.filter((p) =>
+          officeMatchesAddress(p, { stateName, district: form.district }),
+        );
+        setIndiaPostOffices([...(wanted.length ? wanted : entry.PostOffice), ...known]);
       })
       .catch(() => {});
     return () => {
@@ -395,7 +398,10 @@ function DigitalTab() {
           const rows: PincodeEntry[] = entry.PostOffice.filter((p) =>
             sameText(p.State, stateName),
           ).map(postalOfficeToPincodeEntry);
-          setStatePincodes(rows.filter((r) => r.pincode));
+          const known = knownIndianPostOffices
+            .filter((p) => officeMatchesAddress(p, { stateName, district: form.district }))
+            .map(postalOfficeToPincodeEntry);
+          setStatePincodes([...rows, ...known].filter((r) => r.pincode));
         })
         .catch(() => {
           if (!cancelled) setStatePincodes([]);
