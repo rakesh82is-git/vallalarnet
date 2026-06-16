@@ -285,6 +285,7 @@ function DigitalTab() {
           const entry = j?.[0];
           if (entry?.Status === "Success" && entry.PostOffice?.length) {
             setPinPostOffices(entry.PostOffice);
+            setForm((s) => (s.pincode === query ? s : { ...s, pincode: query }));
           }
         })
         .catch(() => {})
@@ -307,6 +308,9 @@ function DigitalTab() {
           new Set(arr.map((x) => x.address?.postcode).filter((p): p is string => !!p)),
         ).map((pin) => ({ value: pin, label: pin, keywords: pin }));
         setForeignPostcodeOptions(options);
+        if (options.some((o) => o.value === query)) {
+          setForm((s) => (s.pincode === query ? s : { ...s, pincode: query }));
+        }
       })
       .catch(() => {})
       .finally(() => {
