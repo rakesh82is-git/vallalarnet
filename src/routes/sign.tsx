@@ -71,10 +71,24 @@ type PincodeEntry = {
 const clean = (value?: string | null) => (value ?? "").trim().toLowerCase();
 const sameText = (a?: string | null, b?: string | null) => !!clean(a) && clean(a) === clean(b);
 const preferredLocality = "Vadalur";
+const knownIndianPostOffices: PostalOffice[] = [
+  { State: "Tamil Nadu", District: "Cuddalore", Block: "Panruti", Name: "Vadalur", Pincode: "607303" },
+];
 const usableBlock = (block?: string | null) => {
   const value = (block ?? "").trim();
   return value && value.toLowerCase() !== "na" ? value : "";
 };
+
+function officeMatchesAddress(
+  office: PostalOffice,
+  address: { stateName?: string; district?: string; sub_district?: string; locality?: string },
+) {
+  if (address.stateName && !sameText(office.State, address.stateName)) return false;
+  if (address.district && !sameText(office.District, address.district)) return false;
+  if (address.sub_district && !sameText(usableBlock(office.Block), address.sub_district)) return false;
+  if (address.locality && !sameText(office.Name, address.locality)) return false;
+  return true;
+}
 
 function scorePostalOffice(
   office: PostalOffice,
