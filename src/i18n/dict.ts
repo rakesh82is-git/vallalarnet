@@ -10,7 +10,12 @@ export const dict = {
       brand: "வடலூர்",
     },
     home: {
-      eyebrow: "அருட்பெருஞ்ஜோதி\nஅருட்பெருஞ்ஜோதி\nதனிப்பெருங்கருணை\nஅருட்பெருஞ்ஜோதி\n\nதனிப்பெருங்கருணை",
+      eyebrow: `அருட்பெருஞ்ஜோதி
+அருட்பெருஞ்ஜோதி
+தனிப்பெருங்கருணை
+அருட்பெருஞ்ஜோதி
+
+தனிப்பெருங்கருணை`,
       title1: "வடலூரைப்",
       title2: "புனித நகரமாக",
       title3: "அறிவிப்போம்! உயிர்களைக் காப்போம்!",
@@ -163,7 +168,12 @@ export const dict = {
       brand: "Vadalur",
     },
     home: {
-      eyebrow: "Arut Perum Jyothi\nArut Perum JyothiThani\nPerum Karunai\nArut Perum Jyothi\n\nBoundless Compassion",
+      eyebrow: `Arutperum Jyothi
+Arutperum Jyothi
+Thaniperum Karunai
+Arutperum Jyothi
+        
+Boundless Compassion`,
       title1: "Declare Vadalur",
       title2: "a Holy City",
       title3: "and protect every life",
