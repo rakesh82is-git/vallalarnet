@@ -625,7 +625,7 @@ function DigitalTab() {
             let sourceNames: string[] = [];
             if (isIndia) {
               const stateName = states.find((s) => s.isoCode === form.stateCode)?.name;
-              sourceNames = (stateName && indiaDistrictsByState[stateName]) || [];
+              sourceNames = (stateName && Object.keys(indiaPoIndex[stateName] ?? {})) || [];
             } else {
               sourceNames = cities.map((c) => c.name);
             }
@@ -704,14 +704,9 @@ function DigitalTab() {
                     setForm((s) => ({ ...s, sub_district: v, locality: "" }))
                   }
                   placeholder="Select sub-district"
-                  searchPlaceholder="Type sub-district name (3+ chars)..."
-                  emptyText={
-                    subDistrictSearch.trim().length < 3
-                      ? "Type 3+ characters to search"
-                      : "No sub-district found"
-                  }
+                  searchPlaceholder="Search sub-district..."
+                  emptyText="No sub-district found"
                   options={blockOptions}
-                  onSearchChange={setSubDistrictSearch}
                   disabled={!districtSelected}
                 />
               );
@@ -774,14 +769,9 @@ function DigitalTab() {
                   value={form.locality}
                   onChange={(v) => set("locality", v)}
                   placeholder="Select locality"
-                  searchPlaceholder="Type locality name (3+ chars)..."
-                  emptyText={
-                    localitySearch.trim().length < 3
-                      ? "Type 3+ characters to search"
-                      : "No locality found"
-                  }
+                  searchPlaceholder="Search locality..."
+                  emptyText="No locality found"
                   options={localityOptions}
-                  onSearchChange={setLocalitySearch}
                   disabled={disabled}
                 />
               );
