@@ -680,21 +680,17 @@ function DigitalTab() {
               : "Pincode / Postcode"
           }
         >
-          <Input
-            inputMode="numeric"
+          <Combobox
             value={form.pincode}
-            onChange={(e) => set("pincode", e.target.value)}
-            maxLength={20}
+            onChange={(v) => set("pincode", v)}
             disabled={!form.countryCode}
-            placeholder={
-              !form.countryCode
-                ? "Select country first"
-                : lookingUpPin
-                  ? "Looking up…"
-                  : isIndia
-                    ? "6-digit pincode (auto-fills location)"
-                    : "Postcode (auto-fills location)"
-            }
+            placeholder={!form.countryCode ? "Select country first" : "Select pincode/postcode"}
+            searchPlaceholder={isIndia ? "Type 6-digit pincode..." : "Type postcode..."}
+            emptyText={isIndia ? "Type a valid 6-digit pincode" : "Type a valid postcode"}
+            loading={lookingUpPin}
+            loadingText="Looking up…"
+            onSearchChange={setPinSearch}
+            options={pincodeOptions}
           />
         </Field>
         <Field label="Mobile Number / கைபேசி எண்">
