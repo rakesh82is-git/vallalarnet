@@ -54,10 +54,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 type PostalOffice = {
-  State: string | null;
-  District: string | null;
+  State: string;
+  District: string;
   Block?: string | null;
-  Name: string | null;
+  Name: string;
   Pincode?: string | null;
 };
 
