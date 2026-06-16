@@ -684,42 +684,24 @@ function DigitalTab() {
               : "Pincode / Postcode"
           }
         >
-          <div className="relative">
-            <Input
-              type="text"
-              inputMode={isIndia ? "numeric" : "text"}
-              value={form.pincode}
-              disabled={!form.countryCode}
-              maxLength={isIndia ? 6 : 12}
-              placeholder={
-                !form.countryCode
-                  ? "Select country first"
-                  : isIndia
-                    ? "Enter 6-digit pincode"
-                    : "Enter postcode"
-              }
-              list="pincode-suggestions"
-              onChange={(e) => {
-                const v = isIndia
-                  ? e.target.value.replace(/\D/g, "").slice(0, 6)
-                  : e.target.value;
-                set("pincode", v);
-                setPinSearch(v);
-              }}
-            />
-            <datalist id="pincode-suggestions">
-              {pincodeOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </datalist>
-            {lookingUpPin && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                Looking up…
-              </span>
-            )}
-          </div>
+          <Combobox
+            value={form.pincode}
+            onChange={(v) => set("pincode", v)}
+            disabled={!form.countryCode}
+            placeholder={
+              !form.countryCode
+                ? "Select country first"
+                : isIndia
+                  ? "Select or type pincode"
+                  : "Select or type postcode"
+            }
+            searchPlaceholder={isIndia ? "Type 6-digit pincode..." : "Type postcode..."}
+            emptyText={isIndia ? "Type a valid 6-digit pincode" : "Type a valid postcode"}
+            loading={lookingUpPin}
+            loadingText="Looking up…"
+            onSearchChange={setPinSearch}
+            options={pincodeOptions}
+          />
         </Field>
         <Field label="Mobile Number / கைபேசி எண்">
           <div className="flex">
