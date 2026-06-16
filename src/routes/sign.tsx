@@ -613,13 +613,14 @@ function DigitalTab() {
 
   const subDistrictOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
-      for (const d of subDistrictList)
-        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
     if (isIndia) {
       for (const p of indiaPostOffices) {
-        const b = p.Block;
-        if (b && b !== "NA" && !m.has(b)) m.set(b, { value: b, label: b, keywords: b });
+        const b = usableBlock(p.Block);
+        if (b && !m.has(b)) m.set(b, { value: b, label: b, keywords: b });
       }
+    } else {
+      for (const d of subDistrictList)
+        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
     }
     if (form.sub_district && !m.has(form.sub_district))
       m.set(form.sub_district, {
@@ -632,12 +633,15 @@ function DigitalTab() {
 
   const localityOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
-    for (const d of localityList) m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
     if (isIndia) {
       for (const p of indiaPostOffices) {
-        if (form.sub_district && p.Block !== form.sub_district && p.Block !== "NA") continue;
+        const block = usableBlock(p.Block);
+        if (form.sub_district && block && !sameText(block, form.sub_district)) continue;
         if (!m.has(p.Name)) m.set(p.Name, { value: p.Name, label: p.Name, keywords: p.Name });
       }
+    } else {
+      for (const d of localityList)
+        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
     }
     if (form.locality && !m.has(form.locality))
       m.set(form.locality, { value: form.locality, label: form.locality, keywords: form.locality });
