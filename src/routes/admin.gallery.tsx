@@ -150,7 +150,18 @@ function AdminGallery() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!draft.title_ta.trim() || !draft.title_en.trim() || !draft.url.trim()) {
+    // For fieldwork items grouped under an event, inherit the event's title
+    // when the per-item title is blank (the event header carries the heading).
+    let titleTa = draft.title_ta.trim();
+    let titleEn = draft.title_en.trim();
+    if (draft.kind === "fieldwork" && draft.event_id) {
+      const ev = events.find((e) => e.id === draft.event_id);
+      if (ev) {
+        if (!titleTa) titleTa = ev.title_ta;
+        if (!titleEn) titleEn = ev.title_en;
+      }
+    }
+    if (!titleTa || !titleEn || !draft.url.trim()) {
       toast.error("Title (TA/EN) and URL are required");
       return;
     }
@@ -160,8 +171,8 @@ function AdminGallery() {
         data: {
           id: draft.id || undefined,
           kind: draft.kind,
-          title_ta: draft.title_ta.trim(),
-          title_en: draft.title_en.trim(),
+          title_ta: titleTa,
+          title_en: titleEn,
           url: draft.url.trim(),
           thumb_url: draft.thumb_url.trim() || null,
           sort_order: Number(draft.sort_order) || 0,
@@ -408,6 +419,7 @@ function AdminGallery() {
               type="text"
               value={draft.title_ta}
               onChange={(e) => setDraft({ ...draft, title_ta: e.target.value })}
+              placeholder={tab === "fieldwork" ? "Leave blank to use event title" : ""}
               className={inputCls}
             />
           </Field>
@@ -416,6 +428,7 @@ function AdminGallery() {
               type="text"
               value={draft.title_en}
               onChange={(e) => setDraft({ ...draft, title_en: e.target.value })}
+              placeholder={tab === "fieldwork" ? "Leave blank to use event title" : ""}
               className={inputCls}
             />
           </Field>
