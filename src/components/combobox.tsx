@@ -25,6 +25,9 @@ type Props = {
   placeholder?: string;
   searchPlaceholder?: string;
   emptyText?: string;
+  loading?: boolean;
+  loadingText?: string;
+  onSearchChange?: (search: string) => void;
   disabled?: boolean;
 };
 
@@ -35,6 +38,9 @@ export function Combobox({
   placeholder = "Select...",
   searchPlaceholder = "Search...",
   emptyText = "No results",
+  loading = false,
+  loadingText = "Loading…",
+  onSearchChange,
   disabled,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -64,9 +70,9 @@ export function Combobox({
             return hay.includes(search.toLowerCase()) ? 1 : 0;
           }}
         >
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={searchPlaceholder} onValueChange={onSearchChange} />
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandEmpty>{loading ? loadingText : emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((o) => (
                 <CommandItem
