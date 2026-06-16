@@ -130,6 +130,8 @@ function DigitalTab() {
     Array<{ value: string; label: string; keywords: string }>
   >([]);
   const lastDistrictRef = useRef<string>("");
+  const [subDistrictSearch, setSubDistrictSearch] = useState("");
+  const [localitySearch, setLocalitySearch] = useState("");
   const [indiaDistrictsByState, setIndiaDistrictsByState] = useState<Record<string, string[]>>({});
 
   // India source-of-truth dataset for state→districts. Naming matches the
@@ -270,38 +272,77 @@ function DigitalTab() {
     );
   }, [geoTried]);
 
-  // ─── India district → sub-district/locality options ───
+  // ─── India district reset: when district changes, clear cached POs ───
+  // (postalpincode.in has no district-listing endpoint — /postoffice/{q}
+  // matches by post-office NAME, not district. We instead pull POs on
+  // demand as the user types in sub-district / locality below.)
   useEffect(() => {
     if (!isIndia) {
       setDistrictPostOffices([]);
       return;
     }
     const d = form.district.trim();
-    if (!d) {
+    if (!d || d !== lastDistrictRef.current) {
       setDistrictPostOffices([]);
-      lastDistrictRef.current = "";
-      return;
+      setSubDistrictSearch("");
+      setLocalitySearch("");
+      lastDistrictRef.current = d;
     }
-    if (d === lastDistrictRef.current) return;
-    lastDistrictRef.current = d;
-    fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(d)}`)
+  }, [form.district, isIndia]);
+
+  // ─── On-demand PO search for sub-district / locality ───
+  // Queries /postoffice/{query} as the user types, then keeps only POs
+  // whose District matches the selected district. Results are merged into
+  // districtPostOffices so the dropdowns populate.
+  useEffect(() => {
+    if (!isIndia) return;
+    const d = form.district.trim();
+    const q = (subDistrictSearch || localitySearch).trim();
+    if (!d || q.length < 3) return;
+    let cancelled = false;
+    const stateName = states
+      .find((s) => s.isoCode === form.stateCode)
+      ?.name?.toLowerCase();
+    fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(q)}`)
       .then((r) => r.json())
-      .then((j: Array<{ Status: string; PostOffice?: Array<{ State: string; District: string; Block: string; Name: string }> }>) => {
-        const entry = j?.[0];
-        if (!entry || entry.Status !== "Success" || !entry.PostOffice?.length) {
-          setDistrictPostOffices([]);
-          return;
-        }
-        const stateName = states.find((s) => s.isoCode === form.stateCode)?.name?.toLowerCase();
-        const offices = entry.PostOffice.filter(
-          (o) =>
-            o.District.toLowerCase() === d.toLowerCase() &&
-            (!stateName || o.State.toLowerCase() === stateName),
-        );
-        setDistrictPostOffices(offices);
-      })
-      .catch(() => setDistrictPostOffices([]));
-  }, [form.district, form.stateCode, isIndia, states]);
+      .then(
+        (
+          j: Array<{
+            Status: string;
+            PostOffice?: Array<{
+              State: string;
+              District: string;
+              Block: string;
+              Name: string;
+              Pincode?: string;
+            }>;
+          }>,
+        ) => {
+          if (cancelled) return;
+          const entry = j?.[0];
+          if (!entry || entry.Status !== "Success" || !entry.PostOffice?.length) return;
+          const matches = entry.PostOffice.filter(
+            (o) =>
+              o.District.toLowerCase() === d.toLowerCase() &&
+              (!stateName || o.State.toLowerCase() === stateName),
+          );
+          if (!matches.length) return;
+          setDistrictPostOffices((prev) => {
+            const map = new Map<string, PostalOffice>();
+            for (const o of [...prev, ...matches]) {
+              map.set(`${o.Pincode ?? ""}::${o.Block}::${o.Name}`, o);
+            }
+            return Array.from(map.values());
+          });
+        },
+      )
+      .catch(() => {
+        /* silent */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [subDistrictSearch, localitySearch, form.district, form.stateCode, isIndia, states]);
 
   // ─── Search valid pincode/postcode options from the selected country ───
   useEffect(() => {
@@ -682,7 +723,20 @@ function DigitalTab() {
               ),
             ).map((b) => ({ value: b, label: b, keywords: b }));
             const districtSelected = !!form.district.trim();
-            if (isIndia && blockOptions.length > 0) {
+            if (isIndia && districtSelected) {
+              // Always include the current value so it stays selected
+              if (
+                form.sub_district &&
+                !blockOptions.some(
+                  (o) => o.value.toLowerCase() === form.sub_district.toLowerCase(),
+                )
+              ) {
+                blockOptions.unshift({
+                  value: form.sub_district,
+                  label: form.sub_district,
+                  keywords: form.sub_district,
+                });
+              }
               return (
                 <Combobox
                   value={form.sub_district}
@@ -690,9 +744,14 @@ function DigitalTab() {
                     setForm((s) => ({ ...s, sub_district: v, locality: "" }))
                   }
                   placeholder="Select sub-district"
-                  searchPlaceholder="Search sub-district..."
-                  emptyText="No sub-district found"
+                  searchPlaceholder="Type sub-district name (3+ chars)..."
+                  emptyText={
+                    subDistrictSearch.trim().length < 3
+                      ? "Type 3+ characters to search"
+                      : "No sub-district found"
+                  }
                   options={blockOptions}
+                  onSearchChange={setSubDistrictSearch}
                   disabled={!districtSelected}
                 />
               );
@@ -737,15 +796,32 @@ function DigitalTab() {
             );
             // Locality depends on sub-district being filled
             const disabled = !districtSelected || !subSelected;
-            if (isIndia && subSelected && localityOptions.length > 0) {
+            if (isIndia && subSelected) {
+              if (
+                form.locality &&
+                !localityOptions.some(
+                  (o) => o.value.toLowerCase() === form.locality.toLowerCase(),
+                )
+              ) {
+                localityOptions.unshift({
+                  value: form.locality,
+                  label: form.locality,
+                  keywords: form.locality,
+                });
+              }
               return (
                 <Combobox
                   value={form.locality}
                   onChange={(v) => set("locality", v)}
                   placeholder="Select locality"
-                  searchPlaceholder="Search locality..."
-                  emptyText="No locality found"
+                  searchPlaceholder="Type locality name (3+ chars)..."
+                  emptyText={
+                    localitySearch.trim().length < 3
+                      ? "Type 3+ characters to search"
+                      : "No locality found"
+                  }
                   options={localityOptions}
+                  onSearchChange={setLocalitySearch}
                   disabled={disabled}
                 />
               );
