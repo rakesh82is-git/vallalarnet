@@ -569,6 +569,7 @@ function DigitalTab() {
     setLocalityList([]);
     setPincodeList([]);
     setIndiaPostOffices([]);
+    setStatePincodes([]);
     lastPinRef.current = "";
     setForm({
       name: "",
@@ -657,6 +658,7 @@ function DigitalTab() {
               setLocalityList([]);
               setPincodeList([]);
               setIndiaPostOffices([]);
+              setStatePincodes([]);
               lastPinRef.current = "";
               setForm((s) => ({
                 ...s,
