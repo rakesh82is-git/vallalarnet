@@ -130,6 +130,8 @@ function DigitalTab() {
     Array<{ value: string; label: string; keywords: string }>
   >([]);
   const lastDistrictRef = useRef<string>("");
+  const [subDistrictSearch, setSubDistrictSearch] = useState("");
+  const [localitySearch, setLocalitySearch] = useState("");
   const [indiaDistrictsByState, setIndiaDistrictsByState] = useState<Record<string, string[]>>({});
 
   // India source-of-truth dataset for state→districts. Naming matches the
