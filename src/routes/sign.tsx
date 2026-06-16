@@ -155,12 +155,25 @@ function DigitalTab() {
 
   // Merge district-derived + pincode-derived post offices for the dropdowns.
   const availablePostOffices = useMemo(() => {
-    const map = new Map<string, { State: string; District: string; Block: string; Name: string }>();
+    const map = new Map<string, PostalOffice>();
     for (const o of [...districtPostOffices, ...pinPostOffices]) {
-      map.set(`${o.Block}::${o.Name}`, o);
+      map.set(`${o.Pincode ?? ""}::${o.Block}::${o.Name}`, o);
     }
     return Array.from(map.values());
   }, [districtPostOffices, pinPostOffices]);
+
+  const pincodeOptions = useMemo(() => {
+    if (!isIndia) return [];
+    return Array.from(
+      new Set(
+        availablePostOffices
+          .map((o) => o.Pincode)
+          .filter((pin): pin is string => !!pin),
+      ),
+    )
+      .sort((a, b) => a.localeCompare(b))
+      .map((pin) => ({ value: pin, label: pin, keywords: pin }));
+  }, [availablePostOffices, isIndia]);
 
   // ─── Auto-fill via geolocation (one-shot, on mount) ───
   useEffect(() => {
