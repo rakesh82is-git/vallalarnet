@@ -24,12 +24,7 @@ import {
   listManualSignatures,
 } from "@/lib/petition.functions";
 import * as gn from "@/lib/geonames";
-import {
-  loadStateRows,
-  lookupPincode,
-  slugForState,
-  type InRow,
-} from "@/lib/india-postal";
+import { loadStateRows, lookupPincode, type InRow } from "@/lib/india-postal";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
