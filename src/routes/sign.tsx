@@ -276,17 +276,46 @@ function DigitalTab() {
     let cancelled = false;
 
     if (isIndia) {
-      if (!/^\d{6}$/.test(query)) return;
+      if (!/^\d{3,6}$/.test(query)) return;
       setLookingUpPin(true);
-      fetch(`https://api.postalpincode.in/pincode/${query}`)
+
+      // 6-digit: authoritative India Post lookup (also populates post offices)
+      if (query.length === 6) {
+        fetch(`https://api.postalpincode.in/pincode/${query}`)
+          .then((r) => r.json())
+          .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
+            if (cancelled) return;
+            const entry = j?.[0];
+            if (entry?.Status === "Success" && entry.PostOffice?.length) {
+              setPinPostOffices(entry.PostOffice);
+              setForm((s) => (s.pincode === query ? s : { ...s, pincode: query }));
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (!cancelled) setLookingUpPin(false);
+          });
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      // 3–5 digit prefix: list candidate pincodes via Nominatim
+      const prefixUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=30&country=India&postalcode=${encodeURIComponent(query)}`;
+      fetch(prefixUrl, { headers: { Accept: "application/json" } })
         .then((r) => r.json())
-        .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
+        .then((arr: Array<{ address?: Record<string, string> }>) => {
           if (cancelled) return;
-          const entry = j?.[0];
-          if (entry?.Status === "Success" && entry.PostOffice?.length) {
-            setPinPostOffices(entry.PostOffice);
-            setForm((s) => (s.pincode === query ? s : { ...s, pincode: query }));
-          }
+          const matches = Array.from(
+            new Set(
+              arr
+                .map((x) => x.address?.postcode)
+                .filter((p): p is string => !!p && p.startsWith(query)),
+            ),
+          )
+            .sort((a, b) => a.localeCompare(b))
+            .map((pin) => ({ value: pin, label: pin, keywords: pin }));
+          setForeignPostcodeOptions(matches);
         })
         .catch(() => {})
         .finally(() => {
