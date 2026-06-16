@@ -166,17 +166,18 @@ function DigitalTab() {
   }, [districtPostOffices, pinPostOffices]);
 
   const pincodeOptions = useMemo(() => {
-    const options = isIndia
-      ? Array.from(
-          new Set(
-            availablePostOffices
-              .map((o) => o.Pincode)
-              .filter((pin): pin is string => !!pin),
-          ),
-        )
-          .sort((a, b) => a.localeCompare(b))
-          .map((pin) => ({ value: pin, label: pin, keywords: pin }))
-      : foreignPostcodeOptions;
+    let options: { value: string; label: string; keywords: string }[];
+    if (isIndia) {
+      const fromPostOffices = availablePostOffices
+        .map((o) => o.Pincode)
+        .filter((pin): pin is string => !!pin);
+      const fromPrefix = foreignPostcodeOptions.map((o) => o.value);
+      options = Array.from(new Set([...fromPostOffices, ...fromPrefix]))
+        .sort((a, b) => a.localeCompare(b))
+        .map((pin) => ({ value: pin, label: pin, keywords: pin }));
+    } else {
+      options = foreignPostcodeOptions;
+    }
     if (form.pincode && !options.some((o) => o.value === form.pincode)) {
       return [{ value: form.pincode, label: form.pincode, keywords: form.pincode }, ...options];
     }
@@ -276,17 +277,46 @@ function DigitalTab() {
     let cancelled = false;
 
     if (isIndia) {
-      if (!/^\d{6}$/.test(query)) return;
+      if (!/^\d{3,6}$/.test(query)) return;
       setLookingUpPin(true);
-      fetch(`https://api.postalpincode.in/pincode/${query}`)
+
+      // 6-digit: authoritative India Post lookup (also populates post offices)
+      if (query.length === 6) {
+        fetch(`https://api.postalpincode.in/pincode/${query}`)
+          .then((r) => r.json())
+          .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
+            if (cancelled) return;
+            const entry = j?.[0];
+            if (entry?.Status === "Success" && entry.PostOffice?.length) {
+              setPinPostOffices(entry.PostOffice);
+              setForm((s) => (s.pincode === query ? s : { ...s, pincode: query }));
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (!cancelled) setLookingUpPin(false);
+          });
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      // 3–5 digit prefix: list candidate pincodes via Nominatim
+      const prefixUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=30&country=India&postalcode=${encodeURIComponent(query)}`;
+      fetch(prefixUrl, { headers: { Accept: "application/json" } })
         .then((r) => r.json())
-        .then((j: Array<{ Status: string; PostOffice?: PostalOffice[] }>) => {
+        .then((arr: Array<{ address?: Record<string, string> }>) => {
           if (cancelled) return;
-          const entry = j?.[0];
-          if (entry?.Status === "Success" && entry.PostOffice?.length) {
-            setPinPostOffices(entry.PostOffice);
-            setForm((s) => (s.pincode === query ? s : { ...s, pincode: query }));
-          }
+          const matches = Array.from(
+            new Set(
+              arr
+                .map((x) => x.address?.postcode)
+                .filter((p): p is string => !!p && p.startsWith(query)),
+            ),
+          )
+            .sort((a, b) => a.localeCompare(b))
+            .map((pin) => ({ value: pin, label: pin, keywords: pin }));
+          setForeignPostcodeOptions(matches);
         })
         .catch(() => {})
         .finally(() => {
@@ -696,7 +726,11 @@ function DigitalTab() {
                   : "Select or type postcode"
             }
             searchPlaceholder={isIndia ? "Type 6-digit pincode..." : "Type postcode..."}
-            emptyText={isIndia ? "Type a valid 6-digit pincode" : "Type a valid postcode"}
+            emptyText={
+              isIndia
+                ? "Type the first 3 digits of your pincode"
+                : "Type the first few characters of your postcode"
+            }
             loading={lookingUpPin}
             loadingText="Looking up…"
             onSearchChange={setPinSearch}
