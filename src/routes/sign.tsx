@@ -126,6 +126,9 @@ function DigitalTab() {
   const lastPinRef = useRef<string>("");
   const [pinPostOffices, setPinPostOffices] = useState<PostalOffice[]>([]);
   const [districtPostOffices, setDistrictPostOffices] = useState<PostalOffice[]>([]);
+  const [foreignPostcodeOptions, setForeignPostcodeOptions] = useState<
+    Array<{ value: string; label: string; keywords: string }>
+  >([]);
   const lastDistrictRef = useRef<string>("");
 
   function set<K extends keyof typeof form>(k: K, v: string) {
@@ -163,17 +166,22 @@ function DigitalTab() {
   }, [districtPostOffices, pinPostOffices]);
 
   const pincodeOptions = useMemo(() => {
-    if (!isIndia) return [];
-    return Array.from(
-      new Set(
-        availablePostOffices
-          .map((o) => o.Pincode)
-          .filter((pin): pin is string => !!pin),
-      ),
-    )
-      .sort((a, b) => a.localeCompare(b))
-      .map((pin) => ({ value: pin, label: pin, keywords: pin }));
-  }, [availablePostOffices, isIndia]);
+    const options = isIndia
+      ? Array.from(
+          new Set(
+            availablePostOffices
+              .map((o) => o.Pincode)
+              .filter((pin): pin is string => !!pin),
+          ),
+        )
+          .sort((a, b) => a.localeCompare(b))
+          .map((pin) => ({ value: pin, label: pin, keywords: pin }))
+      : foreignPostcodeOptions;
+    if (form.pincode && !options.some((o) => o.value === form.pincode)) {
+      return [{ value: form.pincode, label: form.pincode, keywords: form.pincode }, ...options];
+    }
+    return options;
+  }, [availablePostOffices, foreignPostcodeOptions, form.pincode, isIndia]);
 
   // ─── Auto-fill via geolocation (one-shot, on mount) ───
   useEffect(() => {
