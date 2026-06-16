@@ -266,77 +266,43 @@ function DigitalTab() {
     );
   }, [geoTried]);
 
-  // ─── India district reset: when district changes, clear cached POs ───
-  // (postalpincode.in has no district-listing endpoint — /postoffice/{q}
-  // matches by post-office NAME, not district. We instead pull POs on
-  // demand as the user types in sub-district / locality below.)
+  // ─── India district → load full PO list from bundled dataset ───
+  // The bundled /india-po/{slug}.json contains every post office in the
+  // district. This pre-populates the sub-district, locality, and pincode
+  // dropdowns up front — no typing required.
   useEffect(() => {
     if (!isIndia) {
       setDistrictPostOffices([]);
+      lastDistrictRef.current = "";
       return;
     }
     const d = form.district.trim();
-    if (!d || d !== lastDistrictRef.current) {
+    if (!d) {
       setDistrictPostOffices([]);
-      setSubDistrictSearch("");
-      setLocalitySearch("");
-      lastDistrictRef.current = d;
+      lastDistrictRef.current = "";
+      return;
     }
-  }, [form.district, isIndia]);
-
-  // ─── On-demand PO search for sub-district / locality ───
-  // Queries /postoffice/{query} as the user types, then keeps only POs
-  // whose District matches the selected district. Results are merged into
-  // districtPostOffices so the dropdowns populate.
-  useEffect(() => {
-    if (!isIndia) return;
-    const d = form.district.trim();
-    const q = (subDistrictSearch || localitySearch).trim();
-    if (!d || q.length < 3) return;
+    if (d === lastDistrictRef.current) return;
+    lastDistrictRef.current = d;
+    const stateName = states.find((s) => s.isoCode === form.stateCode)?.name;
+    const slice = stateName ? indiaPoIndex[stateName]?.[d] : undefined;
+    if (!slice) {
+      setDistrictPostOffices([]);
+      return;
+    }
     let cancelled = false;
-    const stateName = states
-      .find((s) => s.isoCode === form.stateCode)
-      ?.name?.toLowerCase();
-    fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(q)}`)
+    fetch(`/india-po/${slice}`)
       .then((r) => r.json())
-      .then(
-        (
-          j: Array<{
-            Status: string;
-            PostOffice?: Array<{
-              State: string;
-              District: string;
-              Block: string;
-              Name: string;
-              Pincode?: string;
-            }>;
-          }>,
-        ) => {
-          if (cancelled) return;
-          const entry = j?.[0];
-          if (!entry || entry.Status !== "Success" || !entry.PostOffice?.length) return;
-          const matches = entry.PostOffice.filter(
-            (o) =>
-              o.District.toLowerCase() === d.toLowerCase() &&
-              (!stateName || o.State.toLowerCase() === stateName),
-          );
-          if (!matches.length) return;
-          setDistrictPostOffices((prev) => {
-            const map = new Map<string, PostalOffice>();
-            for (const o of [...prev, ...matches]) {
-              map.set(`${o.Pincode ?? ""}::${o.Block}::${o.Name}`, o);
-            }
-            return Array.from(map.values());
-          });
-        },
-      )
+      .then((offices: PostalOffice[]) => {
+        if (!cancelled) setDistrictPostOffices(offices ?? []);
+      })
       .catch(() => {
-        /* silent */
+        if (!cancelled) setDistrictPostOffices([]);
       });
     return () => {
       cancelled = true;
     };
-  }, [subDistrictSearch, localitySearch, form.district, form.stateCode, isIndia, states]);
+  }, [form.district, form.stateCode, isIndia, states, indiaPoIndex]);
 
   // ─── Search valid pincode/postcode options from the selected country ───
   useEffect(() => {
