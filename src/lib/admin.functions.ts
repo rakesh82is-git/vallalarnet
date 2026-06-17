@@ -123,6 +123,179 @@ export const adminExportSignaturesCsv = createServerFn({ method: "GET" }).handle
   },
 );
 
+// ---- XLSX export with embedded signature / document images ---------------
+
+type SigRow = Record<string, unknown> & {
+  id: string;
+  signature_image?: string | null;
+  manual_document_url?: string | null;
+  kind?: string | null;
+};
+
+function parseDataUrl(s: string): { mime: string; bytes: Buffer } | null {
+  const m = /^data:([^;,]+)(;base64)?,(.*)$/.exec(s);
+  if (!m) return null;
+  const mime = m[1] || "image/png";
+  const isB64 = !!m[2];
+  try {
+    const bytes = isB64
+      ? Buffer.from(m[3], "base64")
+      : Buffer.from(decodeURIComponent(m[3]), "utf8");
+    return { mime, bytes };
+  } catch {
+    return null;
+  }
+}
+
+function imgExt(mime: string): "png" | "jpeg" | "gif" | null {
+  const m = mime.toLowerCase();
+  if (m.includes("png")) return "png";
+  if (m.includes("jpeg") || m.includes("jpg")) return "jpeg";
+  if (m.includes("gif")) return "gif";
+  return null;
+}
+
+export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handler(
+  async () => {
+    await requireAdmin();
+    const sb = await getBackend();
+
+    const selectCols = [...SAFE_COLS, "signature_image", "manual_document_url"].join(",");
+    const { data, error } = await sb
+      .from("signatures")
+      .select(selectCols)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const rows = ((data ?? []) as unknown) as SigRow[];
+    const manualRows = rows.filter((r) => !!r.manual_document_url);
+    const digitalRows = rows.filter((r) => !r.manual_document_url);
+
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+
+    const baseHeaders: Array<{ key: string; header: string; width: number }> = [
+      { key: "created_at", header: "Created At", width: 22 },
+      { key: "full_name", header: "Full Name", width: 22 },
+      { key: "name", header: "Name", width: 18 },
+      { key: "email", header: "Email", width: 26 },
+      { key: "age", header: "Age", width: 6 },
+      { key: "country", header: "Country", width: 14 },
+      { key: "state", header: "State", width: 16 },
+      { key: "district", header: "District", width: 18 },
+      { key: "pincode", header: "Pincode", width: 10 },
+      { key: "residential_address", header: "Address", width: 30 },
+      { key: "message", header: "Message", width: 30 },
+      { key: "phone_masked", header: "Phone (masked)", width: 16 },
+      { key: "consent", header: "Consent", width: 9 },
+      { key: "kind", header: "Kind", width: 10 },
+      { key: "document_title", header: "Document Title", width: 22 },
+    ];
+
+    const ROW_HEIGHT = 90; // px; ExcelJS uses points (≈ px*0.75)
+    const IMG_COL_WIDTH = 28;
+
+    async function addSheet(
+      name: string,
+      list: SigRow[],
+      imageHeader: string,
+      getImage: (r: SigRow) => Promise<
+        | { kind: "image"; ext: "png" | "jpeg" | "gif"; bytes: Buffer }
+        | { kind: "link"; url: string; label: string }
+        | null
+      >,
+    ) {
+      const ws = wb.addWorksheet(name);
+      const cols = [
+        ...baseHeaders,
+        { key: "__img__", header: imageHeader, width: IMG_COL_WIDTH },
+      ];
+      ws.columns = cols.map((c) => ({ header: c.header, key: c.key, width: c.width }));
+      ws.getRow(1).font = { bold: true };
+      ws.getRow(1).alignment = { vertical: "middle" };
+
+      const imgColIndex = cols.length; // 1-based
+
+      for (const r of list) {
+        const rowValues: Record<string, unknown> = {};
+        for (const h of baseHeaders) rowValues[h.key] = r[h.key] ?? "";
+        const row = ws.addRow(rowValues);
+        row.height = ROW_HEIGHT * 0.75;
+        row.alignment = { vertical: "middle", wrapText: true };
+
+        const rowNumber = row.number;
+        const result = await getImage(r).catch(() => null);
+        if (!result) continue;
+
+        if (result.kind === "image") {
+          const imageId = wb.addImage({
+            buffer: result.bytes as unknown as ArrayBuffer,
+            extension: result.ext,
+          });
+          ws.addImage(imageId, {
+            tl: { col: imgColIndex - 1 + 0.05, row: rowNumber - 1 + 0.05 },
+            ext: { width: 180, height: 80 },
+            editAs: "oneCell",
+          });
+        } else {
+          const cell = row.getCell(imgColIndex);
+          cell.value = { text: result.label, hyperlink: result.url };
+          cell.font = { color: { argb: "FF1F6FEB" }, underline: true };
+        }
+      }
+    }
+
+    // Digital sheet — embed signature_image (data URL)
+    await addSheet("Digital Signatures", digitalRows, "Signature", async (r) => {
+      const s = (r.signature_image as string | null) ?? null;
+      if (!s) return null;
+      const parsed = s.startsWith("data:") ? parseDataUrl(s) : null;
+      if (!parsed) return null;
+      const ext = imgExt(parsed.mime);
+      if (!ext) return null;
+      return { kind: "image", ext, bytes: parsed.bytes };
+    });
+
+    // Manual sheet — fetch from petition-manual bucket
+    await addSheet("Manual Documents", manualRows, "Document", async (r) => {
+      const path = (r.manual_document_url as string | null) ?? null;
+      if (!path) return null;
+      const dl = await sb.storage.from("petition-manual").download(path);
+      if (dl.error || !dl.data) {
+        const { data: signed } = await sb.storage
+          .from("petition-manual")
+          .createSignedUrl(path, 60 * 60 * 24 * 7);
+        return signed?.signedUrl
+          ? { kind: "link", url: signed.signedUrl, label: "Open document" }
+          : null;
+      }
+      const blob = dl.data as Blob;
+      const mime = blob.type || "";
+      const ext = imgExt(mime);
+      if (ext) {
+        const buf = Buffer.from(await blob.arrayBuffer());
+        return { kind: "image", ext, bytes: buf };
+      }
+      // Not a renderable image (PDF, etc.) — fall back to a signed link
+      const { data: signed } = await sb.storage
+        .from("petition-manual")
+        .createSignedUrl(path, 60 * 60 * 24 * 7);
+      return signed?.signedUrl
+        ? { kind: "link", url: signed.signedUrl, label: "Open document" }
+        : null;
+    });
+
+    const buf = await wb.xlsx.writeBuffer();
+    const base64 = Buffer.from(buf as ArrayBuffer).toString("base64");
+    return {
+      base64,
+      filename: `signatures-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      digitalCount: digitalRows.length,
+      manualCount: manualRows.length,
+    };
+  },
+);
+
 type GalleryItem = {
   id: string;
   kind: "photo" | "video" | "fieldwork";
