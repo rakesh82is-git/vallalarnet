@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { getStats } from "@/lib/petition.functions";
-import { adminExportSignaturesCsv } from "@/lib/admin.functions";
+import { adminExportSignaturesXlsx } from "@/lib/admin.functions";
 import { useT } from "@/i18n/context";
 import { toast } from "sonner";
 
@@ -26,7 +26,7 @@ function timeAgo(iso: string) {
 function AdminAnalytics() {
   const t = useT();
   const { data } = useSuspenseQuery(opts);
-  const exportCsv = useServerFn(adminExportSignaturesCsv);
+  const exportXlsx = useServerFn(adminExportSignaturesXlsx);
   const [exporting, setExporting] = useState(false);
 
   const pct = Math.min(100, Math.round((data.total / data.goal) * 100));
@@ -35,17 +35,24 @@ function AdminAnalytics() {
   async function handleExport() {
     setExporting(true);
     try {
-      const res = await exportCsv();
-      const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
+      const res = await exportXlsx();
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `signatures-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = res.filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success(`Exported ${res.count} signatures`);
+      toast.success(
+        `Exported ${res.digitalCount} digital + ${res.manualCount} manual`,
+      );
     } catch (e) {
       console.error(e);
       toast.error("Export failed");
@@ -63,11 +70,11 @@ function AdminAnalytics() {
           disabled={exporting}
           className="rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-50"
         >
-          {exporting ? "Preparing…" : "Download signatures CSV"}
+          {exporting ? "Preparing…" : "Download signatures (Excel)"}
         </button>
       </div>
       <p className="text-xs text-muted-foreground -mt-4">
-        CSV excludes signature images, scans, and unmasked phone numbers.
+        Excel workbook with two sheets — Digital Signatures (with embedded signature images) and Manual Documents (with embedded document images, or a link when the file is a PDF). Excludes unmasked phone numbers.
       </p>
 
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
