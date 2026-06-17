@@ -228,7 +228,10 @@ export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handl
         if (!result) continue;
 
         if (result.kind === "image") {
-          const imageId = wb.addImage({ buffer: result.bytes, extension: result.ext });
+          const imageId = wb.addImage({
+            buffer: result.bytes as unknown as ArrayBuffer,
+            extension: result.ext,
+          });
           ws.addImage(imageId, {
             tl: { col: imgColIndex - 1 + 0.05, row: rowNumber - 1 + 0.05 },
             ext: { width: 180, height: 80 },
