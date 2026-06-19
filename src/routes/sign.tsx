@@ -421,7 +421,6 @@ function DigitalTab() {
     setSubDistrictList([]);
     setLocalityList([]);
     setPincodeList([]);
-    setStatePincodes([]);
     lastPinRef.current = "";
     setForm({
       name: "",
@@ -509,7 +508,6 @@ function DigitalTab() {
               setSubDistrictList([]);
               setLocalityList([]);
               setPincodeList([]);
-              setStatePincodes([]);
               lastPinRef.current = "";
               setForm((s) => ({
                 ...s,
