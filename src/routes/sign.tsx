@@ -281,25 +281,53 @@ function DigitalTab() {
     };
   }, [form.sub_district, subDistrictList]);
 
-  // ─── Locality → pincode list (GeoNames postal search) ───
+  // ─── State / District / Sub-District / Locality → narrowed pincode list ───
+  // As soon as the user picks a District we fetch the pincodes served by that
+  // district (single GeoNames postal-search call, keyed by the most specific
+  // place name we have). Narrower selections (sub-district, locality) filter
+  // the same row set client-side, so the dropdown progressively shrinks
+  // without extra network calls. This is purely a suggestion list — the
+  // reverse pincode→address resolution in the effect below is untouched.
+  const [pinSearchRows, setPinSearchRows] = useState<gn.GnPostal[]>([]);
   useEffect(() => {
-    const place = form.locality.trim();
+    const place = (form.locality || form.sub_district || form.district).trim();
     if (!place || !form.countryCode) {
-      setPincodeList([]);
+      setPinSearchRows([]);
       return;
     }
     let cancelled = false;
     setLookingUpPin(true);
     gn.postalCodeSearch(form.countryCode, place).then((rows) => {
       if (cancelled) return;
-      const codes = Array.from(new Set(rows.map((r) => r.postalCode).filter(Boolean))).sort();
-      setPincodeList(codes);
+      setPinSearchRows(rows);
       setLookingUpPin(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [form.countryCode, form.locality]);
+  }, [form.countryCode, form.district, form.sub_district, form.locality]);
+
+  useEffect(() => {
+    const eq = (a?: string, b?: string) =>
+      (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
+    const filtered = pinSearchRows.filter((r) => {
+      if (form.district && r.adminName2 && !eq(r.adminName2, form.district)) {
+        // Tolerate "Tiruvallur" vs "Thiruvallur District" mismatches.
+        if (normName(r.adminName2) !== normName(form.district)) return false;
+      }
+      if (form.sub_district && r.adminName3 && !eq(r.adminName3, form.sub_district)) {
+        if (normName(r.adminName3) !== normName(form.sub_district)) return false;
+      }
+      if (form.locality && r.placeName && !eq(r.placeName, form.locality)) {
+        if (normName(r.placeName) !== normName(form.locality)) return false;
+      }
+      return true;
+    });
+    const codes = Array.from(
+      new Set((filtered.length ? filtered : pinSearchRows).map((r) => r.postalCode).filter(Boolean)),
+    ).sort();
+    setPincodeList(codes);
+  }, [pinSearchRows, form.district, form.sub_district, form.locality]);
 
   // ─── Pincode entered → reverse-fill the address ───
   useEffect(() => {
@@ -513,6 +541,7 @@ function DigitalTab() {
     setLocalityList([]);
     setPincodeList([]);
     setPinRows([]);
+    setPinSearchRows([]);
     lastPinRef.current = "";
     setForm({
       name: "",
