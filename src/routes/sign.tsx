@@ -258,31 +258,6 @@ function DigitalTab() {
     };
   }, [form.countryCode, form.locality]);
 
-  // ─── State → pincode dataset (GeoNames postal search) ───
-  useEffect(() => {
-    if (!form.countryCode || !stateName) {
-      setStatePincodes([]);
-      return;
-    }
-    let cancelled = false;
-    gn.postalCodeSearch(form.countryCode, stateName).then((rows) => {
-      if (cancelled) return;
-      setStatePincodes(
-        rows
-          .filter((r) => r.postalCode)
-          .map((r) => ({
-            pincode: r.postalCode,
-            district: r.adminName2,
-            sub_district: r.adminName3,
-            locality: r.placeName,
-          })),
-      );
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [form.countryCode, stateName]);
-
   // ─── Pincode entered → reverse-fill the address ───
   useEffect(() => {
     const pin = form.pincode.trim();
@@ -398,28 +373,13 @@ function DigitalTab() {
   }, [localityList, form.locality]);
 
   const pincodeOptions = useMemo(() => {
-    // Prefer the locality-scoped postal search (same source as the reverse
-    // pincode→locality lookup). Fall back to the state-wide dataset only when
-    // no locality is selected yet.
-    if (form.locality && pincodeList.length) {
-      const opts = pincodeList.map((p) => ({ value: p, label: p, keywords: p }));
-      if (form.pincode && !pincodeList.includes(form.pincode))
-        opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
-      return opts;
-    }
-    const filtered = statePincodes.filter((r) => {
-      if (form.district && !sameText(r.district, form.district)) return false;
-      if (form.sub_district && r.sub_district && !sameText(r.sub_district, form.sub_district))
-        return false;
-      if (form.locality && !sameText(r.locality, form.locality)) return false;
-      return true;
-    });
-    const arr = Array.from(new Set(filtered.map((r) => r.pincode))).sort();
-    const opts = arr.map((p) => ({ value: p, label: p, keywords: p }));
-    if (form.pincode && !arr.includes(form.pincode))
+    // Single source of truth: GeoNames postal search scoped to the selected
+    // locality (same endpoint used by the reverse pincode→address lookup).
+    const opts = pincodeList.map((p) => ({ value: p, label: p, keywords: p }));
+    if (form.pincode && !pincodeList.includes(form.pincode))
       opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
     return opts;
-  }, [statePincodes, pincodeList, form.district, form.sub_district, form.locality, form.pincode]);
+  }, [pincodeList, form.pincode]);
 
   useEffect(() => {
     if (!form.locality || form.pincode) return;
