@@ -201,6 +201,12 @@ function DigitalTab() {
       const adm2 = kids.filter((k) => k.fcode?.startsWith("ADM2"));
       setDistrictList(adm2.length ? adm2 : kids);
       setLoadingDistricts(false);
+      // Reconcile a reverse-filled district name with the canonical list entry.
+      setForm((s) => {
+        if (!s.district) return s;
+        const match = findByName(adm2.length ? adm2 : kids, s.district);
+        return match && match.name !== s.district ? { ...s, district: match.name } : s;
+      });
     })();
     return () => {
       cancelled = true;
