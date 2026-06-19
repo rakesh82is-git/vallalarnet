@@ -129,6 +129,11 @@ function DigitalTab() {
   const [loadingSub, setLoadingSub] = useState(false);
   const [loadingLocality, setLoadingLocality] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
+  // Rows returned by the most recent postalCodeLookup. When non-empty, the
+  // sub-district & locality dropdowns are constrained to the places that
+  // this pincode actually serves (digits 4–6 may map to many villages / cross
+  // taluks), rather than the broader ADM3 children of the district.
+  const [pinRows, setPinRows] = useState<gn.GnPostal[]>([]);
 
   const lastPinRef = useRef<string>("");
 
@@ -299,31 +304,56 @@ function DigitalTab() {
   // ─── Pincode entered → reverse-fill the address ───
   useEffect(() => {
     const pin = form.pincode.trim();
+    if (!pin) {
+      setPinRows([]);
+      lastPinRef.current = "";
+      return;
+    }
+    if (isIndia && !/^\d{6}$/.test(pin)) return;
     if (pin.length < 3) return;
     if (pin === lastPinRef.current) return;
-    if (isIndia && !/^\d{6}$/.test(pin)) return;
     lastPinRef.current = pin;
     setLookingUpPin(true);
 
     gn.postalCodeLookup(form.countryCode, pin).then((rows) => {
-      const r = rows[0];
       setLookingUpPin(false);
-      if (!r) return;
+      setPinRows(rows);
+      if (!rows.length) return;
+      // Pincode hierarchy guarantees:
+      //   digits 1–2 → State (ADM1)   — always correct
+      //   digit  3   → District (ADM2) — always correct
+      //   digits 4–6 → Delivery PO Hub — may map to many sub-districts /
+      //                                   localities, so we list rather than pick.
+      const stateName = rows[0].adminName1 || "";
+      const districtName = rows[0].adminName2 || "";
+      const subSet = Array.from(
+        new Set(rows.map((r) => (r.adminName3 || "").trim()).filter(Boolean)),
+      );
+      const locSet = Array.from(
+        new Set(rows.map((r) => (r.placeName || "").trim()).filter(Boolean)),
+      );
       setForm((s) => {
         const next = { ...s };
-        if (r.adminName1 && !next.stateCode) {
+        if (stateName) {
           const st = State.getStatesOfCountry(next.countryCode).find(
-            (x) => x.name.toLowerCase() === r.adminName1!.toLowerCase(),
+            (x) => x.name.toLowerCase() === stateName.toLowerCase(),
           );
           if (st) next.stateCode = st.isoCode;
         }
-        if (!next.district && r.adminName2) next.district = r.adminName2;
-        if (!next.sub_district && r.adminName3) next.sub_district = r.adminName3;
-        if (!next.locality && r.placeName) next.locality = r.placeName;
+        if (districtName) next.district = districtName;
+        // Only auto-fill when the pincode resolves unambiguously; otherwise
+        // clear so the user picks from the constrained dropdown.
+        next.sub_district = subSet.length === 1 ? subSet[0] : "";
+        next.locality =
+          locSet.length === 1
+            ? locSet[0]
+            : subSet.length === 1
+              ? next.locality // keep until user picks a sub-district
+              : "";
         return next;
       });
     });
-  }, [form.pincode, form.countryCode]);
+  }, [form.pincode, form.countryCode, isIndia]);
 
   // ─── Geolocation one-shot autofill on mount ───
   useEffect(() => {
@@ -390,8 +420,16 @@ function DigitalTab() {
 
   const subDistrictOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
-    for (const d of subDistrictList)
-      m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
+    if (pinRows.length > 0) {
+      // Constrain to sub-districts actually served by the entered pincode.
+      for (const r of pinRows) {
+        const n = (r.adminName3 || "").trim();
+        if (n) m.set(n, { value: n, label: n, keywords: n });
+      }
+    } else {
+      for (const d of subDistrictList)
+        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
+    }
     if (form.sub_district && !m.has(form.sub_district))
       m.set(form.sub_district, {
         value: form.sub_district,
@@ -399,16 +437,32 @@ function DigitalTab() {
         keywords: form.sub_district,
       });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [subDistrictList, form.sub_district]);
+  }, [subDistrictList, form.sub_district, pinRows]);
 
   const localityOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
-    for (const d of localityList)
-      m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
+    if (pinRows.length > 0) {
+      // Constrain to localities served by the pincode; further narrow by
+      // sub-district when one has been chosen.
+      const filtered = form.sub_district
+        ? pinRows.filter(
+            (r) =>
+              (r.adminName3 || "").toLowerCase() ===
+              form.sub_district.toLowerCase(),
+          )
+        : pinRows;
+      for (const r of filtered) {
+        const n = (r.placeName || "").trim();
+        if (n) m.set(n, { value: n, label: n, keywords: n });
+      }
+    } else {
+      for (const d of localityList)
+        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
+    }
     if (form.locality && !m.has(form.locality))
       m.set(form.locality, { value: form.locality, label: form.locality, keywords: form.locality });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [localityList, form.locality]);
+  }, [localityList, form.locality, pinRows, form.sub_district]);
 
   const pincodeOptions = useMemo(() => {
     // Single source of truth: GeoNames postal search scoped to the selected
@@ -422,10 +476,9 @@ function DigitalTab() {
   useEffect(() => {
     if (!form.locality || form.pincode) return;
     const codes = pincodeOptions.map((o) => o.value).filter(Boolean);
-    if (codes.length === 0) return;
-    // Auto-fill when unambiguous; otherwise pre-select the first match so the
-    // field isn't left empty when GeoNames returns several postal codes for a
-    // single locality (common in Indian towns).
+    // Only auto-fill when the locality maps to exactly one pincode. When
+    // GeoNames returns several codes we leave it blank so the user picks.
+    if (codes.length !== 1) return;
     setForm((s) => ({ ...s, pincode: codes[0] }));
   }, [form.locality, form.pincode, pincodeOptions]);
 
