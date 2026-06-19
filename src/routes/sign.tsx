@@ -62,7 +62,6 @@ type PincodeEntry = {
 
 const clean = (value?: string | null) => (value ?? "").trim().toLowerCase();
 const sameText = (a?: string | null, b?: string | null) => !!clean(a) && clean(a) === clean(b);
-const preferredLocality = "Vadalur";
 
 function SignPage() {
   return (
