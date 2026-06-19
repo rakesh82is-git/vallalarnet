@@ -130,8 +130,6 @@ function DigitalTab() {
   const [loadingLocality, setLoadingLocality] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
 
-  // Single GeoNames-backed pincode dataset, scoped to the selected state.
-  const [statePincodes, setStatePincodes] = useState<PincodeEntry[]>([]);
   const lastPinRef = useRef<string>("");
 
   function set<K extends keyof typeof form>(k: K, v: string) {
