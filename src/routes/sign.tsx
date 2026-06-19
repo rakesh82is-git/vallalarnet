@@ -541,6 +541,7 @@ function DigitalTab() {
     setLocalityList([]);
     setPincodeList([]);
     setPinRows([]);
+    setPinSearchRows([]);
     lastPinRef.current = "";
     setForm({
       name: "",
