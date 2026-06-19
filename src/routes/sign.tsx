@@ -53,16 +53,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-type PincodeEntry = {
-  pincode: string;
-  district?: string;
-  sub_district?: string;
-  locality?: string;
-};
-
-const clean = (value?: string | null) => (value ?? "").trim().toLowerCase();
-const sameText = (a?: string | null, b?: string | null) => !!clean(a) && clean(a) === clean(b);
-
 function SignPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
@@ -140,8 +130,6 @@ function DigitalTab() {
   const [loadingLocality, setLoadingLocality] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
 
-  // Single GeoNames-backed pincode dataset, scoped to the selected state.
-  const [statePincodes, setStatePincodes] = useState<PincodeEntry[]>([]);
   const lastPinRef = useRef<string>("");
 
   function set<K extends keyof typeof form>(k: K, v: string) {
@@ -270,31 +258,6 @@ function DigitalTab() {
     };
   }, [form.countryCode, form.locality]);
 
-  // ─── State → pincode dataset (GeoNames postal search) ───
-  useEffect(() => {
-    if (!form.countryCode || !stateName) {
-      setStatePincodes([]);
-      return;
-    }
-    let cancelled = false;
-    gn.postalCodeSearch(form.countryCode, stateName).then((rows) => {
-      if (cancelled) return;
-      setStatePincodes(
-        rows
-          .filter((r) => r.postalCode)
-          .map((r) => ({
-            pincode: r.postalCode,
-            district: r.adminName2,
-            sub_district: r.adminName3,
-            locality: r.placeName,
-          })),
-      );
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [form.countryCode, stateName]);
-
   // ─── Pincode entered → reverse-fill the address ───
   useEffect(() => {
     const pin = form.pincode.trim();
@@ -410,28 +373,13 @@ function DigitalTab() {
   }, [localityList, form.locality]);
 
   const pincodeOptions = useMemo(() => {
-    // Prefer the locality-scoped postal search (same source as the reverse
-    // pincode→locality lookup). Fall back to the state-wide dataset only when
-    // no locality is selected yet.
-    if (form.locality && pincodeList.length) {
-      const opts = pincodeList.map((p) => ({ value: p, label: p, keywords: p }));
-      if (form.pincode && !pincodeList.includes(form.pincode))
-        opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
-      return opts;
-    }
-    const filtered = statePincodes.filter((r) => {
-      if (form.district && !sameText(r.district, form.district)) return false;
-      if (form.sub_district && r.sub_district && !sameText(r.sub_district, form.sub_district))
-        return false;
-      if (form.locality && !sameText(r.locality, form.locality)) return false;
-      return true;
-    });
-    const arr = Array.from(new Set(filtered.map((r) => r.pincode))).sort();
-    const opts = arr.map((p) => ({ value: p, label: p, keywords: p }));
-    if (form.pincode && !arr.includes(form.pincode))
+    // Single source of truth: GeoNames postal search scoped to the selected
+    // locality (same endpoint used by the reverse pincode→address lookup).
+    const opts = pincodeList.map((p) => ({ value: p, label: p, keywords: p }));
+    if (form.pincode && !pincodeList.includes(form.pincode))
       opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
     return opts;
-  }, [statePincodes, pincodeList, form.district, form.sub_district, form.locality, form.pincode]);
+  }, [pincodeList, form.pincode]);
 
   useEffect(() => {
     if (!form.locality || form.pincode) return;
@@ -473,7 +421,6 @@ function DigitalTab() {
     setSubDistrictList([]);
     setLocalityList([]);
     setPincodeList([]);
-    setStatePincodes([]);
     lastPinRef.current = "";
     setForm({
       name: "",
@@ -561,7 +508,6 @@ function DigitalTab() {
               setSubDistrictList([]);
               setLocalityList([]);
               setPincodeList([]);
-              setStatePincodes([]);
               lastPinRef.current = "";
               setForm((s) => ({
                 ...s,
