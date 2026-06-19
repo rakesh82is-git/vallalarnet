@@ -512,6 +512,7 @@ function DigitalTab() {
     setSubDistrictList([]);
     setLocalityList([]);
     setPincodeList([]);
+    setPinRows([]);
     lastPinRef.current = "";
     setForm({
       name: "",
@@ -574,6 +575,7 @@ function DigitalTab() {
 
   const districtSelected = !!form.district.trim();
   const subSelected = !!form.sub_district.trim();
+  const pinDriven = pinRows.length > 0;
 
   return (
     <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8 space-y-6">
@@ -673,9 +675,9 @@ function DigitalTab() {
             onChange={(v) =>
               setForm((s) => ({ ...s, sub_district: v, locality: "", pincode: "" }))
             }
-            disabled={!districtSelected}
+            disabled={!districtSelected && !pinDriven}
             placeholder={
-              !districtSelected
+              !districtSelected && !pinDriven
                 ? "Select district first"
                 : loadingSub
                   ? "Loading…"
@@ -694,9 +696,9 @@ function DigitalTab() {
           <Combobox
             value={form.locality}
             onChange={(v) => setForm((s) => ({ ...s, locality: v }))}
-            disabled={!subSelected && localityOptions.length === 0}
+            disabled={!subSelected && !pinDriven && localityOptions.length === 0}
             placeholder={
-              !subSelected && localityOptions.length === 0
+              !subSelected && !pinDriven && localityOptions.length === 0
                 ? "Select sub-district first"
                 : loadingLocality
                   ? "Loading…"
