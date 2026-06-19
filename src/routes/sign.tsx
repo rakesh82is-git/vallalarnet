@@ -53,16 +53,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-type PincodeEntry = {
-  pincode: string;
-  district?: string;
-  sub_district?: string;
-  locality?: string;
-};
-
-const clean = (value?: string | null) => (value ?? "").trim().toLowerCase();
-const sameText = (a?: string | null, b?: string | null) => !!clean(a) && clean(a) === clean(b);
-
 function SignPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
