@@ -136,6 +136,31 @@ function DigitalTab() {
     setForm((s) => ({ ...s, [k]: v }));
   }
 
+  // GeoNames returns slightly different spellings across its endpoints
+  // (e.g. postalCodeLookup → "Tiruvallur", children of ADM1 → "Thiruvallur
+  // District"). Normalise both sides before comparing so reverse-fill from a
+  // pincode reconciles with the cascading dropdown lists.
+  function normName(s: string): string {
+    return s
+      .toLowerCase()
+      .replace(/\b(district|taluk|tehsil|tahsil|mandal|sub-?district|division|circle)\b/g, "")
+      .replace(/[^a-z0-9]+/g, "")
+      .replace(/^th/, "t");
+  }
+  function findByName<T extends { name: string; toponymName: string }>(
+    list: T[],
+    needle: string,
+  ): T | undefined {
+    if (!needle) return undefined;
+    const n = normName(needle);
+    return (
+      list.find((d) => normName(d.name) === n || normName(d.toponymName) === n) ??
+      list.find(
+        (d) => normName(d.name).includes(n) || n.includes(normName(d.name)),
+      )
+    );
+  }
+
   const countries = useMemo(() => Country.getAllCountries(), []);
   const states = useMemo(
     () => (form.countryCode ? State.getStatesOfCountry(form.countryCode) : []),
@@ -188,11 +213,12 @@ function DigitalTab() {
       setSubDistrictList([]);
       return;
     }
-    const parent = districtList.find(
-      (d) =>
-        d.name.toLowerCase() === form.district.toLowerCase() ||
-        d.toponymName.toLowerCase() === form.district.toLowerCase(),
-    );
+    const parent = findByName(districtList, form.district);
+    // Reconcile the form value with the canonical list name so the dropdown
+    // shows the selected option as checked.
+    if (parent && parent.name !== form.district) {
+      setForm((s) => (s.district === form.district ? { ...s, district: parent.name } : s));
+    }
     if (!parent) {
       setSubDistrictList([]);
       return;
@@ -216,11 +242,12 @@ function DigitalTab() {
       setLocalityList([]);
       return;
     }
-    const parent = subDistrictList.find(
-      (d) =>
-        d.name.toLowerCase() === form.sub_district.toLowerCase() ||
-        d.toponymName.toLowerCase() === form.sub_district.toLowerCase(),
-    );
+    const parent = findByName(subDistrictList, form.sub_district);
+    if (parent && parent.name !== form.sub_district) {
+      setForm((s) =>
+        s.sub_district === form.sub_district ? { ...s, sub_district: parent.name } : s,
+      );
+    }
     if (!parent) {
       setLocalityList([]);
       return;
