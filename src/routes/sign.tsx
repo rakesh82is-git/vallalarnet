@@ -265,6 +265,11 @@ function DigitalTab() {
       const places = kids.filter((k) => k.fcl === "P");
       setLocalityList(places.length ? places : kids);
       setLoadingLocality(false);
+      setForm((s) => {
+        if (!s.locality) return s;
+        const match = findByName(places.length ? places : kids, s.locality);
+        return match && match.name !== s.locality ? { ...s, locality: match.name } : s;
+      });
     });
     return () => {
       cancelled = true;
