@@ -340,6 +340,13 @@ function DigitalTab() {
     if (isIndia && !/^\d{6}$/.test(pin)) return;
     if (pin.length < 3) return;
     if (pin === lastPinRef.current) return;
+    // When the user has already chosen District + Sub-District + Locality,
+    // the pincode is a downstream consequence — don't reverse-resolve and
+    // overwrite their selections (which would cascade-clear and loop).
+    if (form.district.trim() && form.sub_district.trim() && form.locality.trim()) {
+      lastPinRef.current = pin;
+      return;
+    }
     lastPinRef.current = pin;
     setLookingUpPin(true);
 
@@ -381,7 +388,14 @@ function DigitalTab() {
         return next;
       });
     });
-  }, [form.pincode, form.countryCode, isIndia]);
+  }, [
+    form.pincode,
+    form.countryCode,
+    isIndia,
+    form.district,
+    form.sub_district,
+    form.locality,
+  ]);
 
   // ─── Geolocation one-shot autofill on mount ───
   useEffect(() => {
