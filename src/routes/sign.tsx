@@ -24,7 +24,6 @@ import {
   listManualSignatures,
 } from "@/lib/petition.functions";
 import * as gn from "@/lib/geonames";
-import { loadStateRows, lookupPincode, type InRow } from "@/lib/india-postal";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
@@ -142,14 +141,8 @@ function DigitalTab() {
   const [loadingLocality, setLoadingLocality] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
 
-  // Pincode dataset (non-India) — for India, see `inRows` below.
+  // Single GeoNames-backed pincode dataset, scoped to the selected state.
   const [statePincodes, setStatePincodes] = useState<PincodeEntry[]>([]);
-  // India-only: full static post-office dataset for the selected state.
-  // Same source powers District / Sub-District / Locality / Pincode dropdowns
-  // and the reverse pincode lookup, keeping the forward cascade and the
-  // reverse fill 100% consistent.
-  const [inRows, setInRows] = useState<InRow[]>([]);
-  const [loadingIn, setLoadingIn] = useState(false);
   const lastPinRef = useRef<string>("");
 
   function set<K extends keyof typeof form>(k: K, v: string) {
@@ -278,27 +271,9 @@ function DigitalTab() {
     };
   }, [form.countryCode, form.locality]);
 
-  // ─── India: load full state dataset (single source of truth) ───
+  // ─── State → pincode dataset (GeoNames postal search) ───
   useEffect(() => {
-    if (!isIndia || !stateName) {
-      setInRows([]);
-      return;
-    }
-    let cancelled = false;
-    setLoadingIn(true);
-    loadStateRows(stateName).then((rows) => {
-      if (cancelled) return;
-      setInRows(rows);
-      setLoadingIn(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isIndia, stateName]);
-
-  // ─── Non-India: pincode dataset via GeoNames for the Pincode dropdown ───
-  useEffect(() => {
-    if (isIndia || !form.countryCode || !stateName) {
+    if (!form.countryCode || !stateName) {
       setStatePincodes([]);
       return;
     }
@@ -319,7 +294,7 @@ function DigitalTab() {
     return () => {
       cancelled = true;
     };
-  }, [isIndia, form.countryCode, stateName]);
+  }, [form.countryCode, stateName]);
 
   // ─── Pincode entered → reverse-fill the address ───
   useEffect(() => {
@@ -329,52 +304,6 @@ function DigitalTab() {
     if (isIndia && !/^\d{6}$/.test(pin)) return;
     lastPinRef.current = pin;
     setLookingUpPin(true);
-
-    if (isIndia) {
-      lookupPincode(pin)
-        .then((rows) => {
-          if (!rows.length) return;
-          // Score against current selections; prefer matching locality > sub > district > state.
-          const score = (r: (typeof rows)[number]) => {
-            let s = 0;
-            if (form.locality && sameText(r.officeName, form.locality)) s += 128;
-            if (form.sub_district && r.taluk && sameText(r.taluk, form.sub_district)) s += 32;
-            if (form.district && sameText(r.district, form.district)) s += 16;
-            if (stateName && sameText(r.stateName, stateName)) s += 8;
-            if (!form.locality && sameText(r.officeName, preferredLocality)) s += 4;
-            return s;
-          };
-          const best = [...rows].sort((a, b) => score(b) - score(a))[0];
-          if (!best) return;
-          // Seed the state's dataset so the dropdowns immediately reflect the chain.
-          loadStateRows(best.stateName).then((stateRows) => {
-            if (stateRows.length) setInRows(stateRows);
-          });
-          setForm((s) => {
-            const next = { ...s };
-            const st = State.getStatesOfCountry("IN").find((x) =>
-              sameText(x.name, best.stateName),
-            );
-            if (st) next.stateCode = st.isoCode;
-            next.district = best.district;
-            const blocks = Array.from(
-              new Set(
-                rows
-                  .filter((r) => sameText(r.district, best.district))
-                  .map((r) => r.taluk)
-                  .filter(Boolean),
-              ),
-            );
-            if (best.taluk) next.sub_district = best.taluk;
-            else if (blocks.length === 1) next.sub_district = blocks[0];
-            next.locality = best.officeName;
-            return next;
-          });
-        })
-        .catch(() => {})
-        .finally(() => setLookingUpPin(false));
-      return;
-    }
 
     gn.postalCodeLookup(form.countryCode, pin).then((rows) => {
       const r = rows[0];
@@ -394,7 +323,7 @@ function DigitalTab() {
         return next;
       });
     });
-  }, [form.pincode, isIndia, form.countryCode, form.locality, form.sub_district, form.district]);
+  }, [form.pincode, form.countryCode]);
 
   // ─── Geolocation one-shot autofill on mount ───
   useEffect(() => {
@@ -452,32 +381,17 @@ function DigitalTab() {
   // ─── Derived dropdown options ───
   const districtOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
-    if (isIndia) {
-      for (const r of inRows) {
-        if (r.district && !m.has(r.district))
-          m.set(r.district, { value: r.district, label: r.district, keywords: r.district });
-      }
-    } else {
-      for (const d of districtList)
-        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
-    }
+    for (const d of districtList)
+      m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
     if (form.district && !m.has(form.district))
       m.set(form.district, { value: form.district, label: form.district, keywords: form.district });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [districtList, inRows, isIndia, form.district]);
+  }, [districtList, form.district]);
 
   const subDistrictOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
-    if (isIndia) {
-      for (const r of inRows) {
-        if (form.district && !sameText(r.district, form.district)) continue;
-        if (r.taluk && !m.has(r.taluk))
-          m.set(r.taluk, { value: r.taluk, label: r.taluk, keywords: r.taluk });
-      }
-    } else {
-      for (const d of subDistrictList)
-        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
-    }
+    for (const d of subDistrictList)
+      m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
     if (form.sub_district && !m.has(form.sub_district))
       m.set(form.sub_district, {
         value: form.sub_district,
@@ -485,40 +399,19 @@ function DigitalTab() {
         keywords: form.sub_district,
       });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [subDistrictList, inRows, isIndia, form.district, form.sub_district]);
+  }, [subDistrictList, form.sub_district]);
 
   const localityOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
-    if (isIndia) {
-      for (const r of inRows) {
-        if (form.district && !sameText(r.district, form.district)) continue;
-        if (form.sub_district && r.taluk && !sameText(r.taluk, form.sub_district)) continue;
-        if (!m.has(r.officeName))
-          m.set(r.officeName, {
-            value: r.officeName,
-            label: r.officeName,
-            keywords: r.officeName,
-          });
-      }
-    } else {
-      for (const d of localityList)
-        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
-    }
+    for (const d of localityList)
+      m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
     if (form.locality && !m.has(form.locality))
       m.set(form.locality, { value: form.locality, label: form.locality, keywords: form.locality });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [localityList, inRows, isIndia, form.district, form.sub_district, form.locality]);
+  }, [localityList, form.locality]);
 
   const pincodeOptions = useMemo(() => {
-    const source: PincodeEntry[] = isIndia
-      ? inRows.map((r) => ({
-          pincode: r.pincode,
-          district: r.district,
-          sub_district: r.taluk || undefined,
-          locality: r.officeName,
-        }))
-      : statePincodes;
-    const filtered = source.filter((r) => {
+    const filtered = statePincodes.filter((r) => {
       if (form.district && !sameText(r.district, form.district)) return false;
       if (form.sub_district && r.sub_district && !sameText(r.sub_district, form.sub_district))
         return false;
@@ -530,7 +423,7 @@ function DigitalTab() {
     if (form.pincode && !arr.includes(form.pincode))
       opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
     return opts;
-  }, [statePincodes, inRows, isIndia, form.district, form.sub_district, form.locality, form.pincode]);
+  }, [statePincodes, form.district, form.sub_district, form.locality, form.pincode]);
 
   useEffect(() => {
     if (!form.locality || form.pincode) return;
@@ -569,7 +462,6 @@ function DigitalTab() {
     setLocalityList([]);
     setPincodeList([]);
     setStatePincodes([]);
-    setInRows([]);
     lastPinRef.current = "";
     setForm({
       name: "",
@@ -658,7 +550,6 @@ function DigitalTab() {
               setLocalityList([]);
               setPincodeList([]);
               setStatePincodes([]);
-              setInRows([]);
               lastPinRef.current = "";
               setForm((s) => ({
                 ...s,
@@ -706,17 +597,17 @@ function DigitalTab() {
             onChange={(v) =>
               setForm((s) => ({ ...s, district: v, sub_district: "", locality: "", pincode: "" }))
             }
-            disabled={!form.stateCode || (isIndia && loadingIn)}
+            disabled={!form.stateCode}
             placeholder={
               !form.stateCode
                 ? "Select state first"
-                : loadingDistricts || (isIndia && loadingIn)
+                : loadingDistricts
                   ? "Loading districts…"
                   : "Select district"
             }
             searchPlaceholder="Search district..."
-            emptyText={loadingDistricts || (isIndia && loadingIn) ? "Loading…" : "No district found"}
-            loading={loadingDistricts || (isIndia && loadingIn)}
+            emptyText={loadingDistricts ? "Loading…" : "No district found"}
+            loading={loadingDistricts}
             loadingText="Loading districts…"
             options={districtOptions}
           />
