@@ -410,6 +410,15 @@ function DigitalTab() {
   }, [localityList, form.locality]);
 
   const pincodeOptions = useMemo(() => {
+    // Prefer the locality-scoped postal search (same source as the reverse
+    // pincode→locality lookup). Fall back to the state-wide dataset only when
+    // no locality is selected yet.
+    if (form.locality && pincodeList.length) {
+      const opts = pincodeList.map((p) => ({ value: p, label: p, keywords: p }));
+      if (form.pincode && !pincodeList.includes(form.pincode))
+        opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
+      return opts;
+    }
     const filtered = statePincodes.filter((r) => {
       if (form.district && !sameText(r.district, form.district)) return false;
       if (form.sub_district && r.sub_district && !sameText(r.sub_district, form.sub_district))
@@ -422,12 +431,16 @@ function DigitalTab() {
     if (form.pincode && !arr.includes(form.pincode))
       opts.unshift({ value: form.pincode, label: form.pincode, keywords: form.pincode });
     return opts;
-  }, [statePincodes, form.district, form.sub_district, form.locality, form.pincode]);
+  }, [statePincodes, pincodeList, form.district, form.sub_district, form.locality, form.pincode]);
 
   useEffect(() => {
     if (!form.locality || form.pincode) return;
     const codes = pincodeOptions.map((o) => o.value).filter(Boolean);
-    if (codes.length === 1) setForm((s) => ({ ...s, pincode: codes[0] }));
+    if (codes.length === 0) return;
+    // Auto-fill when unambiguous; otherwise pre-select the first match so the
+    // field isn't left empty when GeoNames returns several postal codes for a
+    // single locality (common in Indian towns).
+    setForm((s) => ({ ...s, pincode: codes[0] }));
   }, [form.locality, form.pincode, pincodeOptions]);
 
   function validateForm(): boolean {
