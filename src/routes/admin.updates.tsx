@@ -600,10 +600,11 @@ function AdminUpdatesPage() {
                       fieldwork_event_id: v,
                       // Clear any photo/video link — only one link is stored.
                       gallery_item_id: null,
-                      // Auto-fill empty title fields from the event so the
-                      // admin doesn't have to re-enter them.
-                      title_en: d.title_en.trim() || (ev?.title_en ?? ""),
-                      title_ta: d.title_ta.trim() || (ev?.title_ta ?? ""),
+                      // Auto-fill titles from the event. Always overwrite so
+                      // switching events updates the visible fields; the admin
+                      // can still edit afterwards.
+                      title_en: ev?.title_en ?? d.title_en,
+                      title_ta: ev?.title_ta ?? d.title_ta,
                     }));
                   }}
                 >
