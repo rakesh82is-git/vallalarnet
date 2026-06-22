@@ -893,6 +893,10 @@ function ManualTab() {
       toast.error("Please upload a JPG, PNG, WebP, or PDF");
       return;
     }
+    if (f.type.startsWith("image/") && f.size > 5_000_000) {
+      toast.error("Image must be under 5 MB");
+      return;
+    }
     if (f.size > 6_000_000) {
       toast.error("File must be under 6 MB");
       return;
