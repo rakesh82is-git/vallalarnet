@@ -464,3 +464,27 @@ export const getFieldworkItem = createServerFn({ method: "GET" })
     if (error || !item) return null;
     return item as GalleryItem;
   });
+
+export const getFieldworkEvent = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const sb = await getBackendClient();
+    if (!sb) return null;
+    const { data: event, error } = await sb
+      .from("fieldwork_events")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error || !event) return null;
+    const { data: items } = await sb
+      .from("gallery_items")
+      .select("*")
+      .eq("kind", "fieldwork")
+      .eq("event_id", data.id)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    return {
+      event: event as FieldworkEvent,
+      items: (items ?? []) as GalleryItem[],
+    };
+  });
