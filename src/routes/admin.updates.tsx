@@ -534,9 +534,14 @@ function AdminUpdatesPage() {
 
             <div className="space-y-4 border-t border-border pt-4">
               <div className="space-y-2">
-                <Label htmlFor="gallery_item_id">Link to gallery item (optional)</Label>
+                <Label htmlFor="gallery_item_id">Link to gallery photo / video (optional)</Label>
                 <Select
-                  value={draft.gallery_item_id ?? "__none__"}
+                  value={
+                    draft.gallery_item_id &&
+                    gallery.find((g) => g.id === draft.gallery_item_id)?.kind !== "fieldwork"
+                      ? draft.gallery_item_id
+                      : "__none__"
+                  }
                   onValueChange={(v) =>
                     setDraft({ ...draft, gallery_item_id: v === "__none__" ? null : v })
                   }
@@ -546,15 +551,48 @@ function AdminUpdatesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">— None —</SelectItem>
-                    {gallery.map((g) => (
-                      <SelectItem key={g.id} value={g.id}>
-                        [{g.kind}] {g.title_en || g.title_ta}
-                      </SelectItem>
-                    ))}
+                    {gallery
+                      .filter((g) => g.kind !== "fieldwork")
+                      .map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          [{g.kind}] {g.title_en || g.title_ta}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Readers will be taken to the linked gallery item when they tap the update.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fieldwork_item_id">Or link to a fieldwork item (optional)</Label>
+                <Select
+                  value={
+                    draft.gallery_item_id &&
+                    gallery.find((g) => g.id === draft.gallery_item_id)?.kind === "fieldwork"
+                      ? draft.gallery_item_id
+                      : "__none__"
+                  }
+                  onValueChange={(v) =>
+                    setDraft({ ...draft, gallery_item_id: v === "__none__" ? null : v })
+                  }
+                >
+                  <SelectTrigger id="fieldwork_item_id">
+                    <SelectValue placeholder="No fieldwork item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— None —</SelectItem>
+                    {gallery
+                      .filter((g) => g.kind === "fieldwork")
+                      .map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.title_en || g.title_ta}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Picking a fieldwork item replaces any gallery photo/video link above — only one link is stored.
                 </p>
               </div>
               <div className="space-y-2">
@@ -567,7 +605,7 @@ function AdminUpdatesPage() {
                   placeholder="https://example.com/article"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Used only if no gallery item is selected. Must start with http(s)://
+                  Used only if no gallery/fieldwork item is selected. Must start with http(s)://
                 </p>
               </div>
             </div>
