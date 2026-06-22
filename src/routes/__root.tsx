@@ -8,7 +8,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -53,6 +53,18 @@ function SiteShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Hide the global newsfeed on admin pages to keep the admin tooling uncluttered.
   const showFeed = !pathname.startsWith("/admin");
+  const footerRef = useRef<HTMLElement>(null);
+  const [footerVisible, setFooterVisible] = useState(false);
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => setFooterVisible(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans selection:bg-accent/20">
       <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
@@ -104,17 +116,30 @@ function SiteShell({ children }: { children: ReactNode }) {
               >
                 {children}
               </div>
-              <CampaignUpdatesDrawer
-                isOpen={isFeedOpen}
-                onToggle={() => setIsFeedOpen((v) => !v)}
-              />
+              {/* On lg+ the drawer flows inline next to content. On mobile/tablet it
+                  floats fixed at the bottom of the viewport until the footer scrolls in. */}
+              <div
+                className={cn(
+                  "fixed inset-x-0 bottom-0 z-30 px-3 pb-3 pointer-events-none",
+                  "transition-transform duration-300 ease-in-out",
+                  footerVisible ? "translate-y-full" : "translate-y-0",
+                  "lg:static lg:p-0 lg:translate-y-0 lg:contents",
+                )}
+              >
+                <div className="pointer-events-auto mx-auto max-w-3xl lg:max-w-none lg:mx-0 lg:contents">
+                  <CampaignUpdatesDrawer
+                    isOpen={isFeedOpen}
+                    onToggle={() => setIsFeedOpen((v) => !v)}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         ) : (
           children
         )}
       </main>
-      <footer className="border-t border-border py-8 px-6 mt-16">
+      <footer ref={footerRef} className="border-t border-border py-8 px-6 mt-16">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-muted-foreground">
           <div className="font-display font-bold text-primary text-sm">அருட்பெருஞ்ஜோதி</div>
           <div className="font-mono uppercase tracking-widest text-center">
