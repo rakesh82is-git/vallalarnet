@@ -61,6 +61,11 @@ function GalleryPage() {
   const { data: fw } = useSuspenseQuery(fwOpts);
   const [lightbox, setLightbox] = useState<Item | null>(null);
 
+  const isVideo = (it: Item) =>
+    it.kind === "video" ||
+    /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(it.url) ||
+    !!extractYouTubeId(it.url);
+
   const groups = useMemo(() => ({
     photo: data.filter((i) => i.kind === "photo"),
     video: data.filter((i) => i.kind === "video"),
@@ -184,10 +189,10 @@ function GalleryPage() {
 
       <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
         <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background">
-          {lightbox && lightbox.kind !== "video" && (
+          {lightbox && !isVideo(lightbox) && (
             <img src={resolve(lightbox.url)} alt={title(lightbox)} className="w-full h-auto max-h-[80vh] object-contain" />
           )}
-          {lightbox?.kind === "video" && (
+          {lightbox && isVideo(lightbox) && (
             <div className="aspect-video bg-black">
               {(() => {
                 const ytId = extractYouTubeId(lightbox.url);
