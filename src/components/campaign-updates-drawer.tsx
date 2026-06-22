@@ -54,7 +54,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
     >
       <div
         className={cn(
-          "lg:sticky lg:top-20 rounded-2xl border border-border bg-card/60 backdrop-blur-sm shadow-sm",
+          "lg:sticky lg:top-20 rounded-2xl border border-border bg-card/95 lg:bg-card/60 backdrop-blur-md shadow-lg lg:shadow-sm",
           "transition-all duration-500 ease-in-out overflow-hidden",
           // On desktop when closed, hide content and become a thin rail
           !isOpen && "lg:h-[calc(100vh-6rem)]",
@@ -124,7 +124,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           )}
         >
           <div className="overflow-hidden">
-            <div className="lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto p-4 space-y-4">
+            <div className="max-h-[55vh] overflow-y-auto lg:max-h-[calc(100vh-9rem)] p-4 space-y-4">
               {isLoading && (
                 <p className="text-xs text-muted-foreground">{loadingLabel}</p>
               )}
