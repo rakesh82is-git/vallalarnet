@@ -577,9 +577,21 @@ function AdminUpdatesPage() {
                       ? draft.gallery_item_id
                       : "__none__"
                   }
-                  onValueChange={(v) =>
-                    setDraft({ ...draft, gallery_item_id: v === "__none__" ? null : v })
-                  }
+                  onValueChange={(v) => {
+                    if (v === "__none__") {
+                      setDraft({ ...draft, gallery_item_id: null });
+                      return;
+                    }
+                    const fw = gallery.find((g) => g.id === v);
+                    setDraft((d) => ({
+                      ...d,
+                      gallery_item_id: v,
+                      // Auto-fill empty title fields from the fieldwork item so the
+                      // admin doesn't have to re-enter them.
+                      title_en: d.title_en.trim() || (fw?.title_en ?? ""),
+                      title_ta: d.title_ta.trim() || (fw?.title_ta ?? ""),
+                    }));
+                  }}
                 >
                   <SelectTrigger id="fieldwork_item_id">
                     <SelectValue placeholder="No fieldwork item" />
@@ -596,7 +608,9 @@ function AdminUpdatesPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Picking a fieldwork item replaces any gallery photo/video link above — only one link is stored.
+                  Picking a fieldwork item auto-fills the title from the fieldwork (you can still override),
+                  and the update opens a dedicated page at <code>/fieldwork/&lt;id&gt;</code> showing that media.
+                  Replaces any gallery photo/video link above — only one link is stored.
                 </p>
               </div>
               <div className="space-y-2">
