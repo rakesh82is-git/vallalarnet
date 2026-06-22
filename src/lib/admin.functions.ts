@@ -5,16 +5,15 @@ import { randomUUID } from "crypto";
 
 const SESSION_NAME = "vd_admin";
 
-const ADMIN_USERNAME = "Vallalar";
-const ADMIN_PASSWORD = "Vallalar1823";
-const FALLBACK_SESSION_SECRET = "vadalur-admin-static-session-secret-v1";
-
 function sessionConfig() {
   const envSecret = process.env.ADMIN_SESSION_SECRET;
-  const password =
-    envSecret && envSecret.length >= 32 ? envSecret : FALLBACK_SESSION_SECRET;
+  if (!envSecret || envSecret.length < 32) {
+    throw new Error(
+      "ADMIN_SESSION_SECRET is not configured or is shorter than 32 characters",
+    );
+  }
   return {
-    password,
+    password: envSecret,
     name: SESSION_NAME,
     maxAge: 60 * 60 * 8,
     cookie: {
@@ -54,7 +53,14 @@ export const adminLogin = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    if (data.username !== ADMIN_USERNAME || data.password !== ADMIN_PASSWORD) {
+    const adminUsername = process.env.ADMIN_USERNAME;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminUsername || !adminPassword) {
+      throw new Error(
+        "ADMIN_USERNAME and ADMIN_PASSWORD must be configured as environment variables",
+      );
+    }
+    if (data.username !== adminUsername || data.password !== adminPassword) {
       return { ok: false as const, error: "bad" as const };
     }
     const session = await useSession<{ authed?: boolean }>(sessionConfig());
