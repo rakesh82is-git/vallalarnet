@@ -139,6 +139,8 @@ function AdminUpdatesPage() {
       media_preview_url: row.media_preview_url ?? null,
       status: row.status,
       is_pinned: row.is_pinned,
+      gallery_item_id: row.gallery_item_id ?? null,
+      external_url: row.external_url ?? "",
     });
     setOpen(true);
   }
