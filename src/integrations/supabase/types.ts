@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_updates: {
+        Row: {
+          content_en: string | null
+          content_ta: string | null
+          created_at: string
+          id: string
+          is_pinned: boolean
+          media_url: string | null
+          status: string
+          title_en: string | null
+          title_ta: string | null
+        }
+        Insert: {
+          content_en?: string | null
+          content_ta?: string | null
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          media_url?: string | null
+          status?: string
+          title_en?: string | null
+          title_ta?: string | null
+        }
+        Update: {
+          content_en?: string | null
+          content_ta?: string | null
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          media_url?: string | null
+          status?: string
+          title_en?: string | null
+          title_ta?: string | null
+        }
+        Relationships: []
+      }
       gallery_items: {
         Row: {
           created_at: string
