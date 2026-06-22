@@ -240,45 +240,7 @@ export type Database = {
       }
     }
     Views: {
-      signatures_public: {
-        Row: {
-          country: string | null
-          created_at: string | null
-          district: string | null
-          id: string | null
-          kind: Database["public"]["Enums"]["signature_kind"] | null
-          message: string | null
-          name: string | null
-          scan_url: string | null
-          signature_svg: string | null
-          state: string | null
-        }
-        Insert: {
-          country?: string | null
-          created_at?: string | null
-          district?: string | null
-          id?: string | null
-          kind?: Database["public"]["Enums"]["signature_kind"] | null
-          message?: string | null
-          name?: string | null
-          scan_url?: string | null
-          signature_svg?: string | null
-          state?: string | null
-        }
-        Update: {
-          country?: string | null
-          created_at?: string | null
-          district?: string | null
-          id?: string | null
-          kind?: Database["public"]["Enums"]["signature_kind"] | null
-          message?: string | null
-          name?: string | null
-          scan_url?: string | null
-          signature_svg?: string | null
-          state?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never
