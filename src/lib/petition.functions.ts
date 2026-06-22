@@ -156,7 +156,6 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
       return {
         ok: false as const,
         error: "db" as const,
-        debug: `${error.code ?? "?"}: ${error.message ?? "unknown"}${error.details ? ` | ${error.details}` : ""}`,
       };
     }
 
