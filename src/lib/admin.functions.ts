@@ -533,6 +533,8 @@ type CampaignUpdate = {
   status: "draft" | "published";
   is_pinned: boolean;
   created_at: string;
+  gallery_item_id: string | null;
+  external_url: string | null;
 };
 
 const CAMPAIGN_BUCKET = "campaign-media";
@@ -580,6 +582,17 @@ const CampaignUpsert = z.object({
   media_url: z.string().trim().max(2000).optional().nullable(),
   status: z.enum(["draft", "published"]).default("draft"),
   is_pinned: z.boolean().default(false),
+  gallery_item_id: z.string().uuid().optional().nullable(),
+  external_url: z
+    .string()
+    .trim()
+    .max(2000)
+    .optional()
+    .nullable()
+    .refine(
+      (v) => !v || /^https?:\/\//i.test(v),
+      "External URL must start with http(s)://",
+    ),
 });
 
 export const adminSaveCampaignUpdate = createServerFn({ method: "POST" })
@@ -595,6 +608,8 @@ export const adminSaveCampaignUpdate = createServerFn({ method: "POST" })
       media_url: data.media_url?.trim() || null,
       status: data.status,
       is_pinned: data.is_pinned,
+      gallery_item_id: data.gallery_item_id || null,
+      external_url: data.external_url?.trim() || null,
     };
     if (data.id) {
       const { error } = await sb

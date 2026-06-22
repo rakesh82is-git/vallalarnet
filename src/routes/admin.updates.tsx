@@ -6,6 +6,7 @@ import {
   adminSaveCampaignUpdate,
   adminDeleteCampaignUpdate,
   adminUploadCampaignMedia,
+  adminListGallery,
 } from "@/lib/admin.functions";
 import { toast } from "sonner";
 import {
@@ -47,6 +48,8 @@ type CampaignRow = {
   status: Status;
   is_pinned: boolean;
   created_at: string;
+  gallery_item_id: string | null;
+  external_url: string | null;
 };
 
 type Draft = {
@@ -59,6 +62,8 @@ type Draft = {
   media_preview_url: string | null;
   status: Status;
   is_pinned: boolean;
+  gallery_item_id: string | null;
+  external_url: string;
 };
 
 const emptyDraft = (): Draft => ({
@@ -71,6 +76,8 @@ const emptyDraft = (): Draft => ({
   media_preview_url: null,
   status: "draft",
   is_pinned: false,
+  gallery_item_id: null,
+  external_url: "",
 });
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -91,8 +98,12 @@ function AdminUpdatesPage() {
   const save = useServerFn(adminSaveCampaignUpdate);
   const remove = useServerFn(adminDeleteCampaignUpdate);
   const upload = useServerFn(adminUploadCampaignMedia);
+  const listGallery = useServerFn(adminListGallery);
 
   const [rows, setRows] = useState<CampaignRow[]>([]);
+  const [gallery, setGallery] = useState<
+    { id: string; title_en: string; title_ta: string; kind: string; url: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
@@ -116,6 +127,12 @@ function AdminUpdatesPage() {
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    listGallery()
+      .then((r) => setGallery(r.items as typeof gallery))
+      .catch(() => {});
+  }, [listGallery]);
+
   function openCreate() {
     setDraft(emptyDraft());
     setOpen(true);
@@ -132,6 +149,8 @@ function AdminUpdatesPage() {
       media_preview_url: row.media_preview_url ?? null,
       status: row.status,
       is_pinned: row.is_pinned,
+      gallery_item_id: row.gallery_item_id ?? null,
+      external_url: row.external_url ?? "",
     });
     setOpen(true);
   }
@@ -197,6 +216,8 @@ function AdminUpdatesPage() {
           media_url: draft.media_url || null,
           status: draft.status,
           is_pinned: draft.is_pinned,
+          gallery_item_id: draft.gallery_item_id,
+          external_url: draft.external_url.trim() || null,
         },
       });
       toast.success(draft.id ? "Update saved" : "Update created");
@@ -401,6 +422,46 @@ function AdminUpdatesPage() {
               <p className="text-xs text-muted-foreground">
                 Uploaded to the <code>campaign-media</code> bucket. The path is stored on <code>media_url</code>.
               </p>
+            </div>
+
+            <div className="space-y-4 border-t border-border pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="gallery_item_id">Link to gallery item (optional)</Label>
+                <Select
+                  value={draft.gallery_item_id ?? "__none__"}
+                  onValueChange={(v) =>
+                    setDraft({ ...draft, gallery_item_id: v === "__none__" ? null : v })
+                  }
+                >
+                  <SelectTrigger id="gallery_item_id">
+                    <SelectValue placeholder="No gallery item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— None —</SelectItem>
+                    {gallery.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        [{g.kind}] {g.title_en || g.title_ta}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Readers will be taken to the linked gallery item when they tap the update.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="external_url">Or external URL (optional)</Label>
+                <Input
+                  id="external_url"
+                  type="url"
+                  value={draft.external_url}
+                  onChange={(e) => setDraft({ ...draft, external_url: e.target.value })}
+                  placeholder="https://example.com/article"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used only if no gallery item is selected. Must start with http(s)://
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-border pt-4">
