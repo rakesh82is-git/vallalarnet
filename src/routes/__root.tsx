@@ -4,15 +4,18 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { LanguageProvider, useLang } from "@/i18n/context";
+import { CampaignUpdatesDrawer } from "@/components/campaign-updates-drawer";
+import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/", key: "home" },
@@ -46,6 +49,10 @@ function LangSwitcher() {
 
 function SiteShell({ children }: { children: ReactNode }) {
   const { t } = useLang();
+  const [isFeedOpen, setIsFeedOpen] = useState(true);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Hide the global newsfeed on admin pages to keep the admin tooling uncluttered.
+  const showFeed = !pathname.startsWith("/admin");
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans selection:bg-accent/20">
       <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
@@ -85,7 +92,28 @@ function SiteShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </nav>
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        {showFeed ? (
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+            <div className="flex flex-col lg:flex-row gap-8 transition-all duration-500 ease-in-out">
+              <div
+                className={cn(
+                  "min-w-0 transition-all duration-500 ease-in-out",
+                  isFeedOpen ? "lg:w-2/3" : "lg:w-full",
+                )}
+              >
+                {children}
+              </div>
+              <CampaignUpdatesDrawer
+                isOpen={isFeedOpen}
+                onToggle={() => setIsFeedOpen((v) => !v)}
+              />
+            </div>
+          </div>
+        ) : (
+          children
+        )}
+      </main>
       <footer className="border-t border-border py-8 px-6 mt-16">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-muted-foreground">
           <div className="font-display font-bold text-primary text-sm">அருட்பெருஞ்ஜோதி</div>
