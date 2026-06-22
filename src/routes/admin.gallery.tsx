@@ -261,6 +261,10 @@ function AdminGallery() {
 
   async function handleFile(file: File, target: "url" | "thumb_url") {
     if (!file) return;
+    if (file.type.startsWith("image/") && file.size > 5_000_000) {
+      toast.error("Image too large (max 5MB)");
+      return;
+    }
     if (file.size > 50_000_000) {
       toast.error("Max file size is 50MB");
       return;
