@@ -102,7 +102,7 @@ function AdminUpdatesPage() {
 
   const [rows, setRows] = useState<CampaignRow[]>([]);
   const [gallery, setGallery] = useState<
-    { id: string; title_en: string; title_ta: string; kind: string; url: string }[]
+    { id: string; title_en: string; title_ta: string; kind: string; url: string; thumb_url?: string | null }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -200,7 +200,11 @@ function AdminUpdatesPage() {
   }
 
   async function handleSave() {
+    const linkedFieldwork =
+      draft.gallery_item_id &&
+      gallery.find((g) => g.id === draft.gallery_item_id && g.kind === "fieldwork");
     if (
+      !linkedFieldwork &&
       !draft.title_en.trim() &&
       !draft.title_ta.trim() &&
       !draft.content_en.trim() &&
@@ -214,8 +218,8 @@ function AdminUpdatesPage() {
       await save({
         data: {
           id: draft.id,
-          title_en: draft.title_en,
-          title_ta: draft.title_ta,
+          title_en: draft.title_en || (linkedFieldwork ? linkedFieldwork.title_en : ""),
+          title_ta: draft.title_ta || (linkedFieldwork ? linkedFieldwork.title_ta : ""),
           content_en: draft.content_en,
           content_ta: draft.content_ta,
           media_url: draft.media_url || null,
