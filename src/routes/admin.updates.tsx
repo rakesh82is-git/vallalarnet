@@ -98,8 +98,12 @@ function AdminUpdatesPage() {
   const save = useServerFn(adminSaveCampaignUpdate);
   const remove = useServerFn(adminDeleteCampaignUpdate);
   const upload = useServerFn(adminUploadCampaignMedia);
+  const listGallery = useServerFn(adminListGallery);
 
   const [rows, setRows] = useState<CampaignRow[]>([]);
+  const [gallery, setGallery] = useState<
+    { id: string; title_en: string; title_ta: string; kind: string; url: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
@@ -122,6 +126,12 @@ function AdminUpdatesPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    listGallery()
+      .then((r) => setGallery(r.items as typeof gallery))
+      .catch(() => {});
+  }, [listGallery]);
 
   function openCreate() {
     setDraft(emptyDraft());
@@ -206,6 +216,8 @@ function AdminUpdatesPage() {
           media_url: draft.media_url || null,
           status: draft.status,
           is_pinned: draft.is_pinned,
+          gallery_item_id: draft.gallery_item_id,
+          external_url: draft.external_url.trim() || null,
         },
       });
       toast.success(draft.id ? "Update saved" : "Update created");
