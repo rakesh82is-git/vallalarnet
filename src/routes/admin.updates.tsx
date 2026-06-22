@@ -508,6 +508,30 @@ function AdminUpdatesPage() {
               </p>
             </div>
 
+            {!draft.id && (
+              <div className="space-y-2 border-t border-border pt-4">
+                <Label>Bulk create from multiple images</Label>
+                <p className="text-xs text-muted-foreground">
+                  Pick many images at once. Each one becomes its own update sharing the
+                  title, content, status, pin, and link fields above.
+                </p>
+                <input
+                  ref={bulkRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={bulkBusy || uploading}
+                  onChange={handleBulkFiles}
+                  className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:text-secondary-foreground"
+                />
+                {bulkBusy && (
+                  <p className="text-xs text-muted-foreground">
+                    Creating {bulkProgress.done} / {bulkProgress.total}…
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="space-y-4 border-t border-border pt-4">
               <div className="space-y-2">
                 <Label htmlFor="gallery_item_id">Link to gallery item (optional)</Label>
