@@ -539,13 +539,18 @@ const CAMPAIGN_BUCKET = "campaign-media";
 async function signedMediaUrl(
   sb: Awaited<ReturnType<typeof getBackend>>,
   path: string | null,
+  width = 800,
 ): Promise<string | null> {
   if (!path) return null;
   // Already a full URL (legacy / external) — return as-is
   if (/^https?:\/\//i.test(path)) return path;
+  // Supabase Image Transformation: CDN resize to the requested width,
+  // quality 80, and auto-WebP via Accept negotiation.
   const { data } = await sb.storage
     .from(CAMPAIGN_BUCKET)
-    .createSignedUrl(path, 60 * 60 * 24 * 7);
+    .createSignedUrl(path, 60 * 60 * 24 * 7, {
+      transform: { width, quality: 80, resize: "cover" },
+    });
   return data?.signedUrl ?? null;
 }
 
@@ -563,7 +568,8 @@ export const adminListCampaignUpdates = createServerFn({ method: "GET" }).handle
     const items = await Promise.all(
       rows.map(async (r) => ({
         ...r,
-        media_preview_url: await signedMediaUrl(sb, r.media_url),
+        // Admin list renders a 48px square thumb; 200px covers retina.
+        media_preview_url: await signedMediaUrl(sb, r.media_url, 200),
       })),
     );
     return { items };
@@ -670,7 +676,10 @@ export const adminUploadCampaignMedia = createServerFn({ method: "POST" })
       return { ok: false as const, error: upErr.message ?? "upload" };
     const { data: signed } = await sb.storage
       .from(CAMPAIGN_BUCKET)
-      .createSignedUrl(path, 60 * 60 * 24 * 7);
+      .createSignedUrl(path, 60 * 60 * 24 * 7, {
+        // Preview shown in the upload modal — max-h-40 (~400px) on retina.
+        transform: { width: 800, quality: 80, resize: "cover" },
+      });
     return {
       ok: true as const,
       path,

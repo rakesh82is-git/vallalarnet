@@ -24,6 +24,22 @@ function resolve(url: string) {
   return SEED[url] ?? url;
 }
 
+// Rewrite a Supabase public-object URL to the Image Transformation render
+// endpoint with the requested width, quality 80, and auto-WebP (negotiated
+// via the Accept header). Non-Supabase URLs are returned untouched.
+function supabaseImg(url: string, width: number): string {
+  if (!url) return url;
+  const marker = "/storage/v1/object/public/";
+  const i = url.indexOf(marker);
+  if (i === -1) return url;
+  const base = url.slice(0, i);
+  const rest = url.slice(i + marker.length).split("?")[0];
+  return `${base}/storage/v1/render/image/public/${rest}?width=${width}&quality=80&resize=cover`;
+}
+function thumb(url: string, width: number) {
+  return supabaseImg(resolve(url), width);
+}
+
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/);
@@ -88,7 +104,7 @@ function GalleryPage() {
       style={{ animationDelay: `${i * 40}ms` }}
     >
       <img
-        src={resolve(it.thumb_url || it.url)}
+        src={thumb(it.thumb_url || it.url, 600)}
         alt={title(it)}
         loading="lazy"
         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
