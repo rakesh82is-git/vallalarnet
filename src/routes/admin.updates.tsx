@@ -424,6 +424,46 @@ function AdminUpdatesPage() {
               </p>
             </div>
 
+            <div className="space-y-4 border-t border-border pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="gallery_item_id">Link to gallery item (optional)</Label>
+                <Select
+                  value={draft.gallery_item_id ?? "__none__"}
+                  onValueChange={(v) =>
+                    setDraft({ ...draft, gallery_item_id: v === "__none__" ? null : v })
+                  }
+                >
+                  <SelectTrigger id="gallery_item_id">
+                    <SelectValue placeholder="No gallery item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— None —</SelectItem>
+                    {gallery.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        [{g.kind}] {g.title_en || g.title_ta}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Readers will be taken to the linked gallery item when they tap the update.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="external_url">Or external URL (optional)</Label>
+                <Input
+                  id="external_url"
+                  type="url"
+                  value={draft.external_url}
+                  onChange={(e) => setDraft({ ...draft, external_url: e.target.value })}
+                  placeholder="https://example.com/article"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used only if no gallery item is selected. Must start with http(s)://
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-border pt-4">
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
