@@ -139,6 +139,10 @@ function AdminUpdatesPage() {
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.type.startsWith("image/") && file.size > 5_000_000) {
+      toast.error("Image too large (max 5MB)");
+      return;
+    }
     if (file.size > 50_000_000) {
       toast.error("File too large (max 50MB)");
       return;

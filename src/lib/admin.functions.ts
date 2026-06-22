@@ -422,6 +422,7 @@ export const adminUploadGalleryFile = createServerFn({ method: "POST" })
       .upload(path, bytes, {
         contentType: data.contentType,
         upsert: false,
+        cacheControl: "public, max-age=31536000, immutable",
       });
     if (upErr)
       return { ok: false as const, error: upErr.message ?? "upload" };
@@ -665,6 +666,7 @@ export const adminUploadCampaignMedia = createServerFn({ method: "POST" })
       .upload(path, bytes, {
         contentType: data.contentType,
         upsert: false,
+        cacheControl: "public, max-age=31536000, immutable",
       });
     if (upErr)
       return { ok: false as const, error: upErr.message ?? "upload" };

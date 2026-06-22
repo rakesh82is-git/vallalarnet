@@ -212,7 +212,11 @@ export const submitManualSignature = createServerFn({ method: "POST" })
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from("petition-manual")
-      .upload(path, bytes, { contentType, upsert: false });
+      .upload(path, bytes, {
+        contentType,
+        upsert: false,
+        cacheControl: "public, max-age=31536000, immutable",
+      });
     if (uploadError) return { ok: false as const, error: "upload" as const };
 
     const { data: row, error } = await supabaseAdmin
