@@ -48,6 +48,8 @@ type CampaignRow = {
   status: Status;
   is_pinned: boolean;
   created_at: string;
+  gallery_item_id: string | null;
+  external_url: string | null;
 };
 
 type Draft = {
@@ -60,6 +62,8 @@ type Draft = {
   media_preview_url: string | null;
   status: Status;
   is_pinned: boolean;
+  gallery_item_id: string | null;
+  external_url: string;
 };
 
 const emptyDraft = (): Draft => ({
@@ -72,6 +76,8 @@ const emptyDraft = (): Draft => ({
   media_preview_url: null,
   status: "draft",
   is_pinned: false,
+  gallery_item_id: null,
+  external_url: "",
 });
 
 function readFileAsBase64(file: File): Promise<string> {
