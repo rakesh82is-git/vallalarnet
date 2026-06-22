@@ -293,8 +293,29 @@ function AdminGallery() {
         toast.error(`Upload failed: ${r.error}`);
         return;
       }
-      setDraft((d) => ({ ...d, [target]: r.url }));
-      toast.success("Uploaded");
+      // Auto-generate a thumbnail from the first frame when uploading a video
+      // into the URL field and no thumb was set yet.
+      let autoThumb: string | null = null;
+      if (target === "url" && file.type.startsWith("video/")) {
+        const frame = await captureVideoFrameUpload(file);
+        if (frame) {
+          const tr = await upload({
+            data: {
+              kind: draft.kind,
+              filename: frame.filename,
+              contentType: frame.contentType,
+              base64: frame.base64,
+            },
+          });
+          if (tr.ok) autoThumb = tr.url;
+        }
+      }
+      setDraft((d) => ({
+        ...d,
+        [target]: r.url,
+        ...(autoThumb && !d.thumb_url ? { thumb_url: autoThumb } : {}),
+      }));
+      toast.success(autoThumb ? "Uploaded (thumbnail auto-generated)" : "Uploaded");
     } catch (e) {
       console.error(e);
       toast.error("Upload failed");
@@ -354,13 +375,29 @@ function AdminGallery() {
             toast.error(`${file.name}: ${up.error}`);
             continue;
           }
+          // Auto-generate thumbnail for videos in bulk.
+          let thumbUrl: string | null = null;
+          if (file.type.startsWith("video/")) {
+            const frame = await captureVideoFrameUpload(file);
+            if (frame) {
+              const tr = await upload({
+                data: {
+                  kind: tab,
+                  filename: frame.filename,
+                  contentType: frame.contentType,
+                  base64: frame.base64,
+                },
+              });
+              if (tr.ok) thumbUrl = tr.url;
+            }
+          }
           await save({
             data: {
               kind: tab,
               title_ta: sharedTa,
               title_en: sharedEn,
               url: up.url,
-              thumb_url: null,
+              thumb_url: thumbUrl,
               sort_order: 0,
               event_id: tab === "fieldwork" ? bulkEventId : null,
             },
