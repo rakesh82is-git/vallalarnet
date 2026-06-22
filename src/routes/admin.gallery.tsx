@@ -761,3 +761,62 @@ function fileToBase64(file: File): Promise<string> {
     r.readAsDataURL(file);
   });
 }
+
+// Extract the first usable frame of a video file as a JPEG and return upload payload.
+// Returns null on any failure (codec unsupported, decode error, etc.) — caller falls back.
+async function captureVideoFrameUpload(
+  file: File,
+): Promise<{ base64: string; contentType: string; filename: string } | null> {
+  if (typeof document === "undefined") return null;
+  if (!file.type.startsWith("video/")) return null;
+  const url = URL.createObjectURL(file);
+  try {
+    const video = document.createElement("video");
+    video.preload = "auto";
+    video.muted = true;
+    video.playsInline = true;
+    (video as HTMLVideoElement & { crossOrigin: string }).crossOrigin = "anonymous";
+    video.src = url;
+    await new Promise<void>((resolve, reject) => {
+      const onMeta = () => resolve();
+      const onErr = () => reject(new Error("video load error"));
+      video.addEventListener("loadedmetadata", onMeta, { once: true });
+      video.addEventListener("error", onErr, { once: true });
+    });
+    // Seek slightly past 0 — many codecs render a black frame at exactly 0.
+    const target = Math.min(0.1, Math.max(0, (video.duration || 1) * 0.01));
+    await new Promise<void>((resolve, reject) => {
+      const onSeek = () => resolve();
+      const onErr = () => reject(new Error("seek error"));
+      video.addEventListener("seeked", onSeek, { once: true });
+      video.addEventListener("error", onErr, { once: true });
+      try {
+        video.currentTime = target;
+      } catch (e) {
+        reject(e);
+      }
+    });
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    if (!w || !h) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(video, 0, 0, w, h);
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.82),
+    );
+    if (!blob) return null;
+    const base64 = await fileToBase64(new File([blob], "thumb.jpg", { type: "image/jpeg" }));
+    const dot = file.name.lastIndexOf(".");
+    const stem = dot > 0 ? file.name.slice(0, dot) : file.name;
+    return { base64, contentType: "image/jpeg", filename: `${stem}-thumb.jpg` };
+  } catch (e) {
+    console.warn("video thumbnail generation failed", e);
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
