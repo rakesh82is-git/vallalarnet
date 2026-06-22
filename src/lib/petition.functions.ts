@@ -262,10 +262,19 @@ export const listManualSignatures = createServerFn({ method: "GET" }).handler(
     const items = await Promise.all(
       ((rows ?? []) as Array<{ id: string; name: string; document_title: string | null; manual_document_url: string | null; created_at: string }>).map(async (r) => {
         const path = r.manual_document_url as string;
+        const isPdf = path.toLowerCase().endsWith(".pdf");
+        // For images, sign with a Supabase Image Transformation so the CDN
+        // returns a resized (≈400px), q80, WebP-negotiated thumbnail instead
+        // of the original full-resolution upload. PDFs cannot be transformed.
         const { data: signed } = await supabaseAdmin.storage
           .from("petition-manual")
-          .createSignedUrl(path, 60 * 60 * 24 * 7);
-        const isPdf = path.toLowerCase().endsWith(".pdf");
+          .createSignedUrl(
+            path,
+            60 * 60 * 24 * 7,
+            isPdf
+              ? undefined
+              : { transform: { width: 400, quality: 80, resize: "cover" } },
+          );
         return {
           id: r.id as string,
           name: r.name as string,
