@@ -16,6 +16,7 @@ import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as FieldworkIdRouteImport } from './routes/fieldwork.$id'
 import { Route as AdminUpdatesRouteImport } from './routes/admin.updates'
 import { Route as AdminGalleryRouteImport } from './routes/admin.gallery'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
@@ -55,6 +56,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const FieldworkIdRoute = FieldworkIdRouteImport.update({
+  id: '/fieldwork/$id',
+  path: '/fieldwork/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUpdatesRoute = AdminUpdatesRouteImport.update({
   id: '/updates',
   path: '/updates',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/updates': typeof AdminUpdatesRoute
+  '/fieldwork/$id': typeof FieldworkIdRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/updates': typeof AdminUpdatesRoute
+  '/fieldwork/$id': typeof FieldworkIdRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/updates': typeof AdminUpdatesRoute
+  '/fieldwork/$id': typeof FieldworkIdRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/gallery'
     | '/admin/updates'
+    | '/fieldwork/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/gallery'
     | '/admin/updates'
+    | '/fieldwork/$id'
     | '/admin'
   id:
     | '__root__'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/gallery'
     | '/admin/updates'
+    | '/fieldwork/$id'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   SignRoute: typeof SignRoute
   StoryRoute: typeof StoryRoute
   WallRoute: typeof WallRoute
+  FieldworkIdRoute: typeof FieldworkIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/fieldwork/$id': {
+      id: '/fieldwork/$id'
+      path: '/fieldwork/$id'
+      fullPath: '/fieldwork/$id'
+      preLoaderRoute: typeof FieldworkIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/updates': {
       id: '/admin/updates'
       path: '/updates'
@@ -252,6 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignRoute: SignRoute,
   StoryRoute: StoryRoute,
   WallRoute: WallRoute,
+  FieldworkIdRoute: FieldworkIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

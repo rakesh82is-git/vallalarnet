@@ -102,7 +102,7 @@ function AdminUpdatesPage() {
 
   const [rows, setRows] = useState<CampaignRow[]>([]);
   const [gallery, setGallery] = useState<
-    { id: string; title_en: string; title_ta: string; kind: string; url: string }[]
+    { id: string; title_en: string; title_ta: string; kind: string; url: string; thumb_url?: string | null }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -200,7 +200,11 @@ function AdminUpdatesPage() {
   }
 
   async function handleSave() {
+    const linkedFieldwork =
+      draft.gallery_item_id &&
+      gallery.find((g) => g.id === draft.gallery_item_id && g.kind === "fieldwork");
     if (
+      !linkedFieldwork &&
       !draft.title_en.trim() &&
       !draft.title_ta.trim() &&
       !draft.content_en.trim() &&
@@ -214,8 +218,8 @@ function AdminUpdatesPage() {
       await save({
         data: {
           id: draft.id,
-          title_en: draft.title_en,
-          title_ta: draft.title_ta,
+          title_en: draft.title_en || (linkedFieldwork ? linkedFieldwork.title_en : ""),
+          title_ta: draft.title_ta || (linkedFieldwork ? linkedFieldwork.title_ta : ""),
           content_en: draft.content_en,
           content_ta: draft.content_ta,
           media_url: draft.media_url || null,
@@ -573,9 +577,21 @@ function AdminUpdatesPage() {
                       ? draft.gallery_item_id
                       : "__none__"
                   }
-                  onValueChange={(v) =>
-                    setDraft({ ...draft, gallery_item_id: v === "__none__" ? null : v })
-                  }
+                  onValueChange={(v) => {
+                    if (v === "__none__") {
+                      setDraft({ ...draft, gallery_item_id: null });
+                      return;
+                    }
+                    const fw = gallery.find((g) => g.id === v);
+                    setDraft((d) => ({
+                      ...d,
+                      gallery_item_id: v,
+                      // Auto-fill empty title fields from the fieldwork item so the
+                      // admin doesn't have to re-enter them.
+                      title_en: d.title_en.trim() || (fw?.title_en ?? ""),
+                      title_ta: d.title_ta.trim() || (fw?.title_ta ?? ""),
+                    }));
+                  }}
                 >
                   <SelectTrigger id="fieldwork_item_id">
                     <SelectValue placeholder="No fieldwork item" />
@@ -592,7 +608,9 @@ function AdminUpdatesPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Picking a fieldwork item replaces any gallery photo/video link above — only one link is stored.
+                  Picking a fieldwork item auto-fills the title from the fieldwork (you can still override),
+                  and the update opens a dedicated page at <code>/fieldwork/&lt;id&gt;</code> showing that media.
+                  Replaces any gallery photo/video link above — only one link is stored.
                 </p>
               </div>
               <div className="space-y-2">
