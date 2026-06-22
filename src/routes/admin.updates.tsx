@@ -110,6 +110,11 @@ function AdminUpdatesPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bulkRef = useRef<HTMLInputElement>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number }>(
+    { done: 0, total: 0 },
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -238,6 +243,85 @@ function AdminUpdatesPage() {
       await refresh();
     } catch {
       toast.error("Delete failed");
+    }
+  }
+
+  async function handleBulkFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const list = Array.from(files);
+    if (
+      !draft.title_en.trim() &&
+      !draft.title_ta.trim() &&
+      !draft.content_en.trim() &&
+      !draft.content_ta.trim()
+    ) {
+      toast.error("Add a shared title or content before bulk uploading");
+      if (bulkRef.current) bulkRef.current.value = "";
+      return;
+    }
+    setBulkBusy(true);
+    setBulkProgress({ done: 0, total: list.length });
+    let okCount = 0;
+    let failCount = 0;
+    try {
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        try {
+          if (file.type.startsWith("image/") && file.size > 5_000_000) {
+            toast.error(`${file.name}: image > 5MB, skipped`);
+            failCount++;
+            continue;
+          }
+          if (file.size > 50_000_000) {
+            toast.error(`${file.name}: > 50MB, skipped`);
+            failCount++;
+            continue;
+          }
+          const base64 = await readFileAsBase64(file);
+          const up = await upload({
+            data: {
+              filename: file.name,
+              contentType: file.type || "application/octet-stream",
+              base64,
+            },
+          });
+          if (!up.ok) {
+            failCount++;
+            toast.error(`${file.name}: ${up.error}`);
+            continue;
+          }
+          await save({
+            data: {
+              id: null,
+              title_en: draft.title_en,
+              title_ta: draft.title_ta,
+              content_en: draft.content_en,
+              content_ta: draft.content_ta,
+              media_url: up.path || null,
+              status: draft.status,
+              is_pinned: draft.is_pinned,
+              gallery_item_id: draft.gallery_item_id,
+              external_url: draft.external_url.trim() || null,
+            },
+          });
+          okCount++;
+        } catch (err) {
+          console.error(err);
+          failCount++;
+        } finally {
+          setBulkProgress({ done: i + 1, total: list.length });
+        }
+      }
+      if (okCount) toast.success(`Created ${okCount} update${okCount === 1 ? "" : "s"}`);
+      if (failCount) toast.error(`${failCount} failed`);
+      if (okCount) {
+        setOpen(false);
+        await refresh();
+      }
+    } finally {
+      setBulkBusy(false);
+      if (bulkRef.current) bulkRef.current.value = "";
     }
   }
 
@@ -423,6 +507,30 @@ function AdminUpdatesPage() {
                 Uploaded to the <code>campaign-media</code> bucket. The path is stored on <code>media_url</code>.
               </p>
             </div>
+
+            {!draft.id && (
+              <div className="space-y-2 border-t border-border pt-4">
+                <Label>Bulk create from multiple images</Label>
+                <p className="text-xs text-muted-foreground">
+                  Pick many images at once. Each one becomes its own update sharing the
+                  title, content, status, pin, and link fields above.
+                </p>
+                <input
+                  ref={bulkRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={bulkBusy || uploading}
+                  onChange={handleBulkFiles}
+                  className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:text-secondary-foreground"
+                />
+                {bulkBusy && (
+                  <p className="text-xs text-muted-foreground">
+                    Creating {bulkProgress.done} / {bulkProgress.total}…
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-4 border-t border-border pt-4">
               <div className="space-y-2">

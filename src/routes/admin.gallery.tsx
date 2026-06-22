@@ -104,6 +104,15 @@ function AdminGallery() {
   const [eventDraft, setEventDraft] = useState<EventDraft>(emptyEventDraft());
   const [savingEvent, setSavingEvent] = useState(false);
 
+  // Bulk upload state
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number }>(
+    { done: 0, total: 0 },
+  );
+  const [bulkTitleTa, setBulkTitleTa] = useState("");
+  const [bulkTitleEn, setBulkTitleEn] = useState("");
+  const [bulkEventId, setBulkEventId] = useState<string | null>(null);
+
   async function refresh() {
     setLoading(true);
     try {
@@ -291,6 +300,84 @@ function AdminGallery() {
       toast.error("Upload failed");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleBulkUpload(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const list = Array.from(files);
+
+    // Validate shared title (fieldwork can inherit from event)
+    let sharedTa = bulkTitleTa.trim();
+    let sharedEn = bulkTitleEn.trim();
+    if (tab === "fieldwork" && bulkEventId) {
+      const ev = events.find((e) => e.id === bulkEventId);
+      if (ev) {
+        if (!sharedTa) sharedTa = ev.title_ta;
+        if (!sharedEn) sharedEn = ev.title_en;
+      }
+    }
+    if (!sharedTa || !sharedEn) {
+      toast.error("Set a shared title (TA/EN) before bulk uploading");
+      return;
+    }
+
+    setBulkBusy(true);
+    setBulkProgress({ done: 0, total: list.length });
+    let okCount = 0;
+    let failCount = 0;
+    try {
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        try {
+          if (file.type.startsWith("image/") && file.size > 5_000_000) {
+            toast.error(`${file.name}: image > 5MB, skipped`);
+            failCount++;
+            continue;
+          }
+          if (file.size > 50_000_000) {
+            toast.error(`${file.name}: > 50MB, skipped`);
+            failCount++;
+            continue;
+          }
+          const base64 = await fileToBase64(file);
+          const up = await upload({
+            data: {
+              kind: tab,
+              filename: file.name,
+              contentType: file.type || "application/octet-stream",
+              base64,
+            },
+          });
+          if (!up.ok) {
+            failCount++;
+            toast.error(`${file.name}: ${up.error}`);
+            continue;
+          }
+          await save({
+            data: {
+              kind: tab,
+              title_ta: sharedTa,
+              title_en: sharedEn,
+              url: up.url,
+              thumb_url: null,
+              sort_order: 0,
+              event_id: tab === "fieldwork" ? bulkEventId : null,
+            },
+          });
+          okCount++;
+        } catch (err) {
+          console.error(err);
+          failCount++;
+        } finally {
+          setBulkProgress({ done: i + 1, total: list.length });
+        }
+      }
+      if (okCount) toast.success(`Uploaded ${okCount} item${okCount === 1 ? "" : "s"}`);
+      if (failCount) toast.error(`${failCount} failed`);
+      await refresh();
+    } finally {
+      setBulkBusy(false);
     }
   }
 
@@ -534,6 +621,70 @@ function AdminGallery() {
           {saving ? "Saving…" : draft.id ? "Save changes" : "Add item"}
         </button>
       </form>
+
+      <section className="rounded-3xl bg-card ring-1 ring-border p-5 md:p-6 space-y-4">
+        <div>
+          <h2 className="font-display font-bold">Bulk upload {tab === "photo" ? "photos" : tab === "video" ? "videos" : "fieldwork media"}</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Select many files at once. Each file becomes its own {tab} item with the shared title below.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-3">
+          <Field label="Shared title (Tamil)">
+            <input
+              type="text"
+              value={bulkTitleTa}
+              onChange={(e) => setBulkTitleTa(e.target.value)}
+              placeholder={tab === "fieldwork" ? "Leave blank to use event title" : ""}
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Shared title (English)">
+            <input
+              type="text"
+              value={bulkTitleEn}
+              onChange={(e) => setBulkTitleEn(e.target.value)}
+              placeholder={tab === "fieldwork" ? "Leave blank to use event title" : ""}
+              className={inputCls}
+            />
+          </Field>
+        </div>
+        {tab === "fieldwork" && (
+          <Field label="Event (group all uploaded media under this event)">
+            <select
+              value={bulkEventId ?? ""}
+              onChange={(e) => setBulkEventId(e.target.value || null)}
+              className={inputCls}
+            >
+              <option value="">— Ungrouped —</option>
+              {events.map((ev) => (
+                <option key={ev.id} value={ev.id}>
+                  {ev.title_en}
+                  {ev.event_date ? ` (${ev.event_date})` : ""}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        <Field label={`Select multiple ${tab === "photo" ? "images" : tab === "video" ? "videos" : "files"}`}>
+          <input
+            type="file"
+            multiple
+            accept={tab === "photo" ? "image/*" : tab === "video" ? "video/*,image/*" : "video/*,image/*"}
+            disabled={bulkBusy}
+            onChange={(e) => {
+              handleBulkUpload(e.target.files);
+              e.target.value = "";
+            }}
+            className="text-sm"
+          />
+        </Field>
+        {bulkBusy && (
+          <p className="text-xs text-muted-foreground">
+            Uploading {bulkProgress.done} / {bulkProgress.total}…
+          </p>
+        )}
+      </section>
 
       <section className="space-y-3">
         <h2 className="font-display font-bold">
