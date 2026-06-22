@@ -52,6 +52,21 @@ type FieldworkEvent = {
   sort_order: number;
 };
 
+type CampaignUpdate = {
+  id: string;
+  title_ta: string | null;
+  title_en: string | null;
+  content_ta: string | null;
+  content_en: string | null;
+  media_url: string | null;
+  status: string;
+  is_pinned: boolean;
+  created_at: string;
+  gallery_item_id: string | null;
+  fieldwork_event_id: string | null;
+  external_url: string | null;
+};
+
 function emptyStats() {
   return {
     total: 0,
