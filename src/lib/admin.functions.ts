@@ -676,7 +676,10 @@ export const adminUploadCampaignMedia = createServerFn({ method: "POST" })
       return { ok: false as const, error: upErr.message ?? "upload" };
     const { data: signed } = await sb.storage
       .from(CAMPAIGN_BUCKET)
-      .createSignedUrl(path, 60 * 60 * 24 * 7);
+      .createSignedUrl(path, 60 * 60 * 24 * 7, {
+        // Preview shown in the upload modal — max-h-40 (~400px) on retina.
+        transform: { width: 800, quality: 80, resize: "cover" },
+      });
     return {
       ok: true as const,
       path,
