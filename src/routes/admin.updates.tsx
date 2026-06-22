@@ -322,6 +322,7 @@ function AdminUpdatesPage() {
               status: draft.status,
               is_pinned: draft.is_pinned,
               gallery_item_id: draft.gallery_item_id,
+              fieldwork_event_id: draft.fieldwork_event_id,
               external_url: draft.external_url.trim() || null,
             },
           });
@@ -585,47 +586,50 @@ function AdminUpdatesPage() {
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fieldwork_item_id">Or link to a fieldwork item (optional)</Label>
+                <Label htmlFor="fieldwork_event_id">Or link to a Fieldwork event (optional)</Label>
                 <Select
-                  value={
-                    draft.gallery_item_id &&
-                    gallery.find((g) => g.id === draft.gallery_item_id)?.kind === "fieldwork"
-                      ? draft.gallery_item_id
-                      : "__none__"
-                  }
+                  value={draft.fieldwork_event_id ?? "__none__"}
                   onValueChange={(v) => {
                     if (v === "__none__") {
-                      setDraft({ ...draft, gallery_item_id: null });
+                      setDraft({ ...draft, fieldwork_event_id: null });
                       return;
                     }
-                    const fw = gallery.find((g) => g.id === v);
+                    const ev = events.find((e) => e.id === v);
                     setDraft((d) => ({
                       ...d,
-                      gallery_item_id: v,
-                      // Auto-fill empty title fields from the fieldwork item so the
+                      fieldwork_event_id: v,
+                      // Clear any photo/video link — only one link is stored.
+                      gallery_item_id: null,
+                      // Auto-fill empty title fields from the event so the
                       // admin doesn't have to re-enter them.
-                      title_en: d.title_en.trim() || (fw?.title_en ?? ""),
-                      title_ta: d.title_ta.trim() || (fw?.title_ta ?? ""),
+                      title_en: d.title_en.trim() || (ev?.title_en ?? ""),
+                      title_ta: d.title_ta.trim() || (ev?.title_ta ?? ""),
                     }));
                   }}
                 >
-                  <SelectTrigger id="fieldwork_item_id">
-                    <SelectValue placeholder="No fieldwork item" />
+                  <SelectTrigger id="fieldwork_event_id">
+                    <SelectValue placeholder="No fieldwork event" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">— None —</SelectItem>
-                    {gallery
-                      .filter((g) => g.kind === "fieldwork")
-                      .map((g) => (
-                        <SelectItem key={g.id} value={g.id}>
-                          {g.title_en || g.title_ta}
+                    {events.length === 0 ? (
+                      <SelectItem value="__none__" disabled>
+                        No fieldwork events yet — create one in Gallery → Fieldwork
+                      </SelectItem>
+                    ) : (
+                      events.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.title_en || e.title_ta}
+                          {e.event_date ? ` · ${new Date(e.event_date).toLocaleDateString()}` : ""}
                         </SelectItem>
-                      ))}
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Picking a fieldwork item auto-fills the title from the fieldwork (you can still override),
-                  and the update opens a dedicated page at <code>/fieldwork/&lt;id&gt;</code> showing that media.
+                  Picking a Fieldwork event auto-fills the title from the event (you can still override),
+                  and the update opens a dedicated page at <code>/fieldwork/&lt;event-id&gt;</code>
+                  showing the event details and every photo/video in that event.
                   Replaces any gallery photo/video link above — only one link is stored.
                 </p>
               </div>
