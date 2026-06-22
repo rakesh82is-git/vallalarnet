@@ -519,3 +519,161 @@ export const adminDeleteFieldworkEvent = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
+
+// ---- Campaign updates (bilingual newsfeed) ----------------------------
+
+type CampaignUpdate = {
+  id: string;
+  title_en: string | null;
+  title_ta: string | null;
+  content_en: string | null;
+  content_ta: string | null;
+  media_url: string | null;
+  status: "draft" | "published";
+  is_pinned: boolean;
+  created_at: string;
+};
+
+const CAMPAIGN_BUCKET = "campaign-media";
+
+async function signedMediaUrl(
+  sb: Awaited<ReturnType<typeof getBackend>>,
+  path: string | null,
+): Promise<string | null> {
+  if (!path) return null;
+  // Already a full URL (legacy / external) — return as-is
+  if (/^https?:\/\//i.test(path)) return path;
+  const { data } = await sb.storage
+    .from(CAMPAIGN_BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 7);
+  return data?.signedUrl ?? null;
+}
+
+export const adminListCampaignUpdates = createServerFn({ method: "GET" }).handler(
+  async () => {
+    await requireAdmin();
+    const sb = await getBackend();
+    const { data, error } = await sb
+      .from("campaign_updates")
+      .select("*")
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as CampaignUpdate[];
+    const items = await Promise.all(
+      rows.map(async (r) => ({
+        ...r,
+        media_preview_url: await signedMediaUrl(sb, r.media_url),
+      })),
+    );
+    return { items };
+  },
+);
+
+const CampaignUpsert = z.object({
+  id: z.string().uuid().optional().nullable(),
+  title_en: z.string().trim().max(300).optional().nullable(),
+  title_ta: z.string().trim().max(300).optional().nullable(),
+  content_en: z.string().trim().max(20000).optional().nullable(),
+  content_ta: z.string().trim().max(20000).optional().nullable(),
+  media_url: z.string().trim().max(2000).optional().nullable(),
+  status: z.enum(["draft", "published"]).default("draft"),
+  is_pinned: z.boolean().default(false),
+});
+
+export const adminSaveCampaignUpdate = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => CampaignUpsert.parse(d))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const sb = await getBackend();
+    const payload = {
+      title_en: data.title_en?.trim() || null,
+      title_ta: data.title_ta?.trim() || null,
+      content_en: data.content_en?.trim() || null,
+      content_ta: data.content_ta?.trim() || null,
+      media_url: data.media_url?.trim() || null,
+      status: data.status,
+      is_pinned: data.is_pinned,
+    };
+    if (data.id) {
+      const { error } = await sb
+        .from("campaign_updates")
+        .update(payload)
+        .eq("id", data.id);
+      if (error) throw new Error(error.message);
+      return { ok: true as const, id: data.id };
+    }
+    const { data: row, error } = await sb
+      .from("campaign_updates")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { ok: true as const, id: row.id as string };
+  });
+
+export const adminDeleteCampaignUpdate = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const sb = await getBackend();
+    // Best-effort: remove the stored object if it lives in our bucket
+    const { data: row } = await sb
+      .from("campaign_updates")
+      .select("media_url")
+      .eq("id", data.id)
+      .single();
+    const path = (row?.media_url as string | null) ?? null;
+    if (path && !/^https?:\/\//i.test(path)) {
+      await sb.storage.from(CAMPAIGN_BUCKET).remove([path]).catch(() => {});
+    }
+    const { error } = await sb
+      .from("campaign_updates")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
+
+const CampaignUpload = z.object({
+  filename: z.string().trim().min(1).max(200),
+  contentType: z.string().trim().min(1).max(150),
+  base64: z.string().min(10).max(80_000_000),
+});
+
+export const adminUploadCampaignMedia = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => CampaignUpload.parse(d))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const sb = await getBackend();
+    try {
+      await sb.storage.createBucket(CAMPAIGN_BUCKET, { public: false });
+    } catch {
+      /* exists */
+    }
+    const bytes = Buffer.from(data.base64, "base64");
+    if (bytes.byteLength === 0)
+      return { ok: false as const, error: "empty" as const };
+    if (bytes.byteLength > 50_000_000)
+      return { ok: false as const, error: "too_large" as const };
+    const safe = data.filename.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
+    const path = `${randomUUID()}_${safe}`;
+    const { error: upErr } = await sb.storage
+      .from(CAMPAIGN_BUCKET)
+      .upload(path, bytes, {
+        contentType: data.contentType,
+        upsert: false,
+      });
+    if (upErr)
+      return { ok: false as const, error: upErr.message ?? "upload" };
+    const { data: signed } = await sb.storage
+      .from(CAMPAIGN_BUCKET)
+      .createSignedUrl(path, 60 * 60 * 24 * 7);
+    return {
+      ok: true as const,
+      path,
+      preview_url: signed?.signedUrl ?? null,
+    };
+  });
