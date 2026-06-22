@@ -6,6 +6,7 @@ import {
   adminSaveCampaignUpdate,
   adminDeleteCampaignUpdate,
   adminUploadCampaignMedia,
+  adminListGallery,
 } from "@/lib/admin.functions";
 import { toast } from "sonner";
 import {
