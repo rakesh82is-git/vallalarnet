@@ -19,6 +19,8 @@ export type Database = {
           content_en: string | null
           content_ta: string | null
           created_at: string
+          external_url: string | null
+          gallery_item_id: string | null
           id: string
           is_pinned: boolean
           media_url: string | null
@@ -30,6 +32,8 @@ export type Database = {
           content_en?: string | null
           content_ta?: string | null
           created_at?: string
+          external_url?: string | null
+          gallery_item_id?: string | null
           id?: string
           is_pinned?: boolean
           media_url?: string | null
@@ -41,6 +45,8 @@ export type Database = {
           content_en?: string | null
           content_ta?: string | null
           created_at?: string
+          external_url?: string | null
+          gallery_item_id?: string | null
           id?: string
           is_pinned?: boolean
           media_url?: string | null
@@ -48,7 +54,15 @@ export type Database = {
           title_en?: string | null
           title_ta?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "campaign_updates_gallery_item_id_fkey"
+            columns: ["gallery_item_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gallery_items: {
         Row: {
