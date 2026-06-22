@@ -104,6 +104,15 @@ function AdminGallery() {
   const [eventDraft, setEventDraft] = useState<EventDraft>(emptyEventDraft());
   const [savingEvent, setSavingEvent] = useState(false);
 
+  // Bulk upload state
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number }>(
+    { done: 0, total: 0 },
+  );
+  const [bulkTitleTa, setBulkTitleTa] = useState("");
+  const [bulkTitleEn, setBulkTitleEn] = useState("");
+  const [bulkEventId, setBulkEventId] = useState<string | null>(null);
+
   async function refresh() {
     setLoading(true);
     try {
@@ -291,6 +300,84 @@ function AdminGallery() {
       toast.error("Upload failed");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleBulkUpload(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const list = Array.from(files);
+
+    // Validate shared title (fieldwork can inherit from event)
+    let sharedTa = bulkTitleTa.trim();
+    let sharedEn = bulkTitleEn.trim();
+    if (tab === "fieldwork" && bulkEventId) {
+      const ev = events.find((e) => e.id === bulkEventId);
+      if (ev) {
+        if (!sharedTa) sharedTa = ev.title_ta;
+        if (!sharedEn) sharedEn = ev.title_en;
+      }
+    }
+    if (!sharedTa || !sharedEn) {
+      toast.error("Set a shared title (TA/EN) before bulk uploading");
+      return;
+    }
+
+    setBulkBusy(true);
+    setBulkProgress({ done: 0, total: list.length });
+    let okCount = 0;
+    let failCount = 0;
+    try {
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        try {
+          if (file.type.startsWith("image/") && file.size > 5_000_000) {
+            toast.error(`${file.name}: image > 5MB, skipped`);
+            failCount++;
+            continue;
+          }
+          if (file.size > 50_000_000) {
+            toast.error(`${file.name}: > 50MB, skipped`);
+            failCount++;
+            continue;
+          }
+          const base64 = await fileToBase64(file);
+          const up = await upload({
+            data: {
+              kind: tab,
+              filename: file.name,
+              contentType: file.type || "application/octet-stream",
+              base64,
+            },
+          });
+          if (!up.ok) {
+            failCount++;
+            toast.error(`${file.name}: ${up.error}`);
+            continue;
+          }
+          await save({
+            data: {
+              kind: tab,
+              title_ta: sharedTa,
+              title_en: sharedEn,
+              url: up.url,
+              thumb_url: null,
+              sort_order: 0,
+              event_id: tab === "fieldwork" ? bulkEventId : null,
+            },
+          });
+          okCount++;
+        } catch (err) {
+          console.error(err);
+          failCount++;
+        } finally {
+          setBulkProgress({ done: i + 1, total: list.length });
+        }
+      }
+      if (okCount) toast.success(`Uploaded ${okCount} item${okCount === 1 ? "" : "s"}`);
+      if (failCount) toast.error(`${failCount} failed`);
+      await refresh();
+    } finally {
+      setBulkBusy(false);
     }
   }
 
