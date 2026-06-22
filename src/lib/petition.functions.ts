@@ -52,6 +52,21 @@ type FieldworkEvent = {
   sort_order: number;
 };
 
+type CampaignUpdate = {
+  id: string;
+  title_ta: string | null;
+  title_en: string | null;
+  content_ta: string | null;
+  content_en: string | null;
+  media_url: string | null;
+  status: string;
+  is_pinned: boolean;
+  created_at: string;
+  gallery_item_id: string | null;
+  fieldwork_event_id: string | null;
+  external_url: string | null;
+};
+
 function emptyStats() {
   return {
     total: 0,
@@ -487,3 +502,21 @@ export const getFieldworkEvent = createServerFn({ method: "GET" })
       items: (items ?? []) as GalleryItem[],
     };
   });
+
+export const listCampaignUpdates = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const sb = await getBackendClient();
+    if (!sb) return [] as CampaignUpdate[];
+    const { data, error } = await sb
+      .from("campaign_updates")
+      .select(
+        "id,title_ta,title_en,content_ta,content_en,media_url,status,is_pinned,created_at,gallery_item_id,fieldwork_event_id,external_url",
+      )
+      .eq("status", "published")
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) return [];
+    return (data ?? []) as CampaignUpdate[];
+  },
+);
