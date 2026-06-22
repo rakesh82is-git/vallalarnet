@@ -535,6 +535,7 @@ type CampaignUpdate = {
   created_at: string;
   gallery_item_id: string | null;
   external_url: string | null;
+  fieldwork_event_id: string | null;
 };
 
 const CAMPAIGN_BUCKET = "campaign-media";
@@ -583,6 +584,7 @@ const CampaignUpsert = z.object({
   status: z.enum(["draft", "published"]).default("draft"),
   is_pinned: z.boolean().default(false),
   gallery_item_id: z.string().uuid().optional().nullable(),
+  fieldwork_event_id: z.string().uuid().optional().nullable(),
   external_url: z
     .string()
     .trim()
@@ -609,6 +611,7 @@ export const adminSaveCampaignUpdate = createServerFn({ method: "POST" })
       status: data.status,
       is_pinned: data.is_pinned,
       gallery_item_id: data.gallery_item_id || null,
+      fieldwork_event_id: data.fieldwork_event_id || null,
       external_url: data.external_url?.trim() || null,
     };
     if (data.id) {

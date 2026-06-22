@@ -7,6 +7,7 @@ import {
   adminDeleteCampaignUpdate,
   adminUploadCampaignMedia,
   adminListGallery,
+  adminListFieldworkEvents,
 } from "@/lib/admin.functions";
 import { toast } from "sonner";
 import {
@@ -50,6 +51,7 @@ type CampaignRow = {
   created_at: string;
   gallery_item_id: string | null;
   external_url: string | null;
+  fieldwork_event_id: string | null;
 };
 
 type Draft = {
@@ -64,6 +66,7 @@ type Draft = {
   is_pinned: boolean;
   gallery_item_id: string | null;
   external_url: string;
+  fieldwork_event_id: string | null;
 };
 
 const emptyDraft = (): Draft => ({
@@ -78,6 +81,7 @@ const emptyDraft = (): Draft => ({
   is_pinned: false,
   gallery_item_id: null,
   external_url: "",
+  fieldwork_event_id: null,
 });
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -99,10 +103,14 @@ function AdminUpdatesPage() {
   const remove = useServerFn(adminDeleteCampaignUpdate);
   const upload = useServerFn(adminUploadCampaignMedia);
   const listGallery = useServerFn(adminListGallery);
+  const listEvents = useServerFn(adminListFieldworkEvents);
 
   const [rows, setRows] = useState<CampaignRow[]>([]);
   const [gallery, setGallery] = useState<
     { id: string; title_en: string; title_ta: string; kind: string; url: string; thumb_url?: string | null }[]
+  >([]);
+  const [events, setEvents] = useState<
+    { id: string; title_en: string; title_ta: string; event_date: string | null; location: string | null }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -138,6 +146,12 @@ function AdminUpdatesPage() {
       .catch(() => {});
   }, [listGallery]);
 
+  useEffect(() => {
+    listEvents()
+      .then((r) => setEvents((r.items ?? []) as typeof events))
+      .catch(() => {});
+  }, [listEvents]);
+
   function openCreate() {
     setDraft(emptyDraft());
     setOpen(true);
@@ -156,6 +170,7 @@ function AdminUpdatesPage() {
       is_pinned: row.is_pinned,
       gallery_item_id: row.gallery_item_id ?? null,
       external_url: row.external_url ?? "",
+      fieldwork_event_id: row.fieldwork_event_id ?? null,
     });
     setOpen(true);
   }
@@ -200,11 +215,11 @@ function AdminUpdatesPage() {
   }
 
   async function handleSave() {
-    const linkedFieldwork =
-      draft.gallery_item_id &&
-      gallery.find((g) => g.id === draft.gallery_item_id && g.kind === "fieldwork");
+    const linkedEvent =
+      draft.fieldwork_event_id &&
+      events.find((e) => e.id === draft.fieldwork_event_id);
     if (
-      !linkedFieldwork &&
+      !linkedEvent &&
       !draft.title_en.trim() &&
       !draft.title_ta.trim() &&
       !draft.content_en.trim() &&
@@ -218,14 +233,15 @@ function AdminUpdatesPage() {
       await save({
         data: {
           id: draft.id,
-          title_en: draft.title_en || (linkedFieldwork ? linkedFieldwork.title_en : ""),
-          title_ta: draft.title_ta || (linkedFieldwork ? linkedFieldwork.title_ta : ""),
+          title_en: draft.title_en || (linkedEvent ? linkedEvent.title_en : ""),
+          title_ta: draft.title_ta || (linkedEvent ? linkedEvent.title_ta : ""),
           content_en: draft.content_en,
           content_ta: draft.content_ta,
           media_url: draft.media_url || null,
           status: draft.status,
           is_pinned: draft.is_pinned,
-          gallery_item_id: draft.gallery_item_id,
+          gallery_item_id: draft.fieldwork_event_id ? null : draft.gallery_item_id,
+          fieldwork_event_id: draft.fieldwork_event_id,
           external_url: draft.external_url.trim() || null,
         },
       });
@@ -306,6 +322,7 @@ function AdminUpdatesPage() {
               status: draft.status,
               is_pinned: draft.is_pinned,
               gallery_item_id: draft.gallery_item_id,
+              fieldwork_event_id: draft.fieldwork_event_id,
               external_url: draft.external_url.trim() || null,
             },
           });
@@ -569,47 +586,50 @@ function AdminUpdatesPage() {
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fieldwork_item_id">Or link to a fieldwork item (optional)</Label>
+                <Label htmlFor="fieldwork_event_id">Or link to a Fieldwork event (optional)</Label>
                 <Select
-                  value={
-                    draft.gallery_item_id &&
-                    gallery.find((g) => g.id === draft.gallery_item_id)?.kind === "fieldwork"
-                      ? draft.gallery_item_id
-                      : "__none__"
-                  }
+                  value={draft.fieldwork_event_id ?? "__none__"}
                   onValueChange={(v) => {
                     if (v === "__none__") {
-                      setDraft({ ...draft, gallery_item_id: null });
+                      setDraft({ ...draft, fieldwork_event_id: null });
                       return;
                     }
-                    const fw = gallery.find((g) => g.id === v);
+                    const ev = events.find((e) => e.id === v);
                     setDraft((d) => ({
                       ...d,
-                      gallery_item_id: v,
-                      // Auto-fill empty title fields from the fieldwork item so the
+                      fieldwork_event_id: v,
+                      // Clear any photo/video link — only one link is stored.
+                      gallery_item_id: null,
+                      // Auto-fill empty title fields from the event so the
                       // admin doesn't have to re-enter them.
-                      title_en: d.title_en.trim() || (fw?.title_en ?? ""),
-                      title_ta: d.title_ta.trim() || (fw?.title_ta ?? ""),
+                      title_en: d.title_en.trim() || (ev?.title_en ?? ""),
+                      title_ta: d.title_ta.trim() || (ev?.title_ta ?? ""),
                     }));
                   }}
                 >
-                  <SelectTrigger id="fieldwork_item_id">
-                    <SelectValue placeholder="No fieldwork item" />
+                  <SelectTrigger id="fieldwork_event_id">
+                    <SelectValue placeholder="No fieldwork event" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">— None —</SelectItem>
-                    {gallery
-                      .filter((g) => g.kind === "fieldwork")
-                      .map((g) => (
-                        <SelectItem key={g.id} value={g.id}>
-                          {g.title_en || g.title_ta}
+                    {events.length === 0 ? (
+                      <SelectItem value="__none__" disabled>
+                        No fieldwork events yet — create one in Gallery → Fieldwork
+                      </SelectItem>
+                    ) : (
+                      events.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.title_en || e.title_ta}
+                          {e.event_date ? ` · ${new Date(e.event_date).toLocaleDateString()}` : ""}
                         </SelectItem>
-                      ))}
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Picking a fieldwork item auto-fills the title from the fieldwork (you can still override),
-                  and the update opens a dedicated page at <code>/fieldwork/&lt;id&gt;</code> showing that media.
+                  Picking a Fieldwork event auto-fills the title from the event (you can still override),
+                  and the update opens a dedicated page at <code>/fieldwork/&lt;event-id&gt;</code>
+                  showing the event details and every photo/video in that event.
                   Replaces any gallery photo/video link above — only one link is stored.
                 </p>
               </div>
