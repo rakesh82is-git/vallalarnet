@@ -16,6 +16,7 @@ import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminUpdatesRouteImport } from './routes/admin.updates'
 import { Route as AdminGalleryRouteImport } from './routes/admin.gallery'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 
@@ -54,6 +55,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminUpdatesRoute = AdminUpdatesRouteImport.update({
+  id: '/updates',
+  path: '/updates',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminGalleryRoute = AdminGalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/wall': typeof WallRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/gallery': typeof AdminGalleryRoute
+  '/admin/updates': typeof AdminUpdatesRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/wall': typeof WallRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/gallery': typeof AdminGalleryRoute
+  '/admin/updates': typeof AdminUpdatesRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/wall': typeof WallRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/gallery': typeof AdminGalleryRoute
+  '/admin/updates': typeof AdminUpdatesRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/wall'
     | '/admin/analytics'
     | '/admin/gallery'
+    | '/admin/updates'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/wall'
     | '/admin/analytics'
     | '/admin/gallery'
+    | '/admin/updates'
     | '/admin'
   id:
     | '__root__'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/wall'
     | '/admin/analytics'
     | '/admin/gallery'
+    | '/admin/updates'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -193,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/updates': {
+      id: '/admin/updates'
+      path: '/updates'
+      fullPath: '/admin/updates'
+      preLoaderRoute: typeof AdminUpdatesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/gallery': {
       id: '/admin/gallery'
       path: '/gallery'
@@ -213,12 +232,14 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminGalleryRoute: typeof AdminGalleryRoute
+  AdminUpdatesRoute: typeof AdminUpdatesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminGalleryRoute: AdminGalleryRoute,
+  AdminUpdatesRoute: AdminUpdatesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
