@@ -20,6 +20,7 @@ export type Database = {
           content_ta: string | null
           created_at: string
           external_url: string | null
+          fieldwork_event_id: string | null
           gallery_item_id: string | null
           id: string
           is_pinned: boolean
@@ -33,6 +34,7 @@ export type Database = {
           content_ta?: string | null
           created_at?: string
           external_url?: string | null
+          fieldwork_event_id?: string | null
           gallery_item_id?: string | null
           id?: string
           is_pinned?: boolean
@@ -46,6 +48,7 @@ export type Database = {
           content_ta?: string | null
           created_at?: string
           external_url?: string | null
+          fieldwork_event_id?: string | null
           gallery_item_id?: string | null
           id?: string
           is_pinned?: boolean
@@ -56,6 +59,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "campaign_updates_fieldwork_event_id_fkey"
+            columns: ["fieldwork_event_id"]
+            isOneToOne: false
+            referencedRelation: "fieldwork_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "campaign_updates_gallery_item_id_fkey"
             columns: ["gallery_item_id"]
             isOneToOne: false
@@ -64,9 +74,49 @@ export type Database = {
           },
         ]
       }
+      fieldwork_events: {
+        Row: {
+          caption_en: string | null
+          caption_ta: string | null
+          created_at: string
+          event_date: string | null
+          id: string
+          location: string | null
+          sort_order: number
+          title_en: string
+          title_ta: string
+          updated_at: string
+        }
+        Insert: {
+          caption_en?: string | null
+          caption_ta?: string | null
+          created_at?: string
+          event_date?: string | null
+          id?: string
+          location?: string | null
+          sort_order?: number
+          title_en: string
+          title_ta: string
+          updated_at?: string
+        }
+        Update: {
+          caption_en?: string | null
+          caption_ta?: string | null
+          created_at?: string
+          event_date?: string | null
+          id?: string
+          location?: string | null
+          sort_order?: number
+          title_en?: string
+          title_ta?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gallery_items: {
         Row: {
           created_at: string
+          event_id: string | null
           id: string
           kind: Database["public"]["Enums"]["gallery_kind"]
           sort_order: number
@@ -77,6 +127,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          event_id?: string | null
           id?: string
           kind: Database["public"]["Enums"]["gallery_kind"]
           sort_order?: number
@@ -87,6 +138,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          event_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["gallery_kind"]
           sort_order?: number
@@ -95,7 +147,15 @@ export type Database = {
           title_ta?: string
           url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "gallery_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "fieldwork_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       signatures: {
         Row: {
