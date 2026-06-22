@@ -449,3 +449,18 @@ export const listFieldworkEvents = createServerFn({ method: "GET" }).handler(
     return { events: grouped, ungrouped };
   },
 );
+
+export const getFieldworkItem = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const sb = await getBackendClient();
+    if (!sb) return null;
+    const { data: item, error } = await sb
+      .from("gallery_items")
+      .select("*")
+      .eq("id", data.id)
+      .eq("kind", "fieldwork")
+      .maybeSingle();
+    if (error || !item) return null;
+    return item as GalleryItem;
+  });
