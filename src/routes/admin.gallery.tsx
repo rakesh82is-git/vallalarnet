@@ -622,6 +622,70 @@ function AdminGallery() {
         </button>
       </form>
 
+      <section className="rounded-3xl bg-card ring-1 ring-border p-5 md:p-6 space-y-4">
+        <div>
+          <h2 className="font-display font-bold">Bulk upload {tab === "photo" ? "photos" : tab === "video" ? "videos" : "fieldwork media"}</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Select many files at once. Each file becomes its own {tab} item with the shared title below.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-3">
+          <Field label="Shared title (Tamil)">
+            <input
+              type="text"
+              value={bulkTitleTa}
+              onChange={(e) => setBulkTitleTa(e.target.value)}
+              placeholder={tab === "fieldwork" ? "Leave blank to use event title" : ""}
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Shared title (English)">
+            <input
+              type="text"
+              value={bulkTitleEn}
+              onChange={(e) => setBulkTitleEn(e.target.value)}
+              placeholder={tab === "fieldwork" ? "Leave blank to use event title" : ""}
+              className={inputCls}
+            />
+          </Field>
+        </div>
+        {tab === "fieldwork" && (
+          <Field label="Event (group all uploaded media under this event)">
+            <select
+              value={bulkEventId ?? ""}
+              onChange={(e) => setBulkEventId(e.target.value || null)}
+              className={inputCls}
+            >
+              <option value="">— Ungrouped —</option>
+              {events.map((ev) => (
+                <option key={ev.id} value={ev.id}>
+                  {ev.title_en}
+                  {ev.event_date ? ` (${ev.event_date})` : ""}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        <Field label={`Select multiple ${tab === "photo" ? "images" : tab === "video" ? "videos" : "files"}`}>
+          <input
+            type="file"
+            multiple
+            accept={tab === "photo" ? "image/*" : tab === "video" ? "video/*,image/*" : "video/*,image/*"}
+            disabled={bulkBusy}
+            onChange={(e) => {
+              handleBulkUpload(e.target.files);
+              e.target.value = "";
+            }}
+            className="text-sm"
+          />
+        </Field>
+        {bulkBusy && (
+          <p className="text-xs text-muted-foreground">
+            Uploading {bulkProgress.done} / {bulkProgress.total}…
+          </p>
+        )}
+      </section>
+
       <section className="space-y-3">
         <h2 className="font-display font-bold">
           Existing {tab === "photo" ? "photos" : tab === "video" ? "videos" : "fieldwork"} ({filtered.length})
