@@ -719,10 +719,10 @@ function DigitalTab() {
 
       <div className="flex gap-3">
         <Button onClick={openSignDialog} disabled={busy} size="lg" className="flex-1">
-          Review & Sign
+          {lang === "ta" ? "மதிப்பீடு & கையொப்பம்" : "Review & Sign"}
         </Button>
         <Button type="button" variant="outline" onClick={resetForm} disabled={busy} size="lg">
-          Reset
+          {lang === "ta" ? "மீட்டமை" : "Reset"}
         </Button>
       </div>
 
