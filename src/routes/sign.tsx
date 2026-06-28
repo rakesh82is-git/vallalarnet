@@ -104,7 +104,6 @@ function DigitalTab() {
     countryCode: "IN",
     stateCode: "",
     district: "",
-    sub_district: "",
     locality: "",
     pincode: "",
     mobile_local: "",
@@ -122,11 +121,9 @@ function DigitalTab() {
   // the selected state (ADM1); sub-districts from ADM3 children of the
   // district; localities from populated-place children of the sub-district.
   const [districtList, setDistrictList] = useState<gn.GnPlace[]>([]);
-  const [subDistrictList, setSubDistrictList] = useState<gn.GnPlace[]>([]);
   const [localityList, setLocalityList] = useState<gn.GnPlace[]>([]);
   const [pincodeList, setPincodeList] = useState<string[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
-  const [loadingSub, setLoadingSub] = useState(false);
   const [loadingLocality, setLoadingLocality] = useState(false);
   const [lookingUpPin, setLookingUpPin] = useState(false);
   // Rows returned by the most recent postalCodeLookup. When non-empty, the
@@ -218,46 +215,15 @@ function DigitalTab() {
     };
   }, [form.countryCode, stateName]);
 
-  // ─── District → sub-district list (ADM3 children) ───
+  // ─── District → locality list (populated-place descendants) ───
   useEffect(() => {
     if (!form.district) {
-      setSubDistrictList([]);
-      return;
-    }
-    const parent = findByName(districtList, form.district);
-    // Reconcile the form value with the canonical list name so the dropdown
-    // shows the selected option as checked.
-    if (parent && parent.name !== form.district) {
-      setForm((s) => (s.district === form.district ? { ...s, district: parent.name } : s));
-    }
-    if (!parent) {
-      setSubDistrictList([]);
-      return;
-    }
-    let cancelled = false;
-    setLoadingSub(true);
-    gn.getChildren(parent.geonameId).then((kids) => {
-      if (cancelled) return;
-      const adm3 = kids.filter((k) => k.fcode?.startsWith("ADM3"));
-      setSubDistrictList(adm3.length ? adm3 : kids);
-      setLoadingSub(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [form.district, districtList]);
-
-  // ─── Sub-district → locality list (populated-place children) ───
-  useEffect(() => {
-    if (!form.sub_district) {
       setLocalityList([]);
       return;
     }
-    const parent = findByName(subDistrictList, form.sub_district);
-    if (parent && parent.name !== form.sub_district) {
-      setForm((s) =>
-        s.sub_district === form.sub_district ? { ...s, sub_district: parent.name } : s,
-      );
+    const parent = findByName(districtList, form.district);
+    if (parent && parent.name !== form.district) {
+      setForm((s) => (s.district === form.district ? { ...s, district: parent.name } : s));
     }
     if (!parent) {
       setLocalityList([]);
@@ -279,7 +245,7 @@ function DigitalTab() {
     return () => {
       cancelled = true;
     };
-  }, [form.sub_district, subDistrictList]);
+  }, [form.district, districtList]);
 
   // ─── State / District / Sub-District / Locality → narrowed pincode list ───
   // As soon as the user picks a District we fetch the pincodes served by that
@@ -290,7 +256,7 @@ function DigitalTab() {
   // reverse pincode→address resolution in the effect below is untouched.
   const [pinSearchRows, setPinSearchRows] = useState<gn.GnPostal[]>([]);
   useEffect(() => {
-    const place = (form.locality || form.sub_district || form.district).trim();
+    const place = (form.locality || form.district).trim();
     if (!place || !form.countryCode) {
       setPinSearchRows([]);
       return;
@@ -305,7 +271,7 @@ function DigitalTab() {
     return () => {
       cancelled = true;
     };
-  }, [form.countryCode, form.district, form.sub_district, form.locality]);
+  }, [form.countryCode, form.district, form.locality]);
 
   useEffect(() => {
     const eq = (a?: string, b?: string) =>
@@ -314,9 +280,6 @@ function DigitalTab() {
       if (form.district && r.adminName2 && !eq(r.adminName2, form.district)) {
         // Tolerate "Tiruvallur" vs "Thiruvallur District" mismatches.
         if (normName(r.adminName2) !== normName(form.district)) return false;
-      }
-      if (form.sub_district && r.adminName3 && !eq(r.adminName3, form.sub_district)) {
-        if (normName(r.adminName3) !== normName(form.sub_district)) return false;
       }
       if (form.locality && r.placeName && !eq(r.placeName, form.locality)) {
         if (normName(r.placeName) !== normName(form.locality)) return false;
@@ -327,7 +290,7 @@ function DigitalTab() {
       new Set((filtered.length ? filtered : pinSearchRows).map((r) => r.postalCode).filter(Boolean)),
     ).sort();
     setPincodeList(codes);
-  }, [pinSearchRows, form.district, form.sub_district, form.locality]);
+  }, [pinSearchRows, form.district, form.locality]);
 
   // ─── Pincode entered → reverse-fill the address ───
   useEffect(() => {
@@ -340,10 +303,10 @@ function DigitalTab() {
     if (isIndia && !/^\d{6}$/.test(pin)) return;
     if (pin.length < 3) return;
     if (pin === lastPinRef.current) return;
-    // When the user has already chosen District + Sub-District + Locality,
-    // the pincode is a downstream consequence — don't reverse-resolve and
-    // overwrite their selections (which would cascade-clear and loop).
-    if (form.district.trim() && form.sub_district.trim() && form.locality.trim()) {
+    // When the user has already chosen District + Locality, the pincode is
+    // a downstream consequence — don't reverse-resolve and overwrite their
+    // selections (which would cascade-clear and loop).
+    if (form.district.trim() && form.locality.trim()) {
       lastPinRef.current = pin;
       return;
     }
@@ -361,9 +324,6 @@ function DigitalTab() {
       //                                   localities, so we list rather than pick.
       const stateName = rows[0].adminName1 || "";
       const districtName = rows[0].adminName2 || "";
-      const subSet = Array.from(
-        new Set(rows.map((r) => (r.adminName3 || "").trim()).filter(Boolean)),
-      );
       const locSet = Array.from(
         new Set(rows.map((r) => (r.placeName || "").trim()).filter(Boolean)),
       );
@@ -376,15 +336,11 @@ function DigitalTab() {
           if (st) next.stateCode = st.isoCode;
         }
         if (districtName) next.district = districtName;
-        // Only auto-fill when the pincode resolves unambiguously; otherwise
-        // clear so the user picks from the constrained dropdown.
-        next.sub_district = subSet.length === 1 ? subSet[0] : "";
-        next.locality =
-          locSet.length === 1
-            ? locSet[0]
-            : subSet.length === 1
-              ? next.locality // keep until user picks a sub-district
-              : "";
+        // Only auto-fill when unambiguous; otherwise leave blank so the user
+        // picks from the constrained dropdown.
+        if (locSet.length === 1) next.locality = locSet[0];
+        else if (!locSet.some((l) => l.toLowerCase() === next.locality.toLowerCase()))
+          next.locality = "";
         return next;
       });
     });
@@ -393,7 +349,6 @@ function DigitalTab() {
     form.countryCode,
     isIndia,
     form.district,
-    form.sub_district,
     form.locality,
   ]);
 
@@ -427,8 +382,8 @@ function DigitalTab() {
             const next = { ...s };
             if (iso && !next.stateCode && !next.district) next.countryCode = iso;
             if (!next.pincode && pin) next.pincode = pin;
-            if (!next.sub_district && subDistrict) next.sub_district = subDistrict;
-            if (!next.locality && localityName) next.locality = localityName;
+            if (!next.locality && (localityName || subDistrict))
+              next.locality = localityName || subDistrict;
             const targetIso = iso || next.countryCode;
             if (targetIso && stName && !next.stateCode) {
               const st = State.getStatesOfCountry(targetIso).find(
@@ -460,40 +415,10 @@ function DigitalTab() {
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
   }, [districtList, form.district]);
 
-  const subDistrictOptions = useMemo(() => {
-    const m = new Map<string, { value: string; label: string; keywords: string }>();
-    if (pinRows.length > 0) {
-      // Constrain to sub-districts actually served by the entered pincode.
-      for (const r of pinRows) {
-        const n = (r.adminName3 || "").trim();
-        if (n) m.set(n, { value: n, label: n, keywords: n });
-      }
-    } else {
-      for (const d of subDistrictList)
-        m.set(d.name, { value: d.name, label: d.name, keywords: d.name });
-    }
-    if (form.sub_district && !m.has(form.sub_district))
-      m.set(form.sub_district, {
-        value: form.sub_district,
-        label: form.sub_district,
-        keywords: form.sub_district,
-      });
-    return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [subDistrictList, form.sub_district, pinRows]);
-
   const localityOptions = useMemo(() => {
     const m = new Map<string, { value: string; label: string; keywords: string }>();
     if (pinRows.length > 0) {
-      // Constrain to localities served by the pincode; further narrow by
-      // sub-district when one has been chosen.
-      const filtered = form.sub_district
-        ? pinRows.filter(
-            (r) =>
-              (r.adminName3 || "").toLowerCase() ===
-              form.sub_district.toLowerCase(),
-          )
-        : pinRows;
-      for (const r of filtered) {
+      for (const r of pinRows) {
         const n = (r.placeName || "").trim();
         if (n) m.set(n, { value: n, label: n, keywords: n });
       }
@@ -504,7 +429,7 @@ function DigitalTab() {
     if (form.locality && !m.has(form.locality))
       m.set(form.locality, { value: form.locality, label: form.locality, keywords: form.locality });
     return Array.from(m.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [localityList, form.locality, pinRows, form.sub_district]);
+  }, [localityList, form.locality, pinRows]);
 
   const pincodeOptions = useMemo(() => {
     // Single source of truth: GeoNames postal search scoped to the selected
@@ -525,14 +450,14 @@ function DigitalTab() {
   }, [form.locality, form.pincode, pincodeOptions]);
 
   function validateForm(): boolean {
-    const { name, age, district, mobile_local, pincode, sub_district, locality } = form;
+    const { name, age, district, mobile_local, pincode, locality } = form;
     const country = selectedCountry?.name ?? "";
     if (!name || !age || !country || !stateName || !district || !mobile_local) {
       toast.error("Please fill in all fields");
       return false;
     }
-    if (isIndia && (!pincode || !sub_district || !locality)) {
-      toast.error("Pincode, Sub-District and Locality are required for India");
+    if (isIndia && (!pincode || !locality)) {
+      toast.error("Pincode and Locality are required for India");
       return false;
     }
     const ageNum = Number(age);
@@ -551,7 +476,6 @@ function DigitalTab() {
 
   function resetForm() {
     setDistrictList([]);
-    setSubDistrictList([]);
     setLocalityList([]);
     setPincodeList([]);
     setPinRows([]);
@@ -563,7 +487,6 @@ function DigitalTab() {
       countryCode: "IN",
       stateCode: "",
       district: "",
-      sub_district: "",
       locality: "",
       pincode: "",
       mobile_local: "",
@@ -571,7 +494,7 @@ function DigitalTab() {
   }
 
   async function handleSubmit(sig: string) {
-    const { name, age, district, mobile_local, pincode, sub_district, locality } = form;
+    const { name, age, district, mobile_local, pincode, locality } = form;
     const country = selectedCountry?.name ?? "";
     const ageNum = Number(age);
     const mobile_number = `${dialCode} ${mobile_local}`.trim();
@@ -584,7 +507,7 @@ function DigitalTab() {
           country,
           state: stateName,
           district,
-          sub_district: sub_district || null,
+          sub_district: null,
           locality: locality || null,
           pincode: pincode || null,
           mobile_number,
@@ -617,7 +540,6 @@ function DigitalTab() {
   }
 
   const districtSelected = !!form.district.trim();
-  const subSelected = !!form.sub_district.trim();
   const pinDriven = pinRows.length > 0;
 
   return (
@@ -641,7 +563,6 @@ function DigitalTab() {
             value={form.countryCode}
             onChange={(v) => {
               setDistrictList([]);
-              setSubDistrictList([]);
               setLocalityList([]);
               setPincodeList([]);
               lastPinRef.current = "";
@@ -650,7 +571,6 @@ function DigitalTab() {
                 countryCode: v,
                 stateCode: "",
                 district: "",
-                sub_district: "",
                 locality: "",
                 pincode: "",
               }));
@@ -673,7 +593,6 @@ function DigitalTab() {
                 ...s,
                 stateCode: v,
                 district: "",
-                sub_district: "",
                 locality: "",
                 pincode: "",
               }))
@@ -689,7 +608,7 @@ function DigitalTab() {
           <Combobox
             value={form.district}
             onChange={(v) =>
-              setForm((s) => ({ ...s, district: v, sub_district: "", locality: "", pincode: "" }))
+              setForm((s) => ({ ...s, district: v, locality: "", pincode: "" }))
             }
             disabled={!form.stateCode}
             placeholder={
@@ -704,33 +623,7 @@ function DigitalTab() {
             loading={loadingDistricts}
             loadingText="Loading districts…"
             options={districtOptions}
-          />
-        </Field>
-        <Field
-          label={
-            isIndia
-              ? "Sub-District / வட்டம்"
-              : "Sub-District / County (optional)"
-          }
-        >
-          <Combobox
-            value={form.sub_district}
-            onChange={(v) =>
-              setForm((s) => ({ ...s, sub_district: v, locality: "", pincode: "" }))
-            }
-            disabled={!districtSelected && !pinDriven}
-            placeholder={
-              !districtSelected && !pinDriven
-                ? "Select district first"
-                : loadingSub
-                  ? "Loading…"
-                  : "Select sub-district"
-            }
-            searchPlaceholder="Search sub-district..."
-            emptyText={loadingSub ? "Loading…" : "No sub-district found"}
-            loading={loadingSub}
-            loadingText="Loading sub-districts…"
-            options={subDistrictOptions}
+            allowCustomValue
           />
         </Field>
         <Field
@@ -739,10 +632,10 @@ function DigitalTab() {
           <Combobox
             value={form.locality}
             onChange={(v) => setForm((s) => ({ ...s, locality: v }))}
-            disabled={!subSelected && !pinDriven && localityOptions.length === 0}
+            disabled={!districtSelected && !pinDriven && localityOptions.length === 0}
             placeholder={
-              !subSelected && !pinDriven && localityOptions.length === 0
-                ? "Select sub-district first"
+              !districtSelected && !pinDriven && localityOptions.length === 0
+                ? "Select district first"
                 : loadingLocality
                   ? "Loading…"
                   : "Select locality"
@@ -752,6 +645,7 @@ function DigitalTab() {
             loading={loadingLocality}
             loadingText="Loading localities…"
             options={localityOptions}
+            allowCustomValue
           />
         </Field>
         <Field
