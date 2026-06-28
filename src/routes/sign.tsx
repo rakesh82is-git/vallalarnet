@@ -561,7 +561,7 @@ function DigitalTab() {
         <Field label={t.sign.name}>
           <Input value={form.name} onChange={(e) => set("name", e.target.value)} maxLength={100} />
         </Field>
-        <Field label="Age / வயது">
+        <Field label={t.sign.age}>
           <Input
             type="number"
             inputMode="numeric"
