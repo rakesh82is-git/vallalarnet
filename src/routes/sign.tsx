@@ -466,16 +466,16 @@ function DigitalTab() {
     const { name, age, district, mobile_local, pincode, locality } = form;
     const country = selectedCountry?.name ?? "";
     if (!name || !age || !country || !stateName || !district || !mobile_local) {
-      toast.error("Please fill in all fields");
+      toast.error(lang === "ta" ? "அனைத்து புலங்களையும் நிரப்பவும்" : "Please fill in all fields");
       return false;
     }
     if (isIndia && (!pincode || !locality)) {
-      toast.error("Pincode and Locality are required for India");
+      toast.error(lang === "ta" ? "இந்தியாவிற்கு அஞ்சல் குறியீடு மற்றும் ஊர் தேவை" : "Pincode and Locality are required for India");
       return false;
     }
     const ageNum = Number(age);
     if (!Number.isFinite(ageNum) || ageNum < 1 || ageNum > 120) {
-      toast.error("Please enter a valid age");
+      toast.error(lang === "ta" ? "சரியான வயதை உள்ளிடவும்" : "Please enter a valid age");
       return false;
     }
     return true;
@@ -529,12 +529,12 @@ function DigitalTab() {
       });
       if (!res.ok) {
         if (res.error === "duplicate") {
-          toast.error("This mobile number has already signed.");
+          toast.error(lang === "ta" ? "இந்த கைபேசி எண் ஏற்கனவே கையொப்பமிட்டுள்ளது." : "This mobile number has already signed.");
         } else {
           toast.error(
             "debug" in res && res.debug
               ? `DB error: ${res.debug}`
-              : "Something went wrong. Please try again.",
+              : lang === "ta" ? "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்." : "Something went wrong. Please try again.",
           );
         }
         return;
@@ -542,7 +542,7 @@ function DigitalTab() {
       setSignOpen(false);
       setResult({ id: res.id, name, voteNumber: res.voteNumber });
     } catch {
-      toast.error("Network error — please try again");
+      toast.error(lang === "ta" ? "வலையமைப்பு பிழை — மீண்டும் முயற்சிக்கவும்" : "Network error — please try again");
     } finally {
       setBusy(false);
     }
@@ -588,9 +588,9 @@ function DigitalTab() {
                 pincode: "",
               }));
             }}
-            placeholder="Select country"
-            searchPlaceholder="Search country..."
-            emptyText="No country found"
+            placeholder={lang === "ta" ? "நாட்டை தேர்ந்தெடுக்கவும்" : "Select country"}
+            searchPlaceholder={lang === "ta" ? "நாட்டை தேடு..." : "Search country..."}
+            emptyText={lang === "ta" ? "நாடு இல்லை" : "No country found"}
             options={countries.map((c) => ({
               value: c.isoCode,
               label: `${c.flag} ${c.name}`,
@@ -611,9 +611,9 @@ function DigitalTab() {
               }))
             }
             disabled={!states.length}
-            placeholder={states.length ? "Select state" : "No states available"}
-            searchPlaceholder="Search state..."
-            emptyText="No state found"
+            placeholder={states.length ? (lang === "ta" ? "மாநிலத்தைத் தேர்ந்தெடு" : "Select state") : (lang === "ta" ? "மாநிலங்கள் இல்லை" : "No states available")}
+            searchPlaceholder={lang === "ta" ? "மாநிலத்தை தேடு..." : "Search state..."}
+            emptyText={lang === "ta" ? "மாநிலம் இல்லை" : "No state found"}
             options={states.map((s) => ({ value: s.isoCode, label: s.name, keywords: s.name }))}
           />
         </Field>
@@ -626,15 +626,15 @@ function DigitalTab() {
             disabled={!form.stateCode}
             placeholder={
               !form.stateCode
-                ? "Select state first"
+                ? (lang === "ta" ? "முதலில் மாநிலத்தைத் தேர்ந்தெடு" : "Select state first")
                 : loadingDistricts
-                  ? "Loading districts…"
-                  : "Select district"
+                  ? (lang === "ta" ? "மாவட்டங்கள் ஏற்றப்படுகிறது…" : "Loading districts…")
+                  : (lang === "ta" ? "மாவட்டத்தைத் தேர்ந்தெடு" : "Select district")
             }
-            searchPlaceholder="Search district..."
-            emptyText={loadingDistricts ? "Loading…" : "No district found"}
+            searchPlaceholder={lang === "ta" ? "மாவட்டத்தை தேடு..." : "Search district..."}
+            emptyText={loadingDistricts ? (lang === "ta" ? "ஏற்றுகிறது…" : "Loading…") : (lang === "ta" ? "மாவட்டம் இல்லை" : "No district found")}
             loading={loadingDistricts}
-            loadingText="Loading districts…"
+            loadingText={lang === "ta" ? "மாவட்டங்கள் ஏற்றப்படுகிறது…" : "Loading districts…"}
             options={districtOptions}
             allowCustomValue
           />
@@ -648,15 +648,15 @@ function DigitalTab() {
             disabled={!districtSelected && !pinDriven && localityOptions.length === 0}
             placeholder={
               !districtSelected && !pinDriven && localityOptions.length === 0
-                ? "Select district first"
+                ? (lang === "ta" ? "முதலில் மாவட்டத்தைத் தேர்ந்தெடு" : "Select district first")
                 : loadingLocality
-                  ? "Loading…"
-                  : "Select locality"
+                  ? (lang === "ta" ? "ஏற்றுகிறது…" : "Loading…")
+                  : (lang === "ta" ? "ஊர் தேர்ந்தெடு" : "Select locality")
             }
-            searchPlaceholder="Search locality..."
-            emptyText={loadingLocality ? "Loading…" : "No locality found"}
+            searchPlaceholder={lang === "ta" ? "ஊர் தேடு..." : "Search locality..."}
+            emptyText={loadingLocality ? (lang === "ta" ? "ஏற்றுகிறது…" : "Loading…") : (lang === "ta" ? "ஊர் இல்லை" : "No locality found")}
             loading={loadingLocality}
-            loadingText="Loading localities…"
+            loadingText={lang === "ta" ? "ஊர்கள் ஏற்றப்படுகிறது…" : "Loading localities…"}
             options={localityOptions}
             allowCustomValue
           />
@@ -664,8 +664,8 @@ function DigitalTab() {
         <Field
           label={
             isIndia
-              ? "Pincode / Postcode / அஞ்சல் குறியீடு"
-              : "Pincode / Postcode"
+              ? (lang === "ta" ? "அஞ்சல் குறியீடு" : "Pincode / Postcode")
+              : (lang === "ta" ? "அஞ்சல் குறியீடு" : "Pincode / Postcode")
           }
         >
           <Combobox
@@ -674,19 +674,19 @@ function DigitalTab() {
             disabled={!form.countryCode}
             placeholder={
               !form.countryCode
-                ? "Select country first"
+                ? (lang === "ta" ? "முதலில் நாட்டைத் தேர்ந்தெடு" : "Select country first")
                 : isIndia
-                  ? "Select or type pincode"
-                  : "Select or type postcode"
+                  ? (lang === "ta" ? "அஞ்சல் குறியீடு தேர்ந்தெடு அல்லது தட்டச்சு செய்" : "Select or type pincode")
+                  : (lang === "ta" ? "அஞ்சல் குறியீடு தேர்ந்தெடு அல்லது தட்டச்சு செய்" : "Select or type postcode")
             }
-            searchPlaceholder={isIndia ? "Type 6-digit pincode..." : "Type postcode..."}
+            searchPlaceholder={isIndia ? (lang === "ta" ? "6 இலக்க அஞ்சல் குறியீடு..." : "Type 6-digit pincode...") : (lang === "ta" ? "அஞ்சல் குறியீடு..." : "Type postcode...")}
             emptyText={
               isIndia
-                ? "Type a 6-digit pincode and press Enter"
-                : "Type your postcode and press Enter"
+                ? (lang === "ta" ? "6 இலக்க அஞ்சல் குறியீட்டை தட்டச்சு செய்து Enter அழுத்தவும்" : "Type a 6-digit pincode and press Enter")
+                : (lang === "ta" ? "அஞ்சல் குறியீட்டை தட்டச்சு செய்து Enter அழுத்தவும்" : "Type your postcode and press Enter")
             }
             loading={lookingUpPin}
-            loadingText="Looking up…"
+            loadingText={lang === "ta" ? "தேடுகிறது…" : "Looking up…"}
             options={pincodeOptions}
             allowCustomValue
             onSearchChange={(s) => {
@@ -711,7 +711,7 @@ function DigitalTab() {
               onChange={(e) => set("mobile_local", e.target.value.replace(/[^\d\s-]/g, ""))}
               maxLength={15}
               className="rounded-l-none"
-              placeholder="Phone number"
+              placeholder={lang === "ta" ? "கைபேசி எண்" : "Phone number"}
             />
           </div>
         </Field>
@@ -815,15 +815,15 @@ function ManualTab() {
     }
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     if (!allowed.includes(f.type)) {
-      toast.error("Please upload a JPG, PNG, WebP, or PDF");
+      toast.error(lang === "ta" ? "JPG, PNG, WebP அல்லது PDF பதிவேற்றவும்" : "Please upload a JPG, PNG, WebP, or PDF");
       return;
     }
     if (f.type.startsWith("image/") && f.size > 5_000_000) {
-      toast.error("Image must be under 5 MB");
+      toast.error(lang === "ta" ? "படம் 5 MB-க்கு குறைவாக இருக்க வேண்டும்" : "Image must be under 5 MB");
       return;
     }
     if (f.size > 6_000_000) {
-      toast.error("File must be under 6 MB");
+      toast.error(lang === "ta" ? "கோப்பு 6 MB-க்கு குறைவாக இருக்க வேண்டும்" : "File must be under 6 MB");
       return;
     }
     setFile(f);
@@ -847,11 +847,11 @@ function ManualTab() {
 
   async function handleSubmit() {
     if (!form.name || !form.mobile_number || !form.document_title) {
-      toast.error("Please fill in all fields");
+      toast.error(lang === "ta" ? "அனைத்து புலங்களையும் நிரப்பவும்" : "Please fill in all fields");
       return;
     }
     if (!file) {
-      toast.error("Please attach your signed document");
+      toast.error(lang === "ta" ? "உங்கள் கையொப்பமிட்ட ஆவணத்தை இணைக்கவும்" : "Please attach your signed document");
       return;
     }
     setBusy(true);
@@ -867,15 +867,15 @@ function ManualTab() {
         },
       });
       if (!res.ok) {
-        if (res.error === "duplicate") toast.error("This mobile number has already signed.");
-        else if (res.error === "too_large") toast.error("File must be under 6 MB");
-        else if (res.error === "bad_file") toast.error("Unsupported file type");
-        else toast.error("Something went wrong. Please try again.");
+        if (res.error === "duplicate") toast.error(lang === "ta" ? "இந்த கைபேசி எண் ஏற்கனவே கையொப்பமிட்டுள்ளது." : "This mobile number has already signed.");
+        else if (res.error === "too_large") toast.error(lang === "ta" ? "கோப்பு 6 MB-க்கு குறைவாக இருக்க வேண்டும்" : "File must be under 6 MB");
+        else if (res.error === "bad_file") toast.error(lang === "ta" ? "ஆதரிக்கப்படாத கோப்பு வகை" : "Unsupported file type");
+        else toast.error(lang === "ta" ? "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்." : "Something went wrong. Please try again.");
         return;
       }
       setResult({ id: res.id, name: form.name, voteNumber: res.voteNumber });
     } catch {
-      toast.error("Network error — please try again");
+      toast.error(lang === "ta" ? "வலையமைப்பு பிழை — மீண்டும் முயற்சிக்கவும்" : "Network error — please try again");
     } finally {
       setBusy(false);
     }
@@ -912,7 +912,7 @@ function ManualTab() {
                 value={form.document_title}
                 onChange={(e) => set("document_title", e.target.value)}
                 maxLength={200}
-                placeholder="e.g. Signed petition page from Chennai meeting"
+                placeholder={lang === "ta" ? "உதா. சென்னை கூட்டத்தின் கையொப்பமிட்ட மனு பக்கம்" : "e.g. Signed petition page from Chennai meeting"}
               />
             </Field>
           </div>
