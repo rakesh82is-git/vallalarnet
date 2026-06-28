@@ -598,7 +598,7 @@ function DigitalTab() {
             }))}
           />
         </Field>
-        <Field label="State / மாநிலம்">
+        <Field label={t.sign.state}>
           <Combobox
             value={form.stateCode}
             onChange={(v) =>
