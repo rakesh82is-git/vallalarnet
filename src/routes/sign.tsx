@@ -640,7 +640,7 @@ function DigitalTab() {
           />
         </Field>
         <Field
-          label={isIndia ? "Locality / ஊர்" : "Locality / City (optional)"}
+          label={isIndia ? t.sign.locality ?? (lang === "ta" ? "ஊர்" : "Locality") : lang === "ta" ? "ஊர் / நகரம் (விருப்பமானது)" : "Locality / City (optional)"}
         >
           <Combobox
             value={form.locality}
