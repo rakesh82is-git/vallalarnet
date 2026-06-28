@@ -466,16 +466,16 @@ function DigitalTab() {
     const { name, age, district, mobile_local, pincode, locality } = form;
     const country = selectedCountry?.name ?? "";
     if (!name || !age || !country || !stateName || !district || !mobile_local) {
-      toast.error("Please fill in all fields");
+      toast.error(lang === "ta" ? "அனைத்து புலங்களையும் நிரப்பவும்" : "Please fill in all fields");
       return false;
     }
     if (isIndia && (!pincode || !locality)) {
-      toast.error("Pincode and Locality are required for India");
+      toast.error(lang === "ta" ? "இந்தியாவிற்கு அஞ்சல் குறியீடு மற்றும் ஊர் தேவை" : "Pincode and Locality are required for India");
       return false;
     }
     const ageNum = Number(age);
     if (!Number.isFinite(ageNum) || ageNum < 1 || ageNum > 120) {
-      toast.error("Please enter a valid age");
+      toast.error(lang === "ta" ? "சரியான வயதை உள்ளிடவும்" : "Please enter a valid age");
       return false;
     }
     return true;
@@ -529,12 +529,12 @@ function DigitalTab() {
       });
       if (!res.ok) {
         if (res.error === "duplicate") {
-          toast.error("This mobile number has already signed.");
+          toast.error(lang === "ta" ? "இந்த கைபேசி எண் ஏற்கனவே கையொப்பமிட்டுள்ளது." : "This mobile number has already signed.");
         } else {
           toast.error(
             "debug" in res && res.debug
               ? `DB error: ${res.debug}`
-              : "Something went wrong. Please try again.",
+              : lang === "ta" ? "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்." : "Something went wrong. Please try again.",
           );
         }
         return;
@@ -542,7 +542,7 @@ function DigitalTab() {
       setSignOpen(false);
       setResult({ id: res.id, name, voteNumber: res.voteNumber });
     } catch {
-      toast.error("Network error — please try again");
+      toast.error(lang === "ta" ? "வலையமைப்பு பிழை — மீண்டும் முயற்சிக்கவும்" : "Network error — please try again");
     } finally {
       setBusy(false);
     }
