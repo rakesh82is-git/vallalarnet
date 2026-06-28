@@ -1080,7 +1080,7 @@ function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteN
               preload="auto"
               onCanPlay={() => setVideoReady(true)}
               onError={() => setVideoFailed(true)}
-              aria-label="Thank you blessing video"
+              aria-label={lang === "ta" ? "நன்றி ஆசி வீடியோ" : "Thank you blessing video"}
               className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoReady ? "opacity-100" : "opacity-0"}`}
             />
           )}
