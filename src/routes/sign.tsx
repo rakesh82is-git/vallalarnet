@@ -907,7 +907,7 @@ function ManualTab() {
             />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Document Title / Description">
+            <Field label={lang === "ta" ? "ஆவணத் தலைப்பு / விளக்கம்" : "Document Title / Description"}>
               <Input
                 value={form.document_title}
                 onChange={(e) => set("document_title", e.target.value)}
