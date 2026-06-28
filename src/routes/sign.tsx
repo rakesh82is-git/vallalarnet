@@ -784,6 +784,7 @@ function DigitalTab() {
 // ─────────────── Manual ───────────────
 
 function ManualTab() {
+  const { lang, t } = useLang();
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     name: "",
