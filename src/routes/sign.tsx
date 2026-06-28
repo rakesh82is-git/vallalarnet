@@ -952,8 +952,8 @@ function ManualTab() {
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="font-medium">Drop your signed document here</p>
-              <p className="text-xs text-muted-foreground">JPG · PNG · WebP · PDF · up to 6 MB</p>
+              <p className="font-medium">{lang === "ta" ? "ஆவணத்தை இங்கே இழுத்து விடுங்கள்" : "Drop your signed document here"}</p>
+              <p className="text-xs text-muted-foreground">JPG · PNG · WebP · PDF · {lang === "ta" ? "அதிகபட்சம் 6 MB" : "up to 6 MB"}</p>
             </div>
           )}
         </div>
