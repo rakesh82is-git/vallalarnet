@@ -563,7 +563,6 @@ function DigitalTab() {
             value={form.countryCode}
             onChange={(v) => {
               setDistrictList([]);
-              setSubDistrictList([]);
               setLocalityList([]);
               setPincodeList([]);
               lastPinRef.current = "";
@@ -572,7 +571,6 @@ function DigitalTab() {
                 countryCode: v,
                 stateCode: "",
                 district: "",
-                sub_district: "",
                 locality: "",
                 pincode: "",
               }));
@@ -595,7 +593,6 @@ function DigitalTab() {
                 ...s,
                 stateCode: v,
                 district: "",
-                sub_district: "",
                 locality: "",
                 pincode: "",
               }))
