@@ -24,6 +24,7 @@ import {
   listManualSignatures,
 } from "@/lib/petition.functions";
 import * as gn from "@/lib/geonames";
+import { useLang } from "@/i18n/context";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
@@ -97,6 +98,7 @@ function SignPage() {
 // ─────────────── Digital ───────────────
 
 function DigitalTab() {
+  const { lang } = useLang();
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -730,6 +732,11 @@ function DigitalTab() {
               <span className="text-xs">உங்கள் கையொப்பத்தை இங்கே வரையவும்</span>
             </DialogDescription>
           </DialogHeader>
+          <div className="max-h-56 overflow-y-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed text-foreground/90 whitespace-pre-line">
+            {lang === "ta"
+              ? "வடலூரை அதிகாரப்பூர்வமாக 'புனித நகரமாக' அறிவிக்கக் கோரும் இந்த விருப்ப உறுதிமொழியில் கையெழுத்திடுவதன் மூலம், அக்கோரிக்கையை நான் முழு மனதுடன் ஆதரிக்கிறேன். வள்ளலாருடன் தொடர்புடைய புனிதத் தலங்களான வடலூர், மருதூர், கருங்குழி மற்றும் மேட்டுக்குப்பம் ஆகியவற்றைச் சுற்றியுள்ள சுமார் 15 கி.மீ சுற்றளவில், இறைச்சி, அசைவ உணவுகள், மது மற்றும் போதைப்பொருட்கள் விற்பனைக்கு முழுமையான சட்டப்பூர்வத் தடை விதிப்பதை நான் முழுமையாக அங்கீகரிக்கிறேன்.\n\nஅரசு மேற்கொள்ளும் எந்தவொரு அதிகாரப்பூர்வ சரிபார்ப்பு அல்லது விசாரணையின்போதும், இந்த முடிவில் முழு விருப்பத்துடனும் முழு ஒப்புதலுடனும் உறுதியாக நிற்பேன் என்று நான் உறுதியளிக்கிறேன்."
+              : "By signing this voluntary declaration seeking to officially declare Vadalur as a 'Holy City', I wholeheartedly support the demand. I fully endorse the imposition of a complete legal ban on the sale of meat, non-vegetarian food, alcohol and drugs within a radius of approximately 15 km around the holy places associated with Vallalar, namely Vadalur, Marudhur, Karunguzhi and Mettukuppam.\n\nI undertake to stand firm in this decision with full willingness and full consent during any official verification or investigation conducted by the government."}
+          </div>
           <SignaturePad onChange={setPendingSig} />
           <DialogFooter className="gap-2 sm:gap-2">
             <Button
