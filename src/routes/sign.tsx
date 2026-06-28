@@ -55,10 +55,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function SignPage() {
+  const { lang } = useLang();
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
       <div className="text-center mb-10 animate-reveal">
-        <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">PETITION</p>
+        <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">
+          {lang === "ta" ? "கையொப்ப மனு" : "PETITION"}
+        </p>
         <div className="mt-6 flex flex-col items-center max-w-2xl mx-auto">
           <img
             src={heroImg}
@@ -70,10 +73,14 @@ function SignPage() {
           />
           <div className="mt-5">
             <h1 className="text-2xl md:text-4xl font-display font-bold leading-tight">
-              வடலூர் புனித நகரம் ஆவதற்கு உங்களுக்கு சம்மதமா?
+              {lang === "ta"
+                ? "வடலூர் புனித நகரம் ஆவதற்கு உங்களுக்கு சம்மதமா?"
+                : "Do you agree to make Vadalur a Holy City?"}
             </h1>
             <p className="mt-3 text-sm md:text-base text-muted-foreground">
-              Do you agree to make Vadalur a Holy City? Add your signature below.
+              {lang === "ta"
+                ? "வடலூரைப் புனித நகரமாக அறிவிப்பதற்கு நீங்கள் சம்மதமா? கீழே உங்கள் கையொப்பத்தைச் சேர்க்கவும்."
+                : "Add your signature below to show your support."}
             </p>
           </div>
         </div>
@@ -81,8 +88,12 @@ function SignPage() {
 
       <Tabs defaultValue="digital" className="animate-reveal">
         <TabsList className="grid w-full grid-cols-2 max-w-lg mx-auto">
-          <TabsTrigger value="digital">Digital Signature</TabsTrigger>
-          <TabsTrigger value="manual">Manual Upload</TabsTrigger>
+          <TabsTrigger value="digital">
+            {lang === "ta" ? "டிஜிட்டல் கையொப்பம்" : "Digital Signature"}
+          </TabsTrigger>
+          <TabsTrigger value="manual">
+            {lang === "ta" ? "கையால் எழுதியது" : "Manual Upload"}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="digital" className="mt-6">
           <DigitalTab />
@@ -98,7 +109,7 @@ function SignPage() {
 // ─────────────── Digital ───────────────
 
 function DigitalTab() {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -547,10 +558,10 @@ function DigitalTab() {
   return (
     <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8 space-y-6">
       <fieldset disabled={busy} className="grid sm:grid-cols-2 gap-4">
-        <Field label="Name / பெயர்">
+        <Field label={t.sign.name}>
           <Input value={form.name} onChange={(e) => set("name", e.target.value)} maxLength={100} />
         </Field>
-        <Field label="Age / வயது">
+        <Field label={t.sign.age}>
           <Input
             type="number"
             inputMode="numeric"
@@ -560,7 +571,7 @@ function DigitalTab() {
             onChange={(e) => set("age", e.target.value)}
           />
         </Field>
-        <Field label="Country / நாடு">
+        <Field label={t.sign.country}>
           <Combobox
             value={form.countryCode}
             onChange={(v) => {
@@ -587,7 +598,7 @@ function DigitalTab() {
             }))}
           />
         </Field>
-        <Field label="State / மாநிலம்">
+        <Field label={t.sign.state}>
           <Combobox
             value={form.stateCode}
             onChange={(v) =>
@@ -606,7 +617,7 @@ function DigitalTab() {
             options={states.map((s) => ({ value: s.isoCode, label: s.name, keywords: s.name }))}
           />
         </Field>
-        <Field label="District / மாவட்டம்">
+        <Field label={t.sign.district}>
           <Combobox
             value={form.district}
             onChange={(v) =>
@@ -629,7 +640,7 @@ function DigitalTab() {
           />
         </Field>
         <Field
-          label={isIndia ? "Locality / ஊர்" : "Locality / City (optional)"}
+          label={isIndia ? (lang === "ta" ? "ஊர்" : "Locality") : lang === "ta" ? "ஊர் / நகரம் (விருப்பமானது)" : "Locality / City (optional)"}
         >
           <Combobox
             value={form.locality}
@@ -688,7 +699,7 @@ function DigitalTab() {
             }}
           />
         </Field>
-        <Field label="Mobile Number / கைபேசி எண்">
+        <Field label={t.sign.phone}>
           <div className="flex">
             <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-secondary text-sm font-mono text-muted-foreground min-w-[64px] justify-center">
               {dialCode || "+—"}
@@ -708,10 +719,10 @@ function DigitalTab() {
 
       <div className="flex gap-3">
         <Button onClick={openSignDialog} disabled={busy} size="lg" className="flex-1">
-          Review & Sign
+          {lang === "ta" ? "மதிப்பீடு & கையொப்பம்" : "Review & Sign"}
         </Button>
         <Button type="button" variant="outline" onClick={resetForm} disabled={busy} size="lg">
-          Reset
+          {lang === "ta" ? "மீட்டமை" : "Reset"}
         </Button>
       </div>
 
@@ -773,6 +784,7 @@ function DigitalTab() {
 // ─────────────── Manual ───────────────
 
 function ManualTab() {
+  const { lang, t } = useLang();
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -882,10 +894,10 @@ function ManualTab() {
     <div className="space-y-10">
       <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8 space-y-6">
         <fieldset disabled={busy} className="grid sm:grid-cols-2 gap-4">
-          <Field label="Name / பெயர்">
+          <Field label={t.sign.name}>
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} maxLength={100} />
           </Field>
-          <Field label="Mobile Number / கைபேசி எண்">
+          <Field label={t.sign.phone}>
             <Input
               type="tel"
               inputMode="tel"
@@ -895,7 +907,7 @@ function ManualTab() {
             />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Document Title / Description">
+            <Field label={lang === "ta" ? "ஆவணத் தலைப்பு / விளக்கம்" : "Document Title / Description"}>
               <Input
                 value={form.document_title}
                 onChange={(e) => set("document_title", e.target.value)}
@@ -940,8 +952,8 @@ function ManualTab() {
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="font-medium">Drop your signed document here</p>
-              <p className="text-xs text-muted-foreground">JPG · PNG · WebP · PDF · up to 6 MB</p>
+              <p className="font-medium">{lang === "ta" ? "ஆவணத்தை இங்கே இழுத்து விடுங்கள்" : "Drop your signed document here"}</p>
+              <p className="text-xs text-muted-foreground">JPG · PNG · WebP · PDF · {lang === "ta" ? "அதிகபட்சம் 6 MB" : "up to 6 MB"}</p>
             </div>
           )}
         </div>
@@ -1045,6 +1057,7 @@ function ManualFeed() {
 // ─────────────── Success ───────────────
 
 function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteNumber: number }) {
+  const { lang } = useLang();
   const thankYouUrl = thankYouVideo;
   const [videoReady, setVideoReady] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
@@ -1068,21 +1081,28 @@ function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteN
               preload="auto"
               onCanPlay={() => setVideoReady(true)}
               onError={() => setVideoFailed(true)}
-              aria-label="Thank you blessing video"
+              aria-label={lang === "ta" ? "நன்றி ஆசி வீடியோ" : "Thank you blessing video"}
               className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoReady ? "opacity-100" : "opacity-0"}`}
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
         </div>
       )}
-      <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">THANK YOU · நன்றி</p>
-      <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">Thank you, {name}!</h2>
+      <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">
+        {lang === "ta" ? "நன்றி" : "THANK YOU"}
+      </p>
+      <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">
+        {lang === "ta" ? `நன்றி, ${name}!` : `Thank you, ${name}!`}
+      </h2>
       <p className="mt-2 text-muted-foreground">
-        You are vote number{" "}
-        <span className="font-mono font-bold text-primary">#{voteNumber.toLocaleString()}</span>
+        {lang === "ta"
+          ? `நீங்கள் #${voteNumber.toLocaleString()} வரிசை எண் கையொப்பம்`
+          : `You are vote number #${voteNumber.toLocaleString()}`}
       </p>
       <div className="mt-6 inline-flex flex-col items-center rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 px-8 py-4">
-        <span className="text-xs font-mono uppercase tracking-widest text-accent">Signature ID</span>
+        <span className="text-xs font-mono uppercase tracking-widest text-accent">
+          {lang === "ta" ? "கையொப்ப ID" : "Signature ID"}
+        </span>
         <span className="mt-1 text-sm font-mono font-bold text-primary tracking-tight break-all max-w-xs">
           {id}
         </span>
@@ -1092,7 +1112,7 @@ function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteN
           to="/wall"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full ring-1 ring-border text-sm font-medium hover:bg-secondary"
         >
-          View the Wall →
+          {lang === "ta" ? "கையொப்பச் சுவரைக் காண் →" : "View the Wall →"}
         </Link>
       </div>
     </div>
