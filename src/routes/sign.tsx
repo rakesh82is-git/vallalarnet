@@ -894,7 +894,7 @@ function ManualTab() {
     <div className="space-y-10">
       <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8 space-y-6">
         <fieldset disabled={busy} className="grid sm:grid-cols-2 gap-4">
-          <Field label="Name / பெயர்">
+          <Field label={t.sign.name}>
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} maxLength={100} />
           </Field>
           <Field label="Mobile Number / கைபேசி எண்">
