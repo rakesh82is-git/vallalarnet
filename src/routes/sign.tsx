@@ -897,7 +897,7 @@ function ManualTab() {
           <Field label={t.sign.name}>
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} maxLength={100} />
           </Field>
-          <Field label="Mobile Number / கைபேசி எண்">
+          <Field label={t.sign.phone}>
             <Input
               type="tel"
               inputMode="tel"
