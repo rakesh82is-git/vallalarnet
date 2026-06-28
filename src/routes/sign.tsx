@@ -24,6 +24,7 @@ import {
   listManualSignatures,
 } from "@/lib/petition.functions";
 import * as gn from "@/lib/geonames";
+import { useLang } from "@/i18n/context";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
