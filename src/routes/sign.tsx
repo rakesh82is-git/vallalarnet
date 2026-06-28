@@ -1056,6 +1056,7 @@ function ManualFeed() {
 // ─────────────── Success ───────────────
 
 function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteNumber: number }) {
+  const { lang } = useLang();
   const thankYouUrl = thankYouVideo;
   const [videoReady, setVideoReady] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
