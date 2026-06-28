@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && tsc --noEmit",
+    "build:dev": "vite build --mode development",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types"
   },
