@@ -1112,7 +1112,7 @@ function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteN
           to="/wall"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full ring-1 ring-border text-sm font-medium hover:bg-secondary"
         >
-          View the Wall →
+          {lang === "ta" ? "கையொப்பச் சுவரைக் காண் →" : "View the Wall →"}
         </Link>
       </div>
     </div>
