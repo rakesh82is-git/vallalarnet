@@ -676,6 +676,14 @@ function DigitalTab() {
             loadingText="Looking up…"
             options={pincodeOptions}
             allowCustomValue
+            onSearchChange={(s) => {
+              const t = s.trim();
+              // Auto-commit a full Indian 6-digit PIN as the user finishes
+              // typing, so reverse-resolution runs without requiring Enter.
+              if (isIndia && /^\d{6}$/.test(t) && t !== form.pincode) {
+                set("pincode", t);
+              }
+            }}
           />
         </Field>
         <Field label="Mobile Number / கைபேசி எண்">
