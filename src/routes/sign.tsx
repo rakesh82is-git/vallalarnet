@@ -699,7 +699,7 @@ function DigitalTab() {
             }}
           />
         </Field>
-        <Field label="Mobile Number / கைபேசி எண்">
+        <Field label={t.sign.phone}>
           <div className="flex">
             <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-secondary text-sm font-mono text-muted-foreground min-w-[64px] justify-center">
               {dialCode || "+—"}
