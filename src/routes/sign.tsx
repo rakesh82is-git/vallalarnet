@@ -1087,14 +1087,21 @@ function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteN
           <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
         </div>
       )}
-      <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">THANK YOU · நன்றி</p>
-      <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">Thank you, {name}!</h2>
+      <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">
+        {lang === "ta" ? "நன்றி" : "THANK YOU"}
+      </p>
+      <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">
+        {lang === "ta" ? `நன்றி, ${name}!` : `Thank you, ${name}!`}
+      </h2>
       <p className="mt-2 text-muted-foreground">
-        You are vote number{" "}
-        <span className="font-mono font-bold text-primary">#{voteNumber.toLocaleString()}</span>
+        {lang === "ta"
+          ? `நீங்கள் #${voteNumber.toLocaleString()} வரிசை எண் கையொப்பம்`
+          : `You are vote number #${voteNumber.toLocaleString()}`}
       </p>
       <div className="mt-6 inline-flex flex-col items-center rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 px-8 py-4">
-        <span className="text-xs font-mono uppercase tracking-widest text-accent">Signature ID</span>
+        <span className="text-xs font-mono uppercase tracking-widest text-accent">
+          {lang === "ta" ? "கையொப்ப ID" : "Signature ID"}
+        </span>
         <span className="mt-1 text-sm font-mono font-bold text-primary tracking-tight break-all max-w-xs">
           {id}
         </span>
