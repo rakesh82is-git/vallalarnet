@@ -588,9 +588,9 @@ function DigitalTab() {
                 pincode: "",
               }));
             }}
-            placeholder="Select country"
-            searchPlaceholder="Search country..."
-            emptyText="No country found"
+            placeholder={lang === "ta" ? "நாட்டை தேர்ந்தெடுக்கவும்" : "Select country"}
+            searchPlaceholder={lang === "ta" ? "நாட்டை தேடு..." : "Search country..."}
+            emptyText={lang === "ta" ? "நாடு இல்லை" : "No country found"}
             options={countries.map((c) => ({
               value: c.isoCode,
               label: `${c.flag} ${c.name}`,
@@ -611,9 +611,9 @@ function DigitalTab() {
               }))
             }
             disabled={!states.length}
-            placeholder={states.length ? "Select state" : "No states available"}
-            searchPlaceholder="Search state..."
-            emptyText="No state found"
+            placeholder={states.length ? (lang === "ta" ? "மாநிலத்தைத் தேர்ந்தெடு" : "Select state") : (lang === "ta" ? "மாநிலங்கள் இல்லை" : "No states available")}
+            searchPlaceholder={lang === "ta" ? "மாநிலத்தை தேடு..." : "Search state..."}
+            emptyText={lang === "ta" ? "மாநிலம் இல்லை" : "No state found"}
             options={states.map((s) => ({ value: s.isoCode, label: s.name, keywords: s.name }))}
           />
         </Field>
@@ -626,15 +626,15 @@ function DigitalTab() {
             disabled={!form.stateCode}
             placeholder={
               !form.stateCode
-                ? "Select state first"
+                ? (lang === "ta" ? "முதலில் மாநிலத்தைத் தேர்ந்தெடு" : "Select state first")
                 : loadingDistricts
-                  ? "Loading districts…"
-                  : "Select district"
+                  ? (lang === "ta" ? "மாவட்டங்கள் ஏற்றப்படுகிறது…" : "Loading districts…")
+                  : (lang === "ta" ? "மாவட்டத்தைத் தேர்ந்தெடு" : "Select district")
             }
-            searchPlaceholder="Search district..."
-            emptyText={loadingDistricts ? "Loading…" : "No district found"}
+            searchPlaceholder={lang === "ta" ? "மாவட்டத்தை தேடு..." : "Search district..."}
+            emptyText={loadingDistricts ? (lang === "ta" ? "ஏற்றுகிறது…" : "Loading…") : (lang === "ta" ? "மாவட்டம் இல்லை" : "No district found")}
             loading={loadingDistricts}
-            loadingText="Loading districts…"
+            loadingText={lang === "ta" ? "மாவட்டங்கள் ஏற்றப்படுகிறது…" : "Loading districts…"}
             options={districtOptions}
             allowCustomValue
           />
@@ -648,15 +648,15 @@ function DigitalTab() {
             disabled={!districtSelected && !pinDriven && localityOptions.length === 0}
             placeholder={
               !districtSelected && !pinDriven && localityOptions.length === 0
-                ? "Select district first"
+                ? (lang === "ta" ? "முதலில் மாவட்டத்தைத் தேர்ந்தெடு" : "Select district first")
                 : loadingLocality
-                  ? "Loading…"
-                  : "Select locality"
+                  ? (lang === "ta" ? "ஏற்றுகிறது…" : "Loading…")
+                  : (lang === "ta" ? "ஊர் தேர்ந்தெடு" : "Select locality")
             }
-            searchPlaceholder="Search locality..."
-            emptyText={loadingLocality ? "Loading…" : "No locality found"}
+            searchPlaceholder={lang === "ta" ? "ஊர் தேடு..." : "Search locality..."}
+            emptyText={loadingLocality ? (lang === "ta" ? "ஏற்றுகிறது…" : "Loading…") : (lang === "ta" ? "ஊர் இல்லை" : "No locality found")}
             loading={loadingLocality}
-            loadingText="Loading localities…"
+            loadingText={lang === "ta" ? "ஊர்கள் ஏற்றப்படுகிறது…" : "Loading localities…"}
             options={localityOptions}
             allowCustomValue
           />
@@ -664,8 +664,8 @@ function DigitalTab() {
         <Field
           label={
             isIndia
-              ? "Pincode / Postcode / அஞ்சல் குறியீடு"
-              : "Pincode / Postcode"
+              ? (lang === "ta" ? "அஞ்சல் குறியீடு" : "Pincode / Postcode")
+              : (lang === "ta" ? "அஞ்சல் குறியீடு" : "Pincode / Postcode")
           }
         >
           <Combobox
@@ -674,19 +674,19 @@ function DigitalTab() {
             disabled={!form.countryCode}
             placeholder={
               !form.countryCode
-                ? "Select country first"
+                ? (lang === "ta" ? "முதலில் நாட்டைத் தேர்ந்தெடு" : "Select country first")
                 : isIndia
-                  ? "Select or type pincode"
-                  : "Select or type postcode"
+                  ? (lang === "ta" ? "அஞ்சல் குறியீடு தேர்ந்தெடு அல்லது தட்டச்சு செய்" : "Select or type pincode")
+                  : (lang === "ta" ? "அஞ்சல் குறியீடு தேர்ந்தெடு அல்லது தட்டச்சு செய்" : "Select or type postcode")
             }
-            searchPlaceholder={isIndia ? "Type 6-digit pincode..." : "Type postcode..."}
+            searchPlaceholder={isIndia ? (lang === "ta" ? "6 இலக்க அஞ்சல் குறியீடு..." : "Type 6-digit pincode...") : (lang === "ta" ? "அஞ்சல் குறியீடு..." : "Type postcode...")}
             emptyText={
               isIndia
-                ? "Type a 6-digit pincode and press Enter"
-                : "Type your postcode and press Enter"
+                ? (lang === "ta" ? "6 இலக்க அஞ்சல் குறியீட்டை தட்டச்சு செய்து Enter அழுத்தவும்" : "Type a 6-digit pincode and press Enter")
+                : (lang === "ta" ? "அஞ்சல் குறியீட்டை தட்டச்சு செய்து Enter அழுத்தவும்" : "Type your postcode and press Enter")
             }
             loading={lookingUpPin}
-            loadingText="Looking up…"
+            loadingText={lang === "ta" ? "தேடுகிறது…" : "Looking up…"}
             options={pincodeOptions}
             allowCustomValue
             onSearchChange={(s) => {
@@ -711,7 +711,7 @@ function DigitalTab() {
               onChange={(e) => set("mobile_local", e.target.value.replace(/[^\d\s-]/g, ""))}
               maxLength={15}
               className="rounded-l-none"
-              placeholder="Phone number"
+              placeholder={lang === "ta" ? "கைபேசி எண்" : "Phone number"}
             />
           </div>
         </Field>
