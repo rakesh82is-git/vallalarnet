@@ -571,7 +571,7 @@ function DigitalTab() {
             onChange={(e) => set("age", e.target.value)}
           />
         </Field>
-        <Field label="Country / நாடு">
+        <Field label={t.sign.country}>
           <Combobox
             value={form.countryCode}
             onChange={(v) => {
