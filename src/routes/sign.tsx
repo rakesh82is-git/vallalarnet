@@ -98,6 +98,7 @@ function SignPage() {
 // ─────────────── Digital ───────────────
 
 function DigitalTab() {
+  const { lang } = useLang();
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     name: "",
