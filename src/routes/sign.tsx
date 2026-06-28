@@ -617,7 +617,7 @@ function DigitalTab() {
             options={states.map((s) => ({ value: s.isoCode, label: s.name, keywords: s.name }))}
           />
         </Field>
-        <Field label="District / மாவட்டம்">
+        <Field label={t.sign.district}>
           <Combobox
             value={form.district}
             onChange={(v) =>
