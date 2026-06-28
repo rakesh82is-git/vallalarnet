@@ -815,15 +815,15 @@ function ManualTab() {
     }
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     if (!allowed.includes(f.type)) {
-      toast.error("Please upload a JPG, PNG, WebP, or PDF");
+      toast.error(lang === "ta" ? "JPG, PNG, WebP அல்லது PDF பதிவேற்றவும்" : "Please upload a JPG, PNG, WebP, or PDF");
       return;
     }
     if (f.type.startsWith("image/") && f.size > 5_000_000) {
-      toast.error("Image must be under 5 MB");
+      toast.error(lang === "ta" ? "படம் 5 MB-க்கு குறைவாக இருக்க வேண்டும்" : "Image must be under 5 MB");
       return;
     }
     if (f.size > 6_000_000) {
-      toast.error("File must be under 6 MB");
+      toast.error(lang === "ta" ? "கோப்பு 6 MB-க்கு குறைவாக இருக்க வேண்டும்" : "File must be under 6 MB");
       return;
     }
     setFile(f);
@@ -847,11 +847,11 @@ function ManualTab() {
 
   async function handleSubmit() {
     if (!form.name || !form.mobile_number || !form.document_title) {
-      toast.error("Please fill in all fields");
+      toast.error(lang === "ta" ? "அனைத்து புலங்களையும் நிரப்பவும்" : "Please fill in all fields");
       return;
     }
     if (!file) {
-      toast.error("Please attach your signed document");
+      toast.error(lang === "ta" ? "உங்கள் கையொப்பமிட்ட ஆவணத்தை இணைக்கவும்" : "Please attach your signed document");
       return;
     }
     setBusy(true);
@@ -867,15 +867,15 @@ function ManualTab() {
         },
       });
       if (!res.ok) {
-        if (res.error === "duplicate") toast.error("This mobile number has already signed.");
-        else if (res.error === "too_large") toast.error("File must be under 6 MB");
-        else if (res.error === "bad_file") toast.error("Unsupported file type");
-        else toast.error("Something went wrong. Please try again.");
+        if (res.error === "duplicate") toast.error(lang === "ta" ? "இந்த கைபேசி எண் ஏற்கனவே கையொப்பமிட்டுள்ளது." : "This mobile number has already signed.");
+        else if (res.error === "too_large") toast.error(lang === "ta" ? "கோப்பு 6 MB-க்கு குறைவாக இருக்க வேண்டும்" : "File must be under 6 MB");
+        else if (res.error === "bad_file") toast.error(lang === "ta" ? "ஆதரிக்கப்படாத கோப்பு வகை" : "Unsupported file type");
+        else toast.error(lang === "ta" ? "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்." : "Something went wrong. Please try again.");
         return;
       }
       setResult({ id: res.id, name: form.name, voteNumber: res.voteNumber });
     } catch {
-      toast.error("Network error — please try again");
+      toast.error(lang === "ta" ? "வலையமைப்பு பிழை — மீண்டும் முயற்சிக்கவும்" : "Network error — please try again");
     } finally {
       setBusy(false);
     }
@@ -912,7 +912,7 @@ function ManualTab() {
                 value={form.document_title}
                 onChange={(e) => set("document_title", e.target.value)}
                 maxLength={200}
-                placeholder="e.g. Signed petition page from Chennai meeting"
+                placeholder={lang === "ta" ? "உதா. சென்னை கூட்டத்தின் கையொப்பமிட்ட மனு பக்கம்" : "e.g. Signed petition page from Chennai meeting"}
               />
             </Field>
           </div>
