@@ -55,10 +55,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function SignPage() {
+  const { lang } = useLang();
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
       <div className="text-center mb-10 animate-reveal">
-        <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">PETITION</p>
+        <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">
+          {lang === "ta" ? "கையொப்ப மனு" : "PETITION"}
+        </p>
         <div className="mt-6 flex flex-col items-center max-w-2xl mx-auto">
           <img
             src={heroImg}
@@ -70,10 +73,14 @@ function SignPage() {
           />
           <div className="mt-5">
             <h1 className="text-2xl md:text-4xl font-display font-bold leading-tight">
-              வடலூர் புனித நகரம் ஆவதற்கு உங்களுக்கு சம்மதமா?
+              {lang === "ta"
+                ? "வடலூர் புனித நகரம் ஆவதற்கு உங்களுக்கு சம்மதமா?"
+                : "Do you agree to make Vadalur a Holy City?"}
             </h1>
             <p className="mt-3 text-sm md:text-base text-muted-foreground">
-              Do you agree to make Vadalur a Holy City? Add your signature below.
+              {lang === "ta"
+                ? "வடலூரைப் புனித நகரமாக அறிவிப்பதற்கு நீங்கள் சம்மதமா? கீழே உங்கள் கையொப்பத்தைச் சேர்க்கவும்."
+                : "Add your signature below to show your support."}
             </p>
           </div>
         </div>
