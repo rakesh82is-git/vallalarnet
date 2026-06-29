@@ -5,10 +5,10 @@ import {
   adminListCampaignUpdates,
   adminSaveCampaignUpdate,
   adminDeleteCampaignUpdate,
-  adminUploadCampaignMedia,
   adminListGallery,
   adminListFieldworkEvents,
 } from "@/lib/admin.functions";
+import { uploadFileToR2 } from "@/lib/r2-upload";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -84,24 +84,10 @@ const emptyDraft = (): Draft => ({
   fieldwork_event_id: null,
 });
 
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      const idx = result.indexOf(",");
-      resolve(idx >= 0 ? result.slice(idx + 1) : result);
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
 function AdminUpdatesPage() {
   const list = useServerFn(adminListCampaignUpdates);
   const save = useServerFn(adminSaveCampaignUpdate);
   const remove = useServerFn(adminDeleteCampaignUpdate);
-  const upload = useServerFn(adminUploadCampaignMedia);
   const listGallery = useServerFn(adminListGallery);
   const listEvents = useServerFn(adminListFieldworkEvents);
 
@@ -188,22 +174,11 @@ function AdminUpdatesPage() {
     }
     setUploading(true);
     try {
-      const base64 = await readFileAsBase64(file);
-      const r = await upload({
-        data: {
-          filename: file.name,
-          contentType: file.type || "application/octet-stream",
-          base64,
-        },
-      });
-      if (!r.ok) {
-        toast.error(`Upload failed: ${r.error}`);
-        return;
-      }
+      const r = await uploadFileToR2(file, "campaign-media");
       setDraft((d) => ({
         ...d,
-        media_url: r.path,
-        media_preview_url: r.preview_url,
+        media_url: r.publicUrl,
+        media_preview_url: r.publicUrl,
       }));
       toast.success("Image uploaded");
     } catch {
@@ -298,19 +273,7 @@ function AdminUpdatesPage() {
             failCount++;
             continue;
           }
-          const base64 = await readFileAsBase64(file);
-          const up = await upload({
-            data: {
-              filename: file.name,
-              contentType: file.type || "application/octet-stream",
-              base64,
-            },
-          });
-          if (!up.ok) {
-            failCount++;
-            toast.error(`${file.name}: ${up.error}`);
-            continue;
-          }
+          const up = await uploadFileToR2(file, "campaign-media");
           await save({
             data: {
               id: null,
@@ -318,7 +281,7 @@ function AdminUpdatesPage() {
               title_ta: draft.title_ta,
               content_en: draft.content_en,
               content_ta: draft.content_ta,
-              media_url: up.path || null,
+              media_url: up.publicUrl || null,
               status: draft.status,
               is_pinned: draft.is_pinned,
               gallery_item_id: draft.gallery_item_id,

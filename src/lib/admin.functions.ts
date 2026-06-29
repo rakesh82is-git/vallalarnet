@@ -264,13 +264,34 @@ export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handl
 
     // Manual sheet — fetch from petition-manual bucket
     await addSheet("Manual Documents", manualRows, "Document", async (r) => {
-      const path = (r.manual_document_url as string | null) ?? null;
-      if (!path) return null;
-      const dl = await sb.storage.from("petition-manual").download(path);
+      const stored = (r.manual_document_url as string | null) ?? null;
+      if (!stored) return null;
+
+      // New: R2 (or any http) URLs — fetch directly.
+      if (/^https?:\/\//i.test(stored)) {
+        try {
+          const resp = await fetch(stored);
+          if (!resp.ok) {
+            return { kind: "link", url: stored, label: "Open document" };
+          }
+          const mime = resp.headers.get("content-type") || "";
+          const ext = imgExt(mime);
+          if (ext) {
+            const buf = Buffer.from(await resp.arrayBuffer());
+            return { kind: "image", ext, bytes: buf };
+          }
+          return { kind: "link", url: stored, label: "Open document" };
+        } catch {
+          return { kind: "link", url: stored, label: "Open document" };
+        }
+      }
+
+      // Legacy: object path in the petition-manual Supabase bucket.
+      const dl = await sb.storage.from("petition-manual").download(stored);
       if (dl.error || !dl.data) {
         const { data: signed } = await sb.storage
           .from("petition-manual")
-          .createSignedUrl(path, 60 * 60 * 24 * 7);
+          .createSignedUrl(stored, 60 * 60 * 24 * 7);
         return signed?.signedUrl
           ? { kind: "link", url: signed.signedUrl, label: "Open document" }
           : null;
@@ -285,7 +306,7 @@ export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handl
       // Not a renderable image (PDF, etc.) — fall back to a signed link
       const { data: signed } = await sb.storage
         .from("petition-manual")
-        .createSignedUrl(path, 60 * 60 * 24 * 7);
+        .createSignedUrl(stored, 60 * 60 * 24 * 7);
       return signed?.signedUrl
         ? { kind: "link", url: signed.signedUrl, label: "Open document" }
         : null;

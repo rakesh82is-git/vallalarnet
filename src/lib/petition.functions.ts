@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createHash, randomUUID } from "crypto";
+import { createHash } from "crypto";
 
 type ManualItem = {
   id: string;
@@ -105,8 +105,7 @@ const ManualSignaturePayload = z.object({
   name: z.string().trim().min(1).max(100),
   mobile_number: z.string().trim().min(6).max(20),
   document_title: z.string().trim().min(1).max(200),
-  file_data_url: z.string().min(30).max(8_000_000),
-  file_name: z.string().trim().min(1).max(200),
+  manual_document_url: z.string().trim().url().max(2000),
 });
 
 function mask(phone: string) {
@@ -200,39 +199,6 @@ export const submitManualSignature = createServerFn({ method: "POST" })
       .maybeSingle();
     if (existingMobile) return { ok: false as const, error: "duplicate" as const };
 
-    // Decode the data URL → bytes
-    const match = /^data:([^;,]+);base64,(.+)$/.exec(data.file_data_url);
-    if (!match) return { ok: false as const, error: "bad_file" as const };
-    const contentType = match[1];
-    const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-    if (!allowed.includes(contentType)) {
-      return { ok: false as const, error: "bad_file" as const };
-    }
-    const bytes = Buffer.from(match[2], "base64");
-    if (bytes.byteLength > 6_000_000) {
-      return { ok: false as const, error: "too_large" as const };
-    }
-
-    const ext =
-      contentType === "application/pdf"
-        ? "pdf"
-        : contentType === "image/png"
-          ? "png"
-          : contentType === "image/webp"
-            ? "webp"
-            : "jpg";
-    const safeName = data.file_name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 60);
-    const path = `${new Date().toISOString().slice(0, 10)}/${randomUUID()}_${safeName}.${ext}`;
-
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from("petition-manual")
-      .upload(path, bytes, {
-        contentType,
-        upsert: false,
-        cacheControl: "public, max-age=31536000, immutable",
-      });
-    if (uploadError) return { ok: false as const, error: "upload" as const };
-
     const { data: row, error } = await supabaseAdmin
       .from("signatures")
       .insert({
@@ -241,7 +207,7 @@ export const submitManualSignature = createServerFn({ method: "POST" })
         mobile_number: data.mobile_number,
         phone_number: data.mobile_number,
         document_title: data.document_title,
-        manual_document_url: path,
+        manual_document_url: data.manual_document_url,
         kind: "manual",
         consent: true,
         phone_hash: phoneHash,
@@ -279,16 +245,23 @@ export const listManualSignatures = createServerFn({ method: "GET" }).handler(
 
     const items = await Promise.all(
       ((rows ?? []) as Array<{ id: string; name: string; document_title: string | null; manual_document_url: string | null; created_at: string }>).map(async (r) => {
-        const path = r.manual_document_url as string;
-        const { data: signed } = await supabaseAdmin.storage
-          .from("petition-manual")
-          .createSignedUrl(path, 60 * 60 * 24 * 7);
-        const isPdf = path.toLowerCase().endsWith(".pdf");
+        const stored = r.manual_document_url as string;
+        let url: string | null = null;
+        if (/^https?:\/\//i.test(stored)) {
+          url = stored;
+        } else {
+          // Legacy: object path in the petition-manual Supabase bucket.
+          const { data: signed } = await supabaseAdmin.storage
+            .from("petition-manual")
+            .createSignedUrl(stored, 60 * 60 * 24 * 7);
+          url = signed?.signedUrl ?? null;
+        }
+        const isPdf = stored.toLowerCase().split("?")[0].endsWith(".pdf");
         return {
           id: r.id as string,
           name: r.name as string,
           document_title: r.document_title as string | null,
-          url: signed?.signedUrl ?? null,
+          url,
           is_pdf: isPdf,
           created_at: r.created_at as string,
         };

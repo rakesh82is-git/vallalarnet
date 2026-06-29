@@ -5,11 +5,11 @@ import {
   adminListGallery,
   adminSaveGalleryItem,
   adminDeleteGalleryItem,
-  adminUploadGalleryFile,
   adminListFieldworkEvents,
   adminSaveFieldworkEvent,
   adminDeleteFieldworkEvent,
 } from "@/lib/admin.functions";
+import { uploadFileToR2 } from "@/lib/r2-upload";
 import { toast } from "sonner";
 
 type Kind = "photo" | "video" | "fieldwork";
@@ -89,7 +89,6 @@ function AdminGallery() {
   const list = useServerFn(adminListGallery);
   const save = useServerFn(adminSaveGalleryItem);
   const del = useServerFn(adminDeleteGalleryItem);
-  const upload = useServerFn(adminUploadGalleryFile);
   const listEvents = useServerFn(adminListFieldworkEvents);
   const saveEvent = useServerFn(adminSaveFieldworkEvent);
   const delEvent = useServerFn(adminDeleteFieldworkEvent);
@@ -280,39 +279,20 @@ function AdminGallery() {
     }
     setUploading(true);
     try {
-      const base64 = await fileToBase64(file);
-      const r = await upload({
-        data: {
-          kind: draft.kind,
-          filename: file.name,
-          contentType: file.type || "application/octet-stream",
-          base64,
-        },
-      });
-      if (!r.ok) {
-        toast.error(`Upload failed: ${r.error}`);
-        return;
-      }
+      const r = await uploadFileToR2(file, `gallery/${draft.kind}`);
       // Auto-generate a thumbnail from the first frame when uploading a video
       // into the URL field and no thumb was set yet.
       let autoThumb: string | null = null;
       if (target === "url" && file.type.startsWith("video/")) {
-        const frame = await captureVideoFrameUpload(file);
+        const frame = await captureVideoFrameFile(file);
         if (frame) {
-          const tr = await upload({
-            data: {
-              kind: draft.kind,
-              filename: frame.filename,
-              contentType: frame.contentType,
-              base64: frame.base64,
-            },
-          });
-          if (tr.ok) autoThumb = tr.url;
+          const tr = await uploadFileToR2(frame, `gallery/${draft.kind}`);
+          autoThumb = tr.publicUrl;
         }
       }
       setDraft((d) => ({
         ...d,
-        [target]: r.url,
+        [target]: r.publicUrl,
         ...(autoThumb && !d.thumb_url ? { thumb_url: autoThumb } : {}),
       }));
       toast.success(autoThumb ? "Uploaded (thumbnail auto-generated)" : "Uploaded");
@@ -361,34 +341,14 @@ function AdminGallery() {
             failCount++;
             continue;
           }
-          const base64 = await fileToBase64(file);
-          const up = await upload({
-            data: {
-              kind: tab,
-              filename: file.name,
-              contentType: file.type || "application/octet-stream",
-              base64,
-            },
-          });
-          if (!up.ok) {
-            failCount++;
-            toast.error(`${file.name}: ${up.error}`);
-            continue;
-          }
+          const up = await uploadFileToR2(file, `gallery/${tab}`);
           // Auto-generate thumbnail for videos in bulk.
           let thumbUrl: string | null = null;
           if (file.type.startsWith("video/")) {
-            const frame = await captureVideoFrameUpload(file);
+            const frame = await captureVideoFrameFile(file);
             if (frame) {
-              const tr = await upload({
-                data: {
-                  kind: tab,
-                  filename: frame.filename,
-                  contentType: frame.contentType,
-                  base64: frame.base64,
-                },
-              });
-              if (tr.ok) thumbUrl = tr.url;
+              const tr = await uploadFileToR2(frame, `gallery/${tab}`);
+              thumbUrl = tr.publicUrl;
             }
           }
           await save({
@@ -396,7 +356,7 @@ function AdminGallery() {
               kind: tab,
               title_ta: sharedTa,
               title_en: sharedEn,
-              url: up.url,
+              url: up.publicUrl,
               thumb_url: thumbUrl,
               sort_order: 0,
               event_id: tab === "fieldwork" ? bulkEventId : null,
@@ -786,24 +746,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => {
-      const s = String(r.result || "");
-      const i = s.indexOf(",");
-      resolve(i >= 0 ? s.slice(i + 1) : s);
-    };
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
-}
-
-// Extract the first usable frame of a video file as a JPEG and return upload payload.
+// Extract the first usable frame of a video as a JPEG File suitable for R2 upload.
 // Returns null on any failure (codec unsupported, decode error, etc.) — caller falls back.
-async function captureVideoFrameUpload(
-  file: File,
-): Promise<{ base64: string; contentType: string; filename: string } | null> {
+async function captureVideoFrameFile(file: File): Promise<File | null> {
   if (typeof document === "undefined") return null;
   if (!file.type.startsWith("video/")) return null;
   const url = URL.createObjectURL(file);
@@ -846,10 +791,9 @@ async function captureVideoFrameUpload(
       canvas.toBlob((b) => resolve(b), "image/jpeg", 0.82),
     );
     if (!blob) return null;
-    const base64 = await fileToBase64(new File([blob], "thumb.jpg", { type: "image/jpeg" }));
     const dot = file.name.lastIndexOf(".");
     const stem = dot > 0 ? file.name.slice(0, dot) : file.name;
-    return { base64, contentType: "image/jpeg", filename: `${stem}-thumb.jpg` };
+    return new File([blob], `${stem}-thumb.jpg`, { type: "image/jpeg" });
   } catch (e) {
     console.warn("video thumbnail generation failed", e);
     return null;
