@@ -81,22 +81,9 @@ function SignPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="digital" className="animate-reveal">
-        <TabsList className="grid w-full grid-cols-2 max-w-lg mx-auto">
-          <TabsTrigger value="digital">
-            {lang === "ta" ? "டிஜிட்டல் கையொப்பம்" : "Digital Signature"}
-          </TabsTrigger>
-          <TabsTrigger value="manual">
-            {lang === "ta" ? "கையால் எழுதியது" : "Manual Upload"}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="digital" className="mt-6">
-          <DigitalTab />
-        </TabsContent>
-        <TabsContent value="manual" className="mt-6">
-          <ManualTab />
-        </TabsContent>
-      </Tabs>
+      <div className="animate-reveal mt-6">
+        <DigitalTab />
+      </div>
     </div>
   );
 }
