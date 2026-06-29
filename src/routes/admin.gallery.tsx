@@ -5,11 +5,11 @@ import {
   adminListGallery,
   adminSaveGalleryItem,
   adminDeleteGalleryItem,
-  adminUploadGalleryFile,
   adminListFieldworkEvents,
   adminSaveFieldworkEvent,
   adminDeleteFieldworkEvent,
 } from "@/lib/admin.functions";
+import { uploadFileToR2 } from "@/lib/r2-upload";
 import { toast } from "sonner";
 
 type Kind = "photo" | "video" | "fieldwork";
@@ -89,7 +89,6 @@ function AdminGallery() {
   const list = useServerFn(adminListGallery);
   const save = useServerFn(adminSaveGalleryItem);
   const del = useServerFn(adminDeleteGalleryItem);
-  const upload = useServerFn(adminUploadGalleryFile);
   const listEvents = useServerFn(adminListFieldworkEvents);
   const saveEvent = useServerFn(adminSaveFieldworkEvent);
   const delEvent = useServerFn(adminDeleteFieldworkEvent);
