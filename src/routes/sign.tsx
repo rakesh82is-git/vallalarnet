@@ -774,7 +774,7 @@ function SuccessCard({ id, name, voteNumber }: { id: string; name: string; voteN
   return (
     <div className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-10 text-center animate-reveal overflow-hidden">
       {thankYouUrl && (
-        <div className="relative mx-auto w-full max-w-md aspect-square rounded-2xl overflow-hidden mb-6 bg-secondary/40">
+        <div className="relative mx-auto w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden mb-6 bg-secondary/40">
           <img
             src={heroImg}
             alt="Vallalar blessing"
