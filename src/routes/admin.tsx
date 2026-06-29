@@ -143,6 +143,13 @@ function AdminLayout() {
           >
             Updates
           </Link>
+          <Link
+            to="/admin/manual"
+            activeProps={{ className: "text-primary" }}
+            className="hover:text-primary"
+          >
+            Manual Upload
+          </Link>
         </div>
         <button
           onClick={handleLogout}
