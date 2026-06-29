@@ -836,15 +836,6 @@ function ManualTab() {
     }
   }
 
-  function readDataUrl(f: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result as string);
-      r.onerror = reject;
-      r.readAsDataURL(f);
-    });
-  }
-
   async function handleSubmit() {
     if (!form.name || !form.mobile_number || !form.document_title) {
       toast.error(lang === "ta" ? "அனைத்து புலங்களையும் நிரப்பவும்" : "Please fill in all fields");
@@ -856,26 +847,25 @@ function ManualTab() {
     }
     setBusy(true);
     try {
-      const dataUrl = await readDataUrl(file);
+      const { uploadFileToR2 } = await import("@/lib/r2-upload");
+      const uploaded = await uploadFileToR2(file, "petition-manual");
       const res = await submitManualSignature({
         data: {
           name: form.name,
           mobile_number: form.mobile_number,
           document_title: form.document_title,
-          file_data_url: dataUrl,
-          file_name: file.name,
+          manual_document_url: uploaded.publicUrl,
         },
       });
       if (!res.ok) {
         if (res.error === "duplicate") toast.error(lang === "ta" ? "இந்த கைபேசி எண் ஏற்கனவே கையொப்பமிட்டுள்ளது." : "This mobile number has already signed.");
-        else if (res.error === "too_large") toast.error(lang === "ta" ? "கோப்பு 6 MB-க்கு குறைவாக இருக்க வேண்டும்" : "File must be under 6 MB");
-        else if (res.error === "bad_file") toast.error(lang === "ta" ? "ஆதரிக்கப்படாத கோப்பு வகை" : "Unsupported file type");
         else toast.error(lang === "ta" ? "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்." : "Something went wrong. Please try again.");
         return;
       }
       setResult({ id: res.id, name: form.name, voteNumber: res.voteNumber });
-    } catch {
-      toast.error(lang === "ta" ? "வலையமைப்பு பிழை — மீண்டும் முயற்சிக்கவும்" : "Network error — please try again");
+    } catch (err) {
+      console.error("[manual signature] upload failed", err);
+      toast.error(lang === "ta" ? "பதிவேற்றம் தோல்வியடைந்தது — மீண்டும் முயற்சிக்கவும்" : "Upload failed — please try again");
     } finally {
       setBusy(false);
     }
