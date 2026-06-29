@@ -15,8 +15,9 @@ import {
 import { Country, State } from "country-state-city";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
-import heroImg from "@/assets/vallalar_with_animals_2.jpeg";
-import thankYouVideo from "@/assets/vallalar-thankyou.mp4";
+import { STATIC } from "@/lib/static-assets";
+const heroImg = STATIC.vallalarWithAnimals2;
+const thankYouVideo = STATIC.vallalarThankYouVideo;
 import { submitDigitalSignature } from "@/lib/petition.functions";
 import * as gn from "@/lib/geonames";
 import { useLang } from "@/i18n/context";
