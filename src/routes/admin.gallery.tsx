@@ -279,39 +279,20 @@ function AdminGallery() {
     }
     setUploading(true);
     try {
-      const base64 = await fileToBase64(file);
-      const r = await upload({
-        data: {
-          kind: draft.kind,
-          filename: file.name,
-          contentType: file.type || "application/octet-stream",
-          base64,
-        },
-      });
-      if (!r.ok) {
-        toast.error(`Upload failed: ${r.error}`);
-        return;
-      }
+      const r = await uploadFileToR2(file, `gallery/${draft.kind}`);
       // Auto-generate a thumbnail from the first frame when uploading a video
       // into the URL field and no thumb was set yet.
       let autoThumb: string | null = null;
       if (target === "url" && file.type.startsWith("video/")) {
-        const frame = await captureVideoFrameUpload(file);
+        const frame = await captureVideoFrameFile(file);
         if (frame) {
-          const tr = await upload({
-            data: {
-              kind: draft.kind,
-              filename: frame.filename,
-              contentType: frame.contentType,
-              base64: frame.base64,
-            },
-          });
-          if (tr.ok) autoThumb = tr.url;
+          const tr = await uploadFileToR2(frame, `gallery/${draft.kind}`);
+          autoThumb = tr.publicUrl;
         }
       }
       setDraft((d) => ({
         ...d,
-        [target]: r.url,
+        [target]: r.publicUrl,
         ...(autoThumb && !d.thumb_url ? { thumb_url: autoThumb } : {}),
       }));
       toast.success(autoThumb ? "Uploaded (thumbnail auto-generated)" : "Uploaded");
@@ -360,34 +341,14 @@ function AdminGallery() {
             failCount++;
             continue;
           }
-          const base64 = await fileToBase64(file);
-          const up = await upload({
-            data: {
-              kind: tab,
-              filename: file.name,
-              contentType: file.type || "application/octet-stream",
-              base64,
-            },
-          });
-          if (!up.ok) {
-            failCount++;
-            toast.error(`${file.name}: ${up.error}`);
-            continue;
-          }
+          const up = await uploadFileToR2(file, `gallery/${tab}`);
           // Auto-generate thumbnail for videos in bulk.
           let thumbUrl: string | null = null;
           if (file.type.startsWith("video/")) {
-            const frame = await captureVideoFrameUpload(file);
+            const frame = await captureVideoFrameFile(file);
             if (frame) {
-              const tr = await upload({
-                data: {
-                  kind: tab,
-                  filename: frame.filename,
-                  contentType: frame.contentType,
-                  base64: frame.base64,
-                },
-              });
-              if (tr.ok) thumbUrl = tr.url;
+              const tr = await uploadFileToR2(frame, `gallery/${tab}`);
+              thumbUrl = tr.publicUrl;
             }
           }
           await save({
@@ -395,7 +356,7 @@ function AdminGallery() {
               kind: tab,
               title_ta: sharedTa,
               title_en: sharedEn,
-              url: up.url,
+              url: up.publicUrl,
               thumb_url: thumbUrl,
               sort_order: 0,
               event_id: tab === "fieldwork" ? bulkEventId : null,
