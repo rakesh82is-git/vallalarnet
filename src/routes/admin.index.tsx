@@ -37,6 +37,16 @@ function AdminHome() {
           Publish bilingual newsfeed posts with images, pin status and draft/published control.
         </p>
       </Link>
+      <Link
+        to="/admin/manual"
+        className="rounded-3xl bg-card ring-1 ring-border p-6 hover:ring-primary/60 transition"
+      >
+        <p className="text-xs font-mono uppercase tracking-widest text-accent">04</p>
+        <h2 className="mt-2 text-xl font-display font-bold">Manual Upload</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Upload scanned paper petitions on behalf of supporters who signed offline.
+        </p>
+      </Link>
     </div>
   );
 }
