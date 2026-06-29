@@ -746,24 +746,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => {
-      const s = String(r.result || "");
-      const i = s.indexOf(",");
-      resolve(i >= 0 ? s.slice(i + 1) : s);
-    };
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
-}
-
-// Extract the first usable frame of a video file as a JPEG and return upload payload.
+// Extract the first usable frame of a video as a JPEG File suitable for R2 upload.
 // Returns null on any failure (codec unsupported, decode error, etc.) — caller falls back.
-async function captureVideoFrameUpload(
-  file: File,
-): Promise<{ base64: string; contentType: string; filename: string } | null> {
+async function captureVideoFrameFile(file: File): Promise<File | null> {
   if (typeof document === "undefined") return null;
   if (!file.type.startsWith("video/")) return null;
   const url = URL.createObjectURL(file);
@@ -806,10 +791,9 @@ async function captureVideoFrameUpload(
       canvas.toBlob((b) => resolve(b), "image/jpeg", 0.82),
     );
     if (!blob) return null;
-    const base64 = await fileToBase64(new File([blob], "thumb.jpg", { type: "image/jpeg" }));
     const dot = file.name.lastIndexOf(".");
     const stem = dot > 0 ? file.name.slice(0, dot) : file.name;
-    return { base64, contentType: "image/jpeg", filename: `${stem}-thumb.jpg` };
+    return new File([blob], `${stem}-thumb.jpg`, { type: "image/jpeg" });
   } catch (e) {
     console.warn("video thumbnail generation failed", e);
     return null;
