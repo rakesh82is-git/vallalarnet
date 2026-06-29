@@ -57,8 +57,8 @@ function StoryPage() {
             {t.story.ch}&nbsp;{c.n}
           </p>
           <h2 className="mt-2 text-3xl md:text-4xl font-display font-bold">{c.title}</h2>
-          <div className="mt-6 grid md:grid-cols-[1fr_1.5fr] gap-6 items-start">
-            <div className="relative aspect-square rounded-2xl overflow-hidden ring-1 ring-border">
+          <div className="mt-6 space-y-6">
+            <div className="relative aspect-[16/9] rounded-2xl overflow-hidden ring-1 ring-border">
               <img src={c.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
             </div>
             <p className="text-base md:text-lg leading-relaxed text-muted-foreground whitespace-pre-line">
