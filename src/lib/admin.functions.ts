@@ -53,14 +53,14 @@ export const adminLogin = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const adminUsername = process.env.ADMIN_USERNAME;
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminUsername = process.env.ADMIN_USERNAME?.trim();
+    const adminPassword = process.env.ADMIN_PASSWORD?.trim();
     if (!adminUsername || !adminPassword) {
       throw new Error(
         "ADMIN_USERNAME and ADMIN_PASSWORD must be configured as environment variables",
       );
     }
-    if (data.username !== adminUsername || data.password !== adminPassword) {
+    if (data.username.trim() !== adminUsername || data.password !== adminPassword) {
       return { ok: false as const, error: "bad" as const };
     }
     const session = await useSession<{ authed?: boolean }>(sessionConfig());
