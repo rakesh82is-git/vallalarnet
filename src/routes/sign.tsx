@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/combobox";
 import {
   Dialog,
@@ -18,11 +17,7 @@ import { toast } from "sonner";
 import { SignaturePad } from "@/components/signature-pad";
 import heroImg from "@/assets/vallalar_with_animals_2.jpeg";
 import thankYouVideo from "@/assets/vallalar-thankyou.mp4";
-import {
-  submitDigitalSignature,
-  submitManualSignature,
-  listManualSignatures,
-} from "@/lib/petition.functions";
+import { submitDigitalSignature } from "@/lib/petition.functions";
 import * as gn from "@/lib/geonames";
 import { useLang } from "@/i18n/context";
 

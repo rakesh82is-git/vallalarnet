@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as FieldworkIdRouteImport } from './routes/fieldwork.$id'
 import { Route as AdminUpdatesRouteImport } from './routes/admin.updates'
+import { Route as AdminManualRouteImport } from './routes/admin.manual'
 import { Route as AdminGalleryRouteImport } from './routes/admin.gallery'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 
@@ -66,6 +67,11 @@ const AdminUpdatesRoute = AdminUpdatesRouteImport.update({
   path: '/updates',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminManualRoute = AdminManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminGalleryRoute = AdminGalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/wall': typeof WallRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/gallery': typeof AdminGalleryRoute
+  '/admin/manual': typeof AdminManualRoute
   '/admin/updates': typeof AdminUpdatesRoute
   '/fieldwork/$id': typeof FieldworkIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/wall': typeof WallRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/gallery': typeof AdminGalleryRoute
+  '/admin/manual': typeof AdminManualRoute
   '/admin/updates': typeof AdminUpdatesRoute
   '/fieldwork/$id': typeof FieldworkIdRoute
   '/admin': typeof AdminIndexRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/wall': typeof WallRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/gallery': typeof AdminGalleryRoute
+  '/admin/manual': typeof AdminManualRoute
   '/admin/updates': typeof AdminUpdatesRoute
   '/fieldwork/$id': typeof FieldworkIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/wall'
     | '/admin/analytics'
     | '/admin/gallery'
+    | '/admin/manual'
     | '/admin/updates'
     | '/fieldwork/$id'
     | '/admin/'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/wall'
     | '/admin/analytics'
     | '/admin/gallery'
+    | '/admin/manual'
     | '/admin/updates'
     | '/fieldwork/$id'
     | '/admin'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/wall'
     | '/admin/analytics'
     | '/admin/gallery'
+    | '/admin/manual'
     | '/admin/updates'
     | '/fieldwork/$id'
     | '/admin/'
@@ -232,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUpdatesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/manual': {
+      id: '/admin/manual'
+      path: '/manual'
+      fullPath: '/admin/manual'
+      preLoaderRoute: typeof AdminManualRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/gallery': {
       id: '/admin/gallery'
       path: '/gallery'
@@ -252,6 +271,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminGalleryRoute: typeof AdminGalleryRoute
+  AdminManualRoute: typeof AdminManualRoute
   AdminUpdatesRoute: typeof AdminUpdatesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -259,6 +279,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminGalleryRoute: AdminGalleryRoute,
+  AdminManualRoute: AdminManualRoute,
   AdminUpdatesRoute: AdminUpdatesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -277,13 +298,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
