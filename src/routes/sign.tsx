@@ -59,14 +59,14 @@ function SignPage() {
           {lang === "ta" ? "கையொப்ப மனு" : "PETITION"}
         </p>
         <div className="mt-6 flex flex-col items-center max-w-2xl mx-auto">
-          <img
-            src={heroImg}
-            alt="Vallalar"
-            width={256}
-            height={256}
-            loading="lazy"
-            className="w-40 h-40 sm:w-56 sm:h-56 rounded-2xl object-cover ring-1 ring-border shadow-lg"
-          />
+          <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden ring-1 ring-border shadow-lg">
+            <img
+              src={heroImg}
+              alt="Vallalar"
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
           <div className="mt-5">
             <h1 className="text-2xl md:text-4xl font-display font-bold leading-tight">
               {lang === "ta"
