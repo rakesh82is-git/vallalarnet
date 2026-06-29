@@ -10,15 +10,7 @@ function readR2Env() {
   const secretAccessKey =
     process.env.VITE_R2_SECRET_ACCESS_KEY ||
     process.env.R2_SECRET_ACCESS_KEY;
-  let endpoint = process.env.VITE_R2_ENDPOINT || process.env.R2_ENDPOINT;
-  // If the endpoint accidentally includes the bucket name (path-style),
-  // strip it — the S3 client will append the bucket itself.
-  if (endpoint) {
-    endpoint = endpoint.replace(/\/+$/, "").replace(
-      new RegExp(`/${BUCKET}$`),
-      "",
-    );
-  }
+  const endpoint = process.env.VITE_R2_ENDPOINT || process.env.R2_ENDPOINT;
   const publicUrl = (
     process.env.VITE_R2_PUBLIC_URL ||
     process.env.R2_PUBLIC_URL ||
