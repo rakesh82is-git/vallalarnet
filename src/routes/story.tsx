@@ -1,15 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useT } from "@/i18n/context";
 import { RichText } from "@/components/rich-text";
-import sanctuaryImg from "@/assets/gnana_sabai_power.jpeg";
-import lampImg from "@/assets/vallalar_study.jpg";
-import gatheringImg from "@/assets/gnana_sabai_over.jpeg";
-import thanksImg from "@/assets/vallalar_with_animals_2.jpeg";
-import marudurImg from "@/assets/Marudur.jpeg";
-import karunguzhiImg from "@/assets/Karunguzhi.jpeg";
-import sathyaDharmaSalaiImg from "@/assets/SathyaDharmaSalai.jpeg";
-import sathyaGnanaSabhaImg from "@/assets/SathyaGnanaSabha.jpeg";
-import siddhiValagamImg from "@/assets/SiddhiValagam.jpeg";
+import { STATIC } from "@/lib/static-assets";
+const sanctuaryImg = STATIC.gnanaSabaiPower;
+const lampImg = STATIC.vallalarStudy;
+const gatheringImg = STATIC.gnanaSabaiOver;
+const thanksImg = STATIC.vallalarWithAnimals2;
+const marudurImg = STATIC.marudur;
+const karunguzhiImg = STATIC.karunguzhi;
+const sathyaDharmaSalaiImg = STATIC.sathyaDharmaSalai;
+const sathyaGnanaSabhaImg = STATIC.sathyaGnanaSabha;
+const siddhiValagamImg = STATIC.siddhiValagam;
 
 export const Route = createFileRoute("/story")({
   head: () => ({

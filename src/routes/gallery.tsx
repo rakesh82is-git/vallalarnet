@@ -6,22 +6,10 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useT, useLang } from "@/i18n/context";
 import { listGallery, listFieldworkEvents } from "@/lib/petition.functions";
 
-// Map seeded `/seed/<name>.jpg` paths to bundled assets (URL strings)
-import sanctuaryImg from "@/assets/sanctuary.jpg";
-import lampImg from "@/assets/lamp.jpg";
-import gatheringImg from "@/assets/gathering.jpg";
-import thanksImg from "@/assets/thanks.jpg";
-import vallalPerumanImg from "@/assets/vallalar_with_animals_2.jpeg";
-
-const SEED: Record<string, string> = {
-  "/seed/sanctuary.jpg": sanctuaryImg,
-  "/seed/lamp.jpg": lampImg,
-  "/seed/gathering.jpg": gatheringImg,
-  "/seed/thanks.jpg": thanksImg,
-  "/seed/vallal-peruman.jpg": vallalPerumanImg,
-};
+import { STATIC } from "@/lib/static-assets";
+const gatheringImg = STATIC.gnanaSabaiOver;
 function resolve(url: string) {
-  return SEED[url] ?? url;
+  return url;
 }
 
 function extractYouTubeId(url: string): string | null {
