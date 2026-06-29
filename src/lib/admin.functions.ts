@@ -177,7 +177,13 @@ export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handl
     const manualRows = rows.filter((r) => !!r.manual_document_url);
     const digitalRows = rows.filter((r) => !r.manual_document_url);
 
-    const ExcelJS = (await import("exceljs")).default;
+    // exceljs ships as CJS; in the workers/ESM bundle the default export can
+    // be either the namespace itself or a `{ default }` wrapper.
+    const mod: any = await import("exceljs");
+    const ExcelJS: any = mod?.Workbook ? mod : (mod?.default?.Workbook ? mod.default : (mod?.default ?? mod));
+    if (typeof ExcelJS?.Workbook !== "function") {
+      throw new Error("exceljs failed to load (Workbook constructor missing)");
+    }
     const wb = new ExcelJS.Workbook();
 
     const baseHeaders: Array<{ key: string; header: string; width: number }> = [
