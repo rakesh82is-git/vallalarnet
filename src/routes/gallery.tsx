@@ -8,8 +8,19 @@ import { listGallery, listFieldworkEvents } from "@/lib/petition.functions";
 
 import { STATIC } from "@/lib/static-assets";
 const gatheringImg = STATIC.gnanaSabaiOver;
+
+// Legacy DB rows still reference /seed/*.jpg paths from the boilerplate.
+// Map them to images we have on R2 so thumbnails render.
+const SEED_MAP: Record<string, string> = {
+  "/seed/sanctuary.jpg": STATIC.gnanaSabaiPower,
+  "/seed/lamp.jpg": STATIC.vallalarStudy,
+  "/seed/gathering.jpg": STATIC.gnanaSabaiOver,
+  "/seed/thanks.jpg": STATIC.vallalarWithAnimals2,
+  "/seed/vallal-peruman.jpg": STATIC.vallalarWithAnimals2,
+};
 function resolve(url: string) {
-  return url;
+  if (!url) return url;
+  return SEED_MAP[url] ?? url;
 }
 
 function extractYouTubeId(url: string): string | null {
