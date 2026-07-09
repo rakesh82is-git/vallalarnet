@@ -49,9 +49,13 @@ function LangSwitcher() {
 
 function SiteShell({ children }: { children: ReactNode }) {
   const { t } = useLang();
-  // Default closed on mobile (bottom sheet is hidden by default). On desktop
-  // the drawer is always visible regardless of this flag.
+  // Default closed on mobile (bottom sheet is hidden by default). Open by default on desktop.
   const [isFeedOpen, setIsFeedOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setIsFeedOpen(true);
+    }
+  }, []);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Hide the global newsfeed on admin pages to keep the admin tooling uncluttered.
   const showFeed = !pathname.startsWith("/admin");
@@ -110,7 +114,7 @@ function SiteShell({ children }: { children: ReactNode }) {
         {showFeed ? (
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
             <div className="flex flex-col lg:flex-row gap-8 transition-all duration-500 ease-in-out">
-              <div className="min-w-0 transition-all duration-500 ease-in-out lg:w-2/3">
+              <div className={cn("min-w-0 transition-all duration-500 ease-in-out", isFeedOpen ? "lg:w-2/3" : "lg:flex-1")}>
                 {children}
               </div>
               {/* On lg+ the drawer flows inline next to content. On mobile/tablet it
