@@ -153,22 +153,22 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                 return (
                   <article
                     key={u.id}
-                    className="group rounded-xl border border-border/60 bg-background/60 p-3 transition-colors hover:border-primary/50 hover:bg-background"
+                    className="group rounded-lg border border-border/60 bg-background/60 p-2 transition-colors hover:border-primary/50 hover:bg-background"
                   >
-                    <header className="flex items-start gap-2">
+                    <header className="flex items-start gap-1.5">
                       {u.is_pinned && (
-                        <Pin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" aria-hidden />
+                        <Pin className="h-3 w-3 text-primary shrink-0 mt-0.5" aria-hidden />
                       )}
                       <button
                         type="button"
                         onClick={() => toggleId(u.id)}
                         className="min-w-0 flex-1 text-left"
                       >
-                        <h3 className="text-sm font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                        <h3 className="text-xs font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
                           {title}
                         </h3>
                         {isExpanded && (
-                          <time className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
+                          <time className="block text-[9px] font-mono uppercase tracking-widest text-muted-foreground mt-0.5">
                             {formatDate(u.created_at, lang)}
                           </time>
                         )}
@@ -179,40 +179,40 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                             href={u.external_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1 rounded-md hover:bg-secondary/60"
+                            className="p-0.5 rounded hover:bg-secondary/60"
                             aria-label="Open external link"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                            <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
                           </a>
                         )}
                         {u.fieldwork_event_id && (
                           <Link
                             to="/fieldwork/$id"
                             params={{ id: u.fieldwork_event_id }}
-                            className="p-1 rounded-md hover:bg-secondary/60"
+                            className="p-0.5 rounded hover:bg-secondary/60"
                             aria-label="View event"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                            <ChevronRight className="h-2.5 w-2.5 text-muted-foreground" />
                           </Link>
                         )}
                         <button
                           type="button"
                           onClick={() => toggleId(u.id)}
-                          className="p-1 rounded-md hover:bg-secondary/60"
+                          className="p-0.5 rounded hover:bg-secondary/60"
                           aria-label={isExpanded ? "Collapse" : "Expand"}
                         >
                           {isExpanded ? (
-                            <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                            <ChevronUp className="h-3 w-3 text-muted-foreground" />
                           ) : (
-                            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
                           )}
                         </button>
                       </div>
                     </header>
                     {isExpanded && (
-                      <div className="mt-2">
+                      <div className="mt-1.5">
                         {u.media_url && /^https?:\/\//i.test(u.media_url) && (
                           /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u.media_url) ? (
                             <video
@@ -220,19 +220,19 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                               controls
                               preload="metadata"
                               playsInline
-                              className="mt-2 w-full rounded-lg border border-border/40 aspect-video object-cover bg-black"
+                              className="w-full rounded border border-border/40 aspect-video object-cover bg-black"
                             />
                           ) : (
                             <img
                               src={u.media_url}
                               alt=""
                               loading="lazy"
-                              className="mt-2 w-full rounded-lg border border-border/40 aspect-video object-cover"
+                              className="w-full rounded border border-border/40 aspect-video object-cover"
                             />
                           )
                         )}
                         {content && (
-                          <p className="mt-2 text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                          <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground whitespace-pre-wrap">
                             {content}
                           </p>
                         )}
