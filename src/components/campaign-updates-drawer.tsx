@@ -54,20 +54,20 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
     });
   };
 
-  // All updates are shown in a scrollable list; each item starts collapsed to its title.
+  // All updates are rendered and scrollable on mobile; desktop keeps the original top-3 preview.
 
   return (
     <aside
       aria-label={heading}
       className={cn(
         "w-full transition-all duration-500 ease-in-out",
-        // Desktop width control
-        isOpen ? "lg:w-1/5" : "lg:w-10",
+        // Desktop width control reverted to the original one-third rail
+        isOpen ? "lg:w-1/3" : "lg:w-12",
       )}
     >
       <div
         className={cn(
-          "lg:sticky lg:top-20 rounded-xl border border-border bg-card/95 lg:bg-card/60 backdrop-blur-md shadow-lg lg:shadow-sm",
+          "lg:sticky lg:top-20 rounded-xl lg:rounded-2xl border border-border bg-card/95 lg:bg-card/60 backdrop-blur-md shadow-lg lg:shadow-sm",
           "transition-all duration-500 ease-in-out overflow-hidden",
           // On desktop when closed, hide content and become a thin rail
           !isOpen && "lg:h-[calc(100vh-6rem)]",
@@ -80,21 +80,22 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           aria-expanded={isOpen}
           aria-controls="campaign-updates-body"
           className={cn(
-            "w-full flex items-center gap-1.5 px-3 py-2 text-left",
+            "w-full flex items-center text-left",
+            "gap-1.5 px-3 py-2 lg:gap-2 lg:px-4 lg:py-3",
             "hover:bg-secondary/60 transition-colors",
             "border-b border-border/60",
-            !isOpen && "lg:border-b-0 lg:h-full lg:flex-col lg:justify-start lg:gap-2 lg:py-3 lg:px-0",
+            !isOpen && "lg:border-b-0 lg:h-full lg:flex-col lg:justify-start lg:gap-3 lg:py-4 lg:px-0",
           )}
         >
           <Newspaper
             className={cn(
               "shrink-0 text-primary",
-              isOpen ? "h-3.5 w-3.5" : "h-4 w-4 lg:mx-auto",
+              isOpen ? "h-3.5 w-3.5 lg:h-4 lg:w-4" : "h-4 w-4 lg:h-5 lg:w-5 lg:mx-auto",
             )}
           />
           <span
             className={cn(
-              "flex-1 min-w-0 font-display text-xs font-semibold tracking-tight truncate",
+              "flex-1 min-w-0 font-display font-semibold tracking-tight truncate text-xs lg:text-sm",
               !isOpen && "lg:hidden",
             )}
           >
@@ -102,7 +103,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           </span>
           {!isOpen && (
             <span
-              className="hidden lg:block text-[9px] font-mono uppercase tracking-widest text-muted-foreground"
+              className="hidden lg:block text-[9px] lg:text-[10px] font-mono uppercase tracking-widest text-muted-foreground"
               style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
             >
               {heading}
@@ -114,14 +115,14 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
             {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </span>
           {/* Desktop chevron (horizontal slide) */}
-          <span className="hidden lg:inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <span className="hidden lg:inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest text-muted-foreground">
             {isOpen ? (
               <>
                 {hideLabel}
-                <ChevronRight className="h-3 w-3" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </>
             ) : (
-              <ChevronLeft className="h-3 w-3 mx-auto" />
+              <ChevronLeft className="h-3.5 w-3.5 mx-auto" />
             )}
           </span>
         </button>
@@ -137,7 +138,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           )}
         >
           <div className="overflow-hidden">
-            <div className="max-h-[25vh] overflow-y-auto lg:max-h-[calc(100vh-8rem)] p-3 space-y-1">
+            <div className="max-h-[25vh] overflow-y-auto lg:max-h-[calc(100vh-9rem)] p-3 lg:p-4 space-y-1 lg:space-y-3 lg:[&>article:nth-child(n+4)]:hidden">
               {isLoading && (
                 <p className="text-xs text-muted-foreground">{loadingLabel}</p>
               )}
@@ -152,22 +153,22 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                 return (
                   <article
                     key={u.id}
-                    className="group rounded-lg border border-border/60 bg-background/60 p-1.5 transition-colors hover:border-primary/50 hover:bg-background"
+                    className="group rounded-lg lg:rounded-xl border border-border/60 bg-background/60 p-1.5 lg:p-3 transition-colors hover:border-primary/50 hover:bg-background"
                   >
-                    <header className="flex items-start gap-1">
+                    <header className="flex items-start gap-1 lg:gap-2">
                       {u.is_pinned && (
-                        <Pin className="h-3 w-3 text-primary shrink-0 mt-0.5" aria-hidden />
+                        <Pin className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-primary shrink-0 mt-0.5" aria-hidden />
                       )}
                       <button
                         type="button"
                         onClick={() => toggleId(u.id)}
                         className="min-w-0 flex-1 text-left"
                       >
-                        <h3 className="text-xs font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                        <h3 className="text-xs lg:text-sm font-semibold leading-tight lg:leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
                           {title}
                         </h3>
                         {isExpanded && (
-                          <time className="block text-[9px] font-mono uppercase tracking-widest text-muted-foreground mt-0.5">
+                          <time className="block text-[9px] font-mono uppercase tracking-widest text-muted-foreground mt-0.5 lg:mt-1">
                             {formatDate(u.created_at, lang)}
                           </time>
                         )}
@@ -178,40 +179,40 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                             href={u.external_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-0.5 rounded hover:bg-secondary/60"
+                            className="p-0.5 lg:p-1 rounded lg:rounded-md hover:bg-secondary/60"
                             aria-label="Open external link"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
+                            <ExternalLink className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-muted-foreground" />
                           </a>
                         )}
                         {u.fieldwork_event_id && (
                           <Link
                             to="/fieldwork/$id"
                             params={{ id: u.fieldwork_event_id }}
-                            className="p-0.5 rounded hover:bg-secondary/60"
+                            className="p-0.5 lg:p-1 rounded lg:rounded-md hover:bg-secondary/60"
                             aria-label="View event"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <ChevronRight className="h-2.5 w-2.5 text-muted-foreground" />
+                            <ChevronRight className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-muted-foreground" />
                           </Link>
                         )}
                         <button
                           type="button"
                           onClick={() => toggleId(u.id)}
-                          className="p-0.5 rounded hover:bg-secondary/60"
+                          className="p-0.5 lg:p-1 rounded lg:rounded-md hover:bg-secondary/60"
                           aria-label={isExpanded ? "Collapse" : "Expand"}
                         >
                           {isExpanded ? (
-                            <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                            <ChevronUp className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-muted-foreground" />
                           ) : (
-                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                            <ChevronDown className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-muted-foreground" />
                           )}
                         </button>
                       </div>
                     </header>
                     {isExpanded && (
-                      <div className="mt-1.5">
+                      <div className="mt-1.5 lg:mt-2">
                         {u.media_url && /^https?:\/\//i.test(u.media_url) && (
                           /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u.media_url) ? (
                             <video
@@ -219,19 +220,19 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                               controls
                               preload="metadata"
                               playsInline
-                              className="w-full rounded border border-border/40 aspect-video object-cover bg-black"
+                              className="w-full rounded lg:rounded-lg border border-border/40 aspect-video object-cover bg-black"
                             />
                           ) : (
                             <img
                               src={u.media_url}
                               alt=""
                               loading="lazy"
-                              className="w-full rounded border border-border/40 aspect-video object-cover"
+                              className="w-full rounded lg:rounded-lg border border-border/40 aspect-video object-cover"
                             />
                           )
                         )}
                         {content && (
-                          <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground whitespace-pre-wrap">
+                          <p className="mt-1.5 lg:mt-2 text-[11px] lg:text-xs leading-snug lg:leading-relaxed text-muted-foreground whitespace-pre-wrap">
                             {content}
                           </p>
                         )}
