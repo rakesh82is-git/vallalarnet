@@ -157,12 +157,22 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                       </div>
                     </header>
                     {u.media_url && /^https?:\/\//i.test(u.media_url) && (
-                      <img
-                        src={u.media_url}
-                        alt=""
-                        loading="lazy"
-                        className="mt-2 w-full rounded-lg border border-border/40 aspect-video object-cover"
-                      />
+                      /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u.media_url) ? (
+                        <video
+                          src={u.media_url}
+                          controls
+                          preload="metadata"
+                          playsInline
+                          className="mt-2 w-full rounded-lg border border-border/40 aspect-video object-cover bg-black"
+                        />
+                      ) : (
+                        <img
+                          src={u.media_url}
+                          alt=""
+                          loading="lazy"
+                          className="mt-2 w-full rounded-lg border border-border/40 aspect-video object-cover"
+                        />
+                      )
                     )}
                     {content && (
                       <p className="mt-2 text-xs leading-relaxed text-muted-foreground line-clamp-4 whitespace-pre-wrap">
