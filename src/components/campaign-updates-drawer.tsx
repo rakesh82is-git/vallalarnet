@@ -54,8 +54,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
     });
   };
 
-  // Minimized view: only the top 3 update titles are shown.
-  const previewUpdates = updates.slice(0, 3);
+  // All updates are shown in a scrollable list; each item starts collapsed to its title.
 
   return (
     <aside
