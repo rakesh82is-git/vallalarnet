@@ -63,12 +63,12 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
       className={cn(
         "w-full transition-all duration-500 ease-in-out",
         // Desktop width control
-        isOpen ? "lg:w-1/3" : "lg:w-12",
+        isOpen ? "lg:w-1/5" : "lg:w-10",
       )}
     >
       <div
         className={cn(
-          "lg:sticky lg:top-20 rounded-2xl border border-border bg-card/95 lg:bg-card/60 backdrop-blur-md shadow-lg lg:shadow-sm",
+          "lg:sticky lg:top-20 rounded-xl border border-border bg-card/95 lg:bg-card/60 backdrop-blur-md shadow-lg lg:shadow-sm",
           "transition-all duration-500 ease-in-out overflow-hidden",
           // On desktop when closed, hide content and become a thin rail
           !isOpen && "lg:h-[calc(100vh-6rem)]",
@@ -81,21 +81,21 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           aria-expanded={isOpen}
           aria-controls="campaign-updates-body"
           className={cn(
-            "w-full flex items-center gap-2 px-4 py-3 text-left",
+            "w-full flex items-center gap-1.5 px-3 py-2 text-left",
             "hover:bg-secondary/60 transition-colors",
             "border-b border-border/60",
-            !isOpen && "lg:border-b-0 lg:h-full lg:flex-col lg:justify-start lg:gap-3 lg:py-4 lg:px-0",
+            !isOpen && "lg:border-b-0 lg:h-full lg:flex-col lg:justify-start lg:gap-2 lg:py-3 lg:px-0",
           )}
         >
           <Newspaper
             className={cn(
               "shrink-0 text-primary",
-              isOpen ? "h-4 w-4" : "h-5 w-5 lg:mx-auto",
+              isOpen ? "h-3.5 w-3.5" : "h-4 w-4 lg:mx-auto",
             )}
           />
           <span
             className={cn(
-              "flex-1 min-w-0 font-display text-sm font-semibold tracking-tight truncate",
+              "flex-1 min-w-0 font-display text-xs font-semibold tracking-tight truncate",
               !isOpen && "lg:hidden",
             )}
           >
@@ -103,26 +103,26 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           </span>
           {!isOpen && (
             <span
-              className="hidden lg:block text-[10px] font-mono uppercase tracking-widest text-muted-foreground"
+              className="hidden lg:block text-[9px] font-mono uppercase tracking-widest text-muted-foreground"
               style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
             >
               {heading}
             </span>
           )}
           {/* Mobile chevron (vertical accordion) */}
-          <span className="lg:hidden inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest text-muted-foreground">
+          <span className="lg:hidden inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             {isOpen ? hideLabel : showLabel}
-            {isOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </span>
           {/* Desktop chevron (horizontal slide) */}
-          <span className="hidden lg:inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest text-muted-foreground">
+          <span className="hidden lg:inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             {isOpen ? (
               <>
                 {hideLabel}
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-3 w-3" />
               </>
             ) : (
-              <ChevronLeft className="h-3.5 w-3.5 mx-auto" />
+              <ChevronLeft className="h-3 w-3 mx-auto" />
             )}
           </span>
         </button>
@@ -138,7 +138,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           )}
         >
           <div className="overflow-hidden">
-            <div className="max-h-[30vh] overflow-y-auto lg:max-h-[calc(100vh-9rem)] p-4 space-y-3">
+            <div className="max-h-[25vh] overflow-y-auto lg:max-h-[calc(100vh-8rem)] p-3 space-y-2">
               {isLoading && (
                 <p className="text-xs text-muted-foreground">{loadingLabel}</p>
               )}
