@@ -107,11 +107,11 @@ function SiteShell({ children }: { children: ReactNode }) {
       <main className="flex-1">
         {showFeed ? (
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-            <div className="flex flex-col lg:flex-row gap-4 transition-all duration-500 ease-in-out">
+            <div className="flex flex-col lg:flex-row gap-8 transition-all duration-500 ease-in-out">
               <div
                 className={cn(
                   "min-w-0 transition-all duration-500 ease-in-out",
-                  isFeedOpen ? "lg:w-4/5" : "lg:w-full",
+                  isFeedOpen ? "lg:w-2/3" : "lg:w-full",
                 )}
               >
                 {children}
