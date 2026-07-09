@@ -54,8 +54,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
     });
   };
 
-  // Minimized view: only the top 3 update titles are shown.
-  const previewUpdates = updates.slice(0, 3);
+  // All updates are shown in a scrollable list; each item starts collapsed to its title.
 
   return (
     <aside
@@ -138,14 +137,14 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           )}
         >
           <div className="overflow-hidden">
-            <div className="max-h-[25vh] overflow-y-auto lg:max-h-[calc(100vh-8rem)] p-3 space-y-2">
+            <div className="max-h-[25vh] overflow-y-auto lg:max-h-[calc(100vh-8rem)] p-3 space-y-1">
               {isLoading && (
                 <p className="text-xs text-muted-foreground">{loadingLabel}</p>
               )}
               {!isLoading && updates.length === 0 && (
                 <p className="text-xs text-muted-foreground">{emptyLabel}</p>
               )}
-              {previewUpdates.map((u) => {
+              {updates.map((u) => {
                 const title = pickLocalized(u.title_ta, u.title_en, lang);
                 const content = pickLocalized(u.content_ta, u.content_en, lang);
                 const isExpanded = expandedIds.has(u.id);
@@ -153,9 +152,9 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                 return (
                   <article
                     key={u.id}
-                    className="group rounded-lg border border-border/60 bg-background/60 p-2 transition-colors hover:border-primary/50 hover:bg-background"
+                    className="group rounded-lg border border-border/60 bg-background/60 p-1.5 transition-colors hover:border-primary/50 hover:bg-background"
                   >
-                    <header className="flex items-start gap-1.5">
+                    <header className="flex items-start gap-1">
                       {u.is_pinned && (
                         <Pin className="h-3 w-3 text-primary shrink-0 mt-0.5" aria-hidden />
                       )}
@@ -164,7 +163,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                         onClick={() => toggleId(u.id)}
                         className="min-w-0 flex-1 text-left"
                       >
-                        <h3 className="text-xs font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                        <h3 className="text-xs font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors">
                           {title}
                         </h3>
                         {isExpanded && (
