@@ -107,11 +107,11 @@ function SiteShell({ children }: { children: ReactNode }) {
       <main className="flex-1">
         {showFeed ? (
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-            <div className="flex flex-col lg:flex-row gap-8 transition-all duration-500 ease-in-out">
+            <div className="flex flex-col lg:flex-row gap-4 transition-all duration-500 ease-in-out">
               <div
                 className={cn(
                   "min-w-0 transition-all duration-500 ease-in-out",
-                  isFeedOpen ? "lg:w-2/3" : "lg:w-full",
+                  isFeedOpen ? "lg:w-4/5" : "lg:w-full",
                 )}
               >
                 {children}
@@ -120,13 +120,13 @@ function SiteShell({ children }: { children: ReactNode }) {
                   floats fixed at the bottom of the viewport until the footer scrolls in. */}
               <div
                 className={cn(
-                  "fixed inset-x-0 bottom-0 z-30 px-3 pb-3 pointer-events-none",
+                  "fixed inset-x-0 bottom-0 z-30 px-2 pb-2 pointer-events-none",
                   "transition-transform duration-300 ease-in-out",
                   footerVisible ? "translate-y-full" : "translate-y-0",
                   "lg:static lg:p-0 lg:translate-y-0 lg:contents",
                 )}
               >
-                <div className="pointer-events-auto mx-auto max-w-3xl lg:max-w-none lg:mx-0 lg:contents">
+                <div className="pointer-events-auto mx-auto max-w-2xl lg:max-w-none lg:mx-0 lg:contents">
                   <CampaignUpdatesDrawer
                     isOpen={isFeedOpen}
                     onToggle={() => setIsFeedOpen((v) => !v)}
