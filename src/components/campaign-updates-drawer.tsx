@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
@@ -36,12 +37,25 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
     queryFn: () => fetchUpdates(),
     staleTime: 60_000,
   });
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const heading = lang === "ta" ? "புதிய செய்திகள்" : "Campaign Updates";
   const hideLabel = lang === "ta" ? "மறை" : "Hide";
   const showLabel = lang === "ta" ? "காட்டு" : "Show";
   const emptyLabel = lang === "ta" ? "இன்னும் புதுப்பிப்புகள் இல்லை." : "No updates yet.";
   const loadingLabel = lang === "ta" ? "ஏற்றுகிறது…" : "Loading…";
+
+  const toggleId = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Minimized view: only the top 3 update titles are shown.
+  const previewUpdates = updates.slice(0, 3);
 
   return (
     <aside
@@ -124,90 +138,108 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           )}
         >
           <div className="overflow-hidden">
-            <div className="max-h-[30vh] overflow-y-auto lg:max-h-[calc(100vh-9rem)] p-4 space-y-4">
+            <div className="max-h-[30vh] overflow-y-auto lg:max-h-[calc(100vh-9rem)] p-4 space-y-3">
               {isLoading && (
                 <p className="text-xs text-muted-foreground">{loadingLabel}</p>
               )}
               {!isLoading && updates.length === 0 && (
                 <p className="text-xs text-muted-foreground">{emptyLabel}</p>
               )}
-              {updates.map((u) => {
+              {previewUpdates.map((u) => {
                 const title = pickLocalized(u.title_ta, u.title_en, lang);
                 const content = pickLocalized(u.content_ta, u.content_en, lang);
-                const inner = (
-                  <article className="group rounded-xl border border-border/60 bg-background/60 p-3 transition-colors hover:border-primary/50 hover:bg-background">
+                const isExpanded = expandedIds.has(u.id);
+
+                return (
+                  <article
+                    key={u.id}
+                    className="group rounded-xl border border-border/60 bg-background/60 p-3 transition-colors hover:border-primary/50 hover:bg-background"
+                  >
                     <header className="flex items-start gap-2">
                       {u.is_pinned && (
                         <Pin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" aria-hidden />
                       )}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          {title ? (
-                            <h3 className="text-sm font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                              {title}
-                            </h3>
-                          ) : null}
-                          {u.external_url && (
-                            <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" aria-hidden />
+                      <button
+                        type="button"
+                        onClick={() => toggleId(u.id)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <h3 className="text-sm font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                          {title}
+                        </h3>
+                        {isExpanded && (
+                          <time className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
+                            {formatDate(u.created_at, lang)}
+                          </time>
+                        )}
+                      </button>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {u.external_url && (
+                          <a
+                            href={u.external_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 rounded-md hover:bg-secondary/60"
+                            aria-label="Open external link"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                          </a>
+                        )}
+                        {u.fieldwork_event_id && (
+                          <Link
+                            to="/fieldwork/$id"
+                            params={{ id: u.fieldwork_event_id }}
+                            className="p-1 rounded-md hover:bg-secondary/60"
+                            aria-label="View event"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                          </Link>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleId(u.id)}
+                          className="p-1 rounded-md hover:bg-secondary/60"
+                          aria-label={isExpanded ? "Collapse" : "Expand"}
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
-                        </div>
-                        <time className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
-                          {formatDate(u.created_at, lang)}
-                        </time>
+                        </button>
                       </div>
                     </header>
-                    {u.media_url && /^https?:\/\//i.test(u.media_url) && (
-                      /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u.media_url) ? (
-                        <video
-                          src={u.media_url}
-                          controls
-                          preload="metadata"
-                          playsInline
-                          className="mt-2 w-full rounded-lg border border-border/40 aspect-video object-cover bg-black"
-                        />
-                      ) : (
-                        <img
-                          src={u.media_url}
-                          alt=""
-                          loading="lazy"
-                          className="mt-2 w-full rounded-lg border border-border/40 aspect-video object-cover"
-                        />
-                      )
-                    )}
-                    {content && (
-                      <p className="mt-2 text-xs leading-relaxed text-muted-foreground line-clamp-4 whitespace-pre-wrap">
-                        {content}
-                      </p>
+                    {isExpanded && (
+                      <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                        {u.media_url && /^https?:\/\//i.test(u.media_url) && (
+                          /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u.media_url) ? (
+                            <video
+                              src={u.media_url}
+                              controls
+                              preload="metadata"
+                              playsInline
+                              className="mt-2 w-full rounded-lg border border-border/40 aspect-video object-cover bg-black"
+                            />
+                          ) : (
+                            <img
+                              src={u.media_url}
+                              alt=""
+                              loading="lazy"
+                              className="mt-2 w-full rounded-lg border border-border/40 aspect-video object-cover"
+                            />
+                          )
+                        )}
+                        {content && (
+                          <p className="mt-2 text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                            {content}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </article>
                 );
-
-                if (u.fieldwork_event_id) {
-                  return (
-                    <Link
-                      key={u.id}
-                      to="/fieldwork/$id"
-                      params={{ id: u.fieldwork_event_id }}
-                      className="block"
-                    >
-                      {inner}
-                    </Link>
-                  );
-                }
-                if (u.external_url) {
-                  return (
-                    <a
-                      key={u.id}
-                      href={u.external_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      {inner}
-                    </a>
-                  );
-                }
-                return <div key={u.id}>{inner}</div>;
               })}
             </div>
           </div>
