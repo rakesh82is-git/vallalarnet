@@ -73,7 +73,7 @@ function Index() {
           <p className="mt-3 text-center text-lg md:text-xl italic text-accent font-medium max-w-2xl mx-auto">
             {t.home.titleQuote}
           </p>
-          <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto text-center whitespace-pre-line">
+          <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto whitespace-pre-line">
             <RichText text={t.home.lede} />
           </p>
           <div className="mt-8 flex flex-wrap gap-3 items-center justify-center">
@@ -104,7 +104,7 @@ function Index() {
       <section className="max-w-4xl mx-auto px-6 py-16 text-center">
         <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">── {t.home.whyEyebrow} ──</p>
         <h2 className="mt-3 text-3xl md:text-4xl font-display font-bold">{t.home.whyTitle}</h2>
-        <p className="mt-5 text-lg text-muted-foreground leading-relaxed">{t.home.whyBody}</p>
+        <p className="mt-5 text-lg text-muted-foreground leading-relaxed text-left">{t.home.whyBody}</p>
         <Link to="/story" className="mt-6 inline-block text-primary font-medium hover:underline">
           {t.home.readMore}
         </Link>
@@ -183,7 +183,7 @@ function Index() {
           <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-6 pb-10">
             <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">── {t.home.finalEyebrow} ──</p>
             <h2 className="mt-2 text-3xl md:text-4xl font-display font-bold">{t.home.finalTitle}</h2>
-            <p className="mt-3 text-muted-foreground max-w-xl">{t.home.finalBody}</p>
+            <p className="mt-3 text-muted-foreground max-w-xl text-left">{t.home.finalBody}</p>
             <Link
               to="/sign"
               className="mt-6 inline-flex items-center gap-2 px-7 py-3 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
