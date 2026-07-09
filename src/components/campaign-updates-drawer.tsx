@@ -1,7 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, Pin, Newspaper, ExternalLink } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Pin,
+  Newspaper,
+  ExternalLink,
+} from "lucide-react";
 import { listCampaignUpdates } from "@/lib/petition.functions";
 import { useLang } from "@/i18n/context";
 import { cn } from "@/lib/utils";
