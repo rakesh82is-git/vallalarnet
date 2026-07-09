@@ -144,7 +144,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
               {!isLoading && updates.length === 0 && (
                 <p className="text-xs text-muted-foreground">{emptyLabel}</p>
               )}
-              {previewUpdates.map((u) => {
+              {updates.map((u) => {
                 const title = pickLocalized(u.title_ta, u.title_en, lang);
                 const content = pickLocalized(u.content_ta, u.content_en, lang);
                 const isExpanded = expandedIds.has(u.id);
