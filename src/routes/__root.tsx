@@ -111,7 +111,7 @@ function SiteShell({ children }: { children: ReactNode }) {
               <div
                 className={cn(
                   "min-w-0 transition-all duration-500 ease-in-out",
-                  isFeedOpen ? "lg:w-2/3" : "lg:w-full",
+                  isFeedOpen ? "lg:w-4/5" : "lg:w-full",
                 )}
               >
                 {children}
