@@ -152,9 +152,9 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                 return (
                   <article
                     key={u.id}
-                    className="group rounded-lg border border-border/60 bg-background/60 p-2 transition-colors hover:border-primary/50 hover:bg-background"
+                    className="group rounded-lg border border-border/60 bg-background/60 p-1.5 transition-colors hover:border-primary/50 hover:bg-background"
                   >
-                    <header className="flex items-start gap-1.5">
+                    <header className="flex items-start gap-1">
                       {u.is_pinned && (
                         <Pin className="h-3 w-3 text-primary shrink-0 mt-0.5" aria-hidden />
                       )}
@@ -163,7 +163,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                         onClick={() => toggleId(u.id)}
                         className="min-w-0 flex-1 text-left"
                       >
-                        <h3 className="text-xs font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                        <h3 className="text-xs font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors">
                           {title}
                         </h3>
                         {isExpanded && (
