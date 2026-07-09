@@ -212,7 +212,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
                       </div>
                     </header>
                     {isExpanded && (
-                      <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="mt-2">
                         {u.media_url && /^https?:\/\//i.test(u.media_url) && (
                           /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u.media_url) ? (
                             <video
