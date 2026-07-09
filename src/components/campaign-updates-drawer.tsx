@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Pin, Newspaper, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, Pin, Newspaper, ExternalLink } from "lucide-react";
 import { listCampaignUpdates } from "@/lib/petition.functions";
 import { useLang } from "@/i18n/context";
 import { cn } from "@/lib/utils";
@@ -37,7 +36,6 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
     queryFn: () => fetchUpdates(),
     staleTime: 60_000,
   });
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const heading = lang === "ta" ? "புதிய செய்திகள்" : "Campaign Updates";
   const hideLabel = lang === "ta" ? "மறை" : "Hide";
@@ -45,204 +43,154 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
   const emptyLabel = lang === "ta" ? "இன்னும் புதுப்பிப்புகள் இல்லை." : "No updates yet.";
   const loadingLabel = lang === "ta" ? "ஏற்றுகிறது…" : "Loading…";
 
-  const toggleId = (id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const isVideo = (url: string | null) =>
+    !!url && /^https?:\/\//i.test(url) && /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url);
+  const isImage = (url: string | null) =>
+    !!url && /^https?:\/\//i.test(url) && !isVideo(url);
 
-  // All updates are rendered and scrollable on mobile; desktop keeps the original top-3 preview.
+  function ArticleBody({ u }: { u: (typeof updates)[number] }) {
+    const title = pickLocalized(u.title_ta, u.title_en, lang);
+    const content = pickLocalized(u.content_ta, u.content_en, lang);
+    // Preferred target when the whole article is clicked
+    const externalHref =
+      u.external_url || (isVideo(u.media_url) ? u.media_url : null);
+
+    const inner = (
+      <>
+        <header className="flex items-start gap-2">
+          {u.is_pinned && (
+            <Pin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" aria-hidden />
+          )}
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold leading-snug text-foreground group-hover:text-primary transition-colors">
+              {title}
+            </h3>
+            <time className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
+              {formatDate(u.created_at, lang)}
+            </time>
+          </div>
+          {externalHref && (
+            <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0 mt-1" />
+          )}
+        </header>
+        {u.media_url && (isVideo(u.media_url) || isImage(u.media_url)) && (
+          <div className="mt-2">
+            {isVideo(u.media_url) ? (
+              <video
+                src={u.media_url ?? undefined}
+                controls
+                preload="metadata"
+                playsInline
+                onClick={(e) => e.stopPropagation()}
+                className="w-full rounded-lg border border-border/40 aspect-video object-cover bg-black"
+              />
+            ) : (
+              <img
+                src={u.media_url ?? undefined}
+                alt=""
+                loading="lazy"
+                className="w-full rounded-lg border border-border/40 aspect-video object-cover"
+              />
+            )}
+          </div>
+        )}
+        {content && (
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
+            {content}
+          </p>
+        )}
+      </>
+    );
+
+    const cls =
+      "group block rounded-xl border border-border/60 bg-background/60 p-3 transition-colors hover:border-primary/50 hover:bg-background text-left w-full";
+
+    if (u.fieldwork_event_id) {
+      return (
+        <Link
+          to="/fieldwork/$id"
+          params={{ id: u.fieldwork_event_id }}
+          className={cls}
+        >
+          {inner}
+        </Link>
+      );
+    }
+    if (externalHref) {
+      return (
+        <a
+          href={externalHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cls}
+        >
+          {inner}
+        </a>
+      );
+    }
+    return <div className={cls}>{inner}</div>;
+  }
+
+  const listBody = (
+    <>
+      {isLoading && <p className="text-xs text-muted-foreground">{loadingLabel}</p>}
+      {!isLoading && updates.length === 0 && (
+        <p className="text-xs text-muted-foreground">{emptyLabel}</p>
+      )}
+      {updates.map((u) => (
+        <ArticleBody key={u.id} u={u} />
+      ))}
+    </>
+  );
 
   return (
-    <aside
-      aria-label={heading}
-      className={cn(
-        "w-full transition-all duration-500 ease-in-out",
-        // Desktop width control reverted to the original one-third rail
-        isOpen ? "lg:w-1/3" : "lg:w-12",
-      )}
-    >
-      <div
-        className={cn(
-          "lg:sticky lg:top-20 rounded-xl lg:rounded-2xl border border-border bg-card/95 lg:bg-card/60 backdrop-blur-md shadow-lg lg:shadow-sm",
-          "transition-all duration-500 ease-in-out overflow-hidden",
-          // On desktop when closed, hide content and become a thin rail
-          !isOpen && "lg:h-[calc(100vh-6rem)]",
-        )}
-      >
-        {/* Header / toggle */}
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={isOpen}
-          aria-controls="campaign-updates-body"
-          className={cn(
-            "w-full flex items-center text-left",
-            "gap-1.5 px-3 py-2 lg:gap-2 lg:px-4 lg:py-3",
-            "hover:bg-secondary/60 transition-colors",
-            "border-b border-border/60",
-            !isOpen && "lg:border-b-0 lg:h-full lg:flex-col lg:justify-start lg:gap-3 lg:py-4 lg:px-0",
-          )}
-        >
-          <Newspaper
-            className={cn(
-              "shrink-0 text-primary",
-              isOpen ? "h-3.5 w-3.5 lg:h-4 lg:w-4" : "h-4 w-4 lg:h-5 lg:w-5 lg:mx-auto",
-            )}
-          />
-          <span
-            className={cn(
-              "flex-1 min-w-0 font-display font-semibold tracking-tight truncate text-xs lg:text-sm",
-              !isOpen && "lg:hidden",
-            )}
-          >
-            {heading}
-          </span>
-          {!isOpen && (
-            <span
-              className="hidden lg:block text-[9px] lg:text-[10px] font-mono uppercase tracking-widest text-muted-foreground"
-              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-            >
+    <aside aria-label={heading} className="w-full lg:w-1/3">
+      {/* Desktop: always-visible drawer, all updates expanded and scrollable */}
+      <div className="hidden lg:block lg:sticky lg:top-20">
+        <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-md shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border/60">
+            <Newspaper className="h-4 w-4 text-primary shrink-0" />
+            <span className="flex-1 min-w-0 font-display font-semibold tracking-tight text-sm truncate">
               {heading}
             </span>
-          )}
-          {/* Mobile chevron (vertical accordion) */}
-          <span className="lg:hidden inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            {isOpen ? hideLabel : showLabel}
-            {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </span>
-          {/* Desktop chevron (horizontal slide) */}
-          <span className="hidden lg:inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest text-muted-foreground">
-            {isOpen ? (
-              <>
-                {hideLabel}
-                <ChevronRight className="h-3.5 w-3.5" />
-              </>
-            ) : (
-              <ChevronLeft className="h-3.5 w-3.5 mx-auto" />
-            )}
-          </span>
-        </button>
+          </div>
+          <div className="max-h-[calc(100vh-8rem)] overflow-y-auto p-4 space-y-3">
+            {listBody}
+          </div>
+        </div>
+      </div>
 
-        {/* Body — collapsible on mobile via grid-rows trick, visible (and scrollable) on desktop when open */}
+      {/* Mobile: hidden by default, expands to ~30vh scrollable panel when opened */}
+      <div className="lg:hidden">
         <div
-          id="campaign-updates-body"
           className={cn(
-            "grid transition-[grid-template-rows] duration-500 ease-in-out",
-            isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-            // On desktop, when closed we already shrink the whole aside; hide body
-            !isOpen && "lg:hidden",
+            "rounded-xl border border-border bg-card/95 backdrop-blur-md shadow-lg overflow-hidden",
           )}
         >
-          <div className="overflow-hidden">
-            <div className="max-h-[25vh] overflow-y-auto lg:max-h-[calc(100vh-9rem)] p-3 lg:p-4 space-y-1 lg:space-y-3 lg:[&>article:nth-child(n+4)]:hidden">
-              {isLoading && (
-                <p className="text-xs text-muted-foreground">{loadingLabel}</p>
-              )}
-              {!isLoading && updates.length === 0 && (
-                <p className="text-xs text-muted-foreground">{emptyLabel}</p>
-              )}
-              {updates.map((u) => {
-                const title = pickLocalized(u.title_ta, u.title_en, lang);
-                const content = pickLocalized(u.content_ta, u.content_en, lang);
-                const isExpanded = expandedIds.has(u.id);
-
-                return (
-                  <article
-                    key={u.id}
-                    className="group rounded-lg lg:rounded-xl border border-border/60 bg-background/60 p-1.5 lg:p-3 transition-colors hover:border-primary/50 hover:bg-background"
-                  >
-                    <header className="flex items-start gap-1 lg:gap-2">
-                      {u.is_pinned && (
-                        <Pin className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-primary shrink-0 mt-0.5" aria-hidden />
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => toggleId(u.id)}
-                        className="min-w-0 flex-1 text-left"
-                      >
-                        <h3 className="text-xs lg:text-sm font-semibold leading-tight lg:leading-snug text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                          {title}
-                        </h3>
-                        {isExpanded && (
-                          <time className="block text-[9px] font-mono uppercase tracking-widest text-muted-foreground mt-0.5 lg:mt-1">
-                            {formatDate(u.created_at, lang)}
-                          </time>
-                        )}
-                      </button>
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        {u.external_url && (
-                          <a
-                            href={u.external_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-0.5 lg:p-1 rounded lg:rounded-md hover:bg-secondary/60"
-                            aria-label="Open external link"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <ExternalLink className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-muted-foreground" />
-                          </a>
-                        )}
-                        {u.fieldwork_event_id && (
-                          <Link
-                            to="/fieldwork/$id"
-                            params={{ id: u.fieldwork_event_id }}
-                            className="p-0.5 lg:p-1 rounded lg:rounded-md hover:bg-secondary/60"
-                            aria-label="View event"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <ChevronRight className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-muted-foreground" />
-                          </Link>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => toggleId(u.id)}
-                          className="p-0.5 lg:p-1 rounded lg:rounded-md hover:bg-secondary/60"
-                          aria-label={isExpanded ? "Collapse" : "Expand"}
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-muted-foreground" />
-                          ) : (
-                            <ChevronDown className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-muted-foreground" />
-                          )}
-                        </button>
-                      </div>
-                    </header>
-                    {isExpanded && (
-                      <div className="mt-1.5 lg:mt-2">
-                        {u.media_url && /^https?:\/\//i.test(u.media_url) && (
-                          /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u.media_url) ? (
-                            <video
-                              src={u.media_url}
-                              controls
-                              preload="metadata"
-                              playsInline
-                              className="w-full rounded lg:rounded-lg border border-border/40 aspect-video object-cover bg-black"
-                            />
-                          ) : (
-                            <img
-                              src={u.media_url}
-                              alt=""
-                              loading="lazy"
-                              className="w-full rounded lg:rounded-lg border border-border/40 aspect-video object-cover"
-                            />
-                          )
-                        )}
-                        {content && (
-                          <p className="mt-1.5 lg:mt-2 text-[11px] lg:text-xs leading-snug lg:leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                            {content}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={isOpen}
+            aria-controls="campaign-updates-body"
+            className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-secondary/60 transition-colors"
+          >
+            <Newspaper className="h-4 w-4 text-primary shrink-0" />
+            <span className="flex-1 min-w-0 font-display font-semibold tracking-tight text-sm truncate">
+              {heading}
+            </span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              {isOpen ? hideLabel : showLabel}
+              {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            </span>
+          </button>
+          {isOpen && (
+            <div
+              id="campaign-updates-body"
+              className="max-h-[30vh] overflow-y-auto p-3 space-y-2 border-t border-border/60"
+            >
+              {listBody}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </aside>
