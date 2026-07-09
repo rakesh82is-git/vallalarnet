@@ -152,20 +152,50 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
   );
 
   return (
-    <aside aria-label={heading} className="w-full lg:w-1/3">
-      {/* Desktop: always-visible drawer, all updates expanded and scrollable */}
-      <div className="hidden lg:block lg:sticky lg:top-20">
+    <aside aria-label={heading} className={cn("w-full lg:transition-all lg:duration-500", isOpen ? "lg:w-1/3" : "lg:w-12")}>
+      {/* Desktop: collapsible drawer. Open by default; toggle hides it to a narrow rail. */}
+      <div className={cn("hidden lg:sticky lg:top-20", isOpen ? "lg:block" : "lg:hidden")}>
         <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-md shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border/60">
             <Newspaper className="h-4 w-4 text-primary shrink-0" />
             <span className="flex-1 min-w-0 font-display font-semibold tracking-tight text-sm truncate">
               {heading}
             </span>
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-label={hideLabel}
+              className="p-1 rounded-md hover:bg-secondary/60 transition-colors"
+            >
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
           </div>
           <div className="max-h-[calc(100vh-8rem)] overflow-y-auto p-4 space-y-3">
             {listBody}
           </div>
         </div>
+      </div>
+
+      {/* Desktop collapsed rail */}
+      <div
+        className={cn(
+          "hidden lg:sticky lg:top-20 rounded-2xl border border-border bg-card/60 backdrop-blur-md shadow-sm overflow-hidden",
+          isOpen ? "lg:hidden" : "lg:flex lg:flex-col lg:items-center lg:gap-2 lg:p-2",
+        )}
+      >
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={isOpen}
+          aria-label={showLabel}
+          className="w-full flex flex-col items-center gap-2 py-2 text-left hover:bg-secondary/60 transition-colors"
+        >
+          <Newspaper className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground [writing-mode:vertical-rl] whitespace-nowrap">
+            {heading}
+          </span>
+          <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+        </button>
       </div>
 
       {/* Mobile: hidden by default, expands to ~30vh scrollable panel when opened */}
