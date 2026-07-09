@@ -49,9 +49,13 @@ function LangSwitcher() {
 
 function SiteShell({ children }: { children: ReactNode }) {
   const { t } = useLang();
-  // Default closed on mobile (bottom sheet is hidden by default). On desktop
-  // the drawer is always visible regardless of this flag.
+  // Default closed on mobile (bottom sheet is hidden by default). Open by default on desktop.
   const [isFeedOpen, setIsFeedOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setIsFeedOpen(true);
+    }
+  }, []);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Hide the global newsfeed on admin pages to keep the admin tooling uncluttered.
   const showFeed = !pathname.startsWith("/admin");
