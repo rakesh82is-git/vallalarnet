@@ -137,7 +137,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
           )}
         >
           <div className="overflow-hidden">
-            <div className="max-h-[25vh] overflow-y-auto lg:max-h-[calc(100vh-8rem)] p-3 space-y-2">
+            <div className="max-h-[25vh] overflow-y-auto lg:max-h-[calc(100vh-8rem)] p-3 space-y-1">
               {isLoading && (
                 <p className="text-xs text-muted-foreground">{loadingLabel}</p>
               )}
