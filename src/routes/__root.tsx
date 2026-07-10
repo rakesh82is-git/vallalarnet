@@ -74,50 +74,49 @@ function SiteShell({ children }: { children: ReactNode }) {
   }, []);
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans selection:bg-accent/20">
-      <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2 text-base md:text-xl font-display font-bold tracking-tight text-primary shrink-0">
-            <span className="text-lg">✦</span>
-            <span>{t.nav.brand}</span>
-          </Link>
-          <div className="hidden md:flex gap-5 text-sm font-medium overflow-x-auto">
-            {NAV.map((n) => (
-              <Link
-                key={n.to}
-                to={n.to}
-                className="hover:text-primary transition-colors whitespace-nowrap"
-                activeProps={{ className: "text-primary" }}
-                activeOptions={{ exact: n.to === "/" }}
-              >
-                {t.nav[n.key as keyof typeof t.nav]}
-              </Link>
-            ))}
-          </div>
-          <LangSwitcher />
-        </div>
-        <div className="md:hidden border-t border-border bg-background/80">
-          <div className="max-w-6xl mx-auto px-4 py-2 flex gap-4 text-xs font-medium overflow-x-auto">
-            {NAV.map((n) => (
-              <Link
-                key={n.to}
-                to={n.to}
-                className="hover:text-primary transition-colors whitespace-nowrap"
-                activeProps={{ className: "text-primary" }}
-                activeOptions={{ exact: n.to === "/" }}
-              >
-                {t.nav[n.key as keyof typeof t.nav]}
-              </Link>
-            ))}
-          </div>
-        </div>
+      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         {showFeed && (
-          <div className="lg:hidden border-t border-border bg-background/80">
-            <div className="max-w-6xl mx-auto px-4 py-2">
-              <SignatureProgressLamp orientation="horizontal" />
+          <div className="lg:hidden border-b border-border">
+            <div className="max-w-6xl mx-auto px-4 md:px-6 py-2 flex items-center gap-3">
+              <SignatureProgressLamp orientation="horizontal" className="flex-1 min-w-0" />
+              <LangSwitcher />
             </div>
           </div>
         )}
-      </nav>
+        <nav>
+          <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between gap-4">
+            <div className="hidden md:flex gap-5 text-sm font-medium overflow-x-auto">
+              {NAV.map((n) => (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  className="hover:text-primary transition-colors whitespace-nowrap"
+                  activeProps={{ className: "text-primary" }}
+                  activeOptions={{ exact: n.to === "/" }}
+                >
+                  {t.nav[n.key as keyof typeof t.nav]}
+                </Link>
+              ))}
+            </div>
+            <div className="md:hidden flex gap-4 text-xs font-medium overflow-x-auto">
+              {NAV.map((n) => (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  className="hover:text-primary transition-colors whitespace-nowrap"
+                  activeProps={{ className: "text-primary" }}
+                  activeOptions={{ exact: n.to === "/" }}
+                >
+                  {t.nav[n.key as keyof typeof t.nav]}
+                </Link>
+              ))}
+            </div>
+            <div className="hidden lg:block">
+              <LangSwitcher />
+            </div>
+          </div>
+        </nav>
+      </div>
       <main className="flex-1">
         {showFeed ? (
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
