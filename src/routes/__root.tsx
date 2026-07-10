@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { LanguageProvider, useLang } from "@/i18n/context";
 import { CampaignUpdatesDrawer } from "@/components/campaign-updates-drawer";
+import { SignatureProgressLamp } from "@/components/signature-progress-lamp";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -108,6 +109,11 @@ function SiteShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </div>
+          {showFeed && (
+            <div className="max-w-6xl mx-auto px-4 pb-2">
+              <SignatureProgressLamp orientation="horizontal" />
+            </div>
+          )}
         </div>
       </nav>
       <main className="flex-1">
@@ -124,10 +130,18 @@ function SiteShell({ children }: { children: ReactNode }) {
                   "fixed inset-x-0 bottom-0 z-30 px-2 pb-2 pointer-events-none",
                   "transition-transform duration-300 ease-in-out",
                   footerVisible ? "translate-y-full" : "translate-y-0",
-                  "lg:static lg:p-0 lg:translate-y-0 lg:contents",
+                  "lg:static lg:p-0 lg:translate-y-0 lg:block",
                 )}
               >
-                <div className="pointer-events-auto mx-auto max-w-2xl lg:max-w-none lg:mx-0 lg:contents">
+                <div
+                  className={cn(
+                    "pointer-events-auto mx-auto max-w-2xl lg:max-w-none lg:mx-0 lg:sticky lg:top-20 lg:flex lg:flex-col lg:gap-4 lg:transition-all lg:duration-500",
+                    isFeedOpen ? "lg:w-1/3" : "lg:w-12",
+                  )}
+                >
+                  {isFeedOpen && (
+                    <SignatureProgressLamp className="hidden lg:block" />
+                  )}
                   <CampaignUpdatesDrawer
                     isOpen={isFeedOpen}
                     onToggle={() => setIsFeedOpen((v) => !v)}
