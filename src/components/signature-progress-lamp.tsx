@@ -85,7 +85,7 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
   const goal = data?.goal ?? 100000;
   const pct = Math.min(100, Math.round((total / Math.max(goal, 1)) * 100));
   const locale = lang === "ta" ? "ta-IN" : "en-IN";
-  const eyebrow = lang === "ta" ? "ஒளி ஏற்றப்படுகிறது" : "Lighting the jyoti";
+  const eyebrow = lang === "ta" ? "வடலூர் புனித நகருக்கு செல்லும் பாதை" : "Road to Vadalur's Punitha Nagaram";
   const goalLabel = lang === "ta" ? "இலக்கு" : "Goal";
   const signedLabel = lang === "ta" ? "கையொப்பங்கள்" : "signatures";
 
