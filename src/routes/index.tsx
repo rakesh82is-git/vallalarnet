@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { STATIC } from "@/lib/static-assets";
+const sanctuaryImg = STATIC.vallalarWithAnimals1;
 import { useT } from "@/i18n/context";
 import { RichText } from "@/components/rich-text";
 import { getStats, listSignatures } from "@/lib/petition.functions";
-const sanctuaryImg = STATIC.vallalarWithAnimals1;
 
 const statsOpts = queryOptions({
   queryKey: ["stats"],
@@ -108,22 +109,6 @@ function Index() {
         </Link>
       </section>
 
-      {/* GOAL */}
-      <section className="px-6 py-12">
-        <div className="max-w-3xl mx-auto rounded-3xl bg-card ring-1 ring-border p-8">
-          <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent text-center">── {t.home.goalEyebrow} ──</p>
-          <h3 className="mt-2 text-2xl font-display font-bold text-center">{t.home.goalTitle}</h3>
-          <div className="mt-6 h-3 rounded-full bg-secondary overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-              style={{ width: `${Math.max(pct, 1)}%` }}
-            />
-          </div>
-          <p className="mt-3 text-center font-mono text-sm text-muted-foreground">
-            {stats.total.toLocaleString("en-IN")} / {stats.goal.toLocaleString("en-IN")} · {pct}%
-          </p>
-        </div>
-      </section>
 
       {/* VOICES */}
       <section className="max-w-6xl mx-auto px-6 py-12">
@@ -173,24 +158,6 @@ function Index() {
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="px-6 pb-16">
-        <div className="max-w-6xl mx-auto relative w-full h-[320px] md:h-[420px] rounded-3xl overflow-hidden">
-          <img src={lampImg} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/30 to-transparent" />
-          <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-6 pb-10">
-            <p className="text-xs font-mono uppercase tracking-[0.3em] text-accent">── {t.home.finalEyebrow} ──</p>
-            <h2 className="mt-2 text-3xl md:text-4xl font-display font-bold">{t.home.finalTitle}</h2>
-            <p className="mt-3 text-muted-foreground max-w-xl text-left">{t.home.finalBody}</p>
-            <Link
-              to="/sign"
-              className="mt-6 inline-flex items-center gap-2 px-7 py-3 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
-            >
-              ✎ {t.home.ctaSign}
-            </Link>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
