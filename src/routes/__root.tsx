@@ -109,12 +109,14 @@ function SiteShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </div>
-          {showFeed && (
-            <div className="max-w-6xl mx-auto px-4 pb-2">
+        </div>
+        {showFeed && (
+          <div className="lg:hidden border-t border-border bg-background/80">
+            <div className="max-w-6xl mx-auto px-4 py-2">
               <SignatureProgressLamp orientation="horizontal" />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </nav>
       <main className="flex-1">
         {showFeed ? (
@@ -135,12 +137,15 @@ function SiteShell({ children }: { children: ReactNode }) {
               >
                 <div
                   className={cn(
-                    "pointer-events-auto mx-auto max-w-2xl lg:max-w-none lg:mx-0 lg:sticky lg:top-20 lg:flex lg:flex-col lg:gap-4 lg:transition-all lg:duration-500",
+                    "pointer-events-auto mx-auto max-w-2xl lg:max-w-none lg:mx-0 lg:flex lg:flex-col lg:gap-4 lg:transition-all lg:duration-500",
                     isFeedOpen ? "lg:w-1/3" : "lg:w-12",
                   )}
                 >
                   {isFeedOpen && (
-                    <SignatureProgressLamp className="hidden lg:block" />
+                    <SignatureProgressLamp
+                      orientation="circular"
+                      className="hidden lg:flex"
+                    />
                   )}
                   <CampaignUpdatesDrawer
                     isOpen={isFeedOpen}
