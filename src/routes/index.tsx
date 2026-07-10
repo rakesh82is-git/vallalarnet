@@ -1,11 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { STATIC } from "@/lib/static-assets";
-const lampImg = STATIC.vallalarStudy;
-const sanctuaryImg = STATIC.vallalarWithAnimals1;
 import { useT } from "@/i18n/context";
 import { RichText } from "@/components/rich-text";
 import { getStats, listSignatures } from "@/lib/petition.functions";
+const sanctuaryImg = STATIC.vallalarWithAnimals1;
 
 const statsOpts = queryOptions({
   queryKey: ["stats"],
