@@ -152,7 +152,7 @@ export function CampaignUpdatesDrawer({ isOpen, onToggle }: Props) {
   );
 
   return (
-    <aside aria-label={heading} className={cn("w-full lg:transition-all lg:duration-500", isOpen ? "lg:w-1/3" : "lg:w-12")}>
+    <aside aria-label={heading} className="w-full">
       {/* Desktop: collapsible drawer. Open by default; toggle hides it to a narrow rail. */}
       <div className={cn("hidden lg:sticky lg:top-20", isOpen ? "lg:block" : "lg:hidden")}>
         <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-md shadow-sm overflow-hidden">
