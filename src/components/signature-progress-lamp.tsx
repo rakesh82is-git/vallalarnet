@@ -5,7 +5,7 @@ import { useLang } from "@/i18n/context";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  orientation?: "vertical" | "horizontal";
+  orientation?: "vertical" | "horizontal" | "circular";
   className?: string;
 };
 
@@ -124,6 +124,73 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
             </span>
           </div>
           <div className="mt-1">{bar}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (orientation === "circular") {
+    const ringSize = 220;
+    const stroke = 10;
+    const radius = (ringSize - stroke) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const dashOffset = circumference * (1 - pct / 100);
+    return (
+      <div
+        className={cn(
+          "rounded-2xl border border-border bg-card/80 backdrop-blur-md shadow-sm p-4 aspect-square flex flex-col items-center justify-center gap-3",
+          className,
+        )}
+        aria-label={eyebrow}
+      >
+        <div className="text-[10px] font-mono uppercase tracking-widest text-accent text-center">
+          {eyebrow}
+        </div>
+        <div className="relative" style={{ width: ringSize, height: ringSize, maxWidth: "100%" }}>
+          <svg
+            viewBox={`0 0 ${ringSize} ${ringSize}`}
+            className="absolute inset-0 w-full h-full -rotate-90"
+            aria-hidden
+          >
+            <defs>
+              <linearGradient id="lamp-ring" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="var(--primary)" />
+                <stop offset="100%" stopColor="var(--accent)" />
+              </linearGradient>
+            </defs>
+            <circle
+              cx={ringSize / 2}
+              cy={ringSize / 2}
+              r={radius}
+              fill="none"
+              stroke="var(--secondary)"
+              strokeWidth={stroke}
+            />
+            <circle
+              cx={ringSize / 2}
+              cy={ringSize / 2}
+              r={radius}
+              fill="none"
+              stroke="url(#lamp-ring)"
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              style={{ transition: "stroke-dashoffset 800ms cubic-bezier(0.16, 1, 0.3, 1)" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center">
+            <Lamp pct={pct} size={Math.round(ringSize * 0.45)} />
+            <div className="text-xl font-display font-bold text-foreground leading-none">
+              {total.toLocaleString(locale)}
+            </div>
+            <div className="text-[10px] font-mono text-muted-foreground">
+              {pct}%
+            </div>
+          </div>
+        </div>
+        <div className="text-[11px] font-mono text-muted-foreground text-center">
+          {goalLabel} {goal.toLocaleString(locale)} {signedLabel}
         </div>
       </div>
     );
