@@ -102,12 +102,12 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
     return (
       <div
         className={cn(
-          "rounded-2xl border border-border bg-card/80 backdrop-blur-md shadow-sm px-3 py-2 flex items-center gap-3",
+          "rounded-xl border border-border bg-card/80 backdrop-blur-md shadow-sm px-2.5 py-1.5 flex items-center gap-2.5",
           className,
         )}
         aria-label={eyebrow}
       >
-        <Lamp pct={pct} size={40} />
+        <Lamp pct={pct} size={32} />
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-[10px] font-mono uppercase tracking-widest text-accent truncate">
@@ -117,7 +117,7 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
               {pct}%
             </span>
           </div>
-          <div className="mt-1 text-sm font-display font-bold text-foreground leading-tight truncate">
+          <div className="mt-0.5 text-xs font-display font-bold text-foreground leading-tight truncate">
             {total.toLocaleString(locale)}
             <span className="text-muted-foreground font-mono text-[10px] font-normal ml-1">
               / {goal.toLocaleString(locale)} {signedLabel}
