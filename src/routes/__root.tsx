@@ -132,13 +132,13 @@ function SiteShell({ children }: { children: ReactNode }) {
                   "fixed inset-x-0 bottom-0 z-30 px-2 pb-2 pointer-events-none",
                   "transition-transform duration-300 ease-in-out",
                   footerVisible ? "translate-y-full" : "translate-y-0",
-                  "lg:static lg:p-0 lg:translate-y-0 lg:block",
+                  "lg:static lg:p-0 lg:translate-y-0 lg:block lg:transition-all lg:duration-500",
+                  isFeedOpen ? "lg:w-1/3" : "lg:w-12",
                 )}
               >
                 <div
                   className={cn(
-                    "pointer-events-auto mx-auto max-w-2xl lg:max-w-none lg:mx-0 lg:flex lg:flex-col lg:gap-4 lg:transition-all lg:duration-500",
-                    isFeedOpen ? "lg:w-1/3" : "lg:w-12",
+                    "pointer-events-auto mx-auto max-w-2xl lg:max-w-none lg:mx-0 lg:flex lg:flex-col lg:gap-4 lg:w-full",
                   )}
                 >
                   {isFeedOpen && (
