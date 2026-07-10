@@ -38,7 +38,6 @@ function Index() {
   const t = useT();
   const { data: stats } = useSuspenseQuery(statsOpts);
   const { data: recent } = useSuspenseQuery(recentOpts);
-  const pct = Math.min(100, Math.round((stats.total / stats.goal) * 100));
 
   return (
     <>
