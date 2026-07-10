@@ -61,12 +61,13 @@ function Index() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent" />
           </div>
-          <h1 className="text-4xl md:text-6xl font-display font-bold text-center text-balance leading-[1.1] animate-reveal">
-            {t.home.title1}
-            <br />
-            <span className="text-primary">{t.home.title2}</span>
-            <br />
-            {t.home.title3}
+          <h1 className="text-[clamp(1rem,5vw-2px,1.875rem)] sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-display font-bold text-center leading-[1.1] animate-reveal">
+            <span className="block">
+              {t.home.title1} <span className="text-primary">{t.home.title2}</span>
+            </span>
+            <span className="block">
+              {t.home.title3}
+            </span>
           </h1>
           <p className="mt-3 text-center text-lg md:text-xl italic text-accent font-medium max-w-2xl mx-auto">
             {t.home.titleQuote}
