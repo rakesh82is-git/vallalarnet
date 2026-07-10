@@ -61,7 +61,7 @@ function Index() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent" />
           </div>
-          <h1 className="text-[clamp(1rem,5vw-2px,1.875rem)] sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-display font-bold text-center leading-[1.1] animate-reveal">
+          <h1 className="text-[clamp(0.875rem,4vw-0.25rem,1.125rem)] sm:text-2xl md:text-3xl lg:text-[clamp(1.25rem,2.5vw-0.125rem,1.875rem)] xl:text-4xl font-display font-bold text-center leading-[1.1] animate-reveal">
             <span className="block">
               {t.home.title1} <span className="text-primary">{t.home.title2}</span>
             </span>
