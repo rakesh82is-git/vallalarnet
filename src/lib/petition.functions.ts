@@ -190,10 +190,7 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
     // Best-effort analytics capture — never fails the signature submission.
     if (data.referral_source) {
       try {
-        const { supabaseAdmin: cloudAdmin } = await import(
-          "@/integrations/supabase/client.server"
-        );
-        const { error: refErr } = await cloudAdmin
+        const { error: refErr } = await supabaseAdmin
           .from("referral_sources")
           .insert({
             signature_id: row.id as string,
