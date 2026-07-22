@@ -21,6 +21,9 @@ const thankYouVideo = STATIC.vallalarThankYouVideo;
 import { submitDigitalSignature } from "@/lib/petition.functions";
 import * as gn from "@/lib/geonames";
 import { useLang } from "@/i18n/context";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+type ReferralSource = "" | "facebook" | "instagram" | "youtube" | "twitter" | "others";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
