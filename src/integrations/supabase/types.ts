@@ -157,30 +157,6 @@ export type Database = {
           },
         ]
       }
-      referral_sources: {
-        Row: {
-          created_at: string
-          id: string
-          other_text: string | null
-          signature_id: string | null
-          source: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          other_text?: string | null
-          signature_id?: string | null
-          source: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          other_text?: string | null
-          signature_id?: string | null
-          source?: string
-        }
-        Relationships: []
-      }
       signatures: {
         Row: {
           age: number | null
