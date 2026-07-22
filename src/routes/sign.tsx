@@ -109,6 +109,8 @@ function DigitalTab() {
   });
   const [signOpen, setSignOpen] = useState(false);
   const [pendingSig, setPendingSig] = useState<string | null>(null);
+  const [referral, setReferral] = useState<ReferralSource>("");
+  const [referralOther, setReferralOther] = useState("");
   const [result, setResult] = useState<{
     id: string;
     name: string;
