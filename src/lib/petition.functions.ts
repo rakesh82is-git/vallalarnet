@@ -194,7 +194,7 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
           "@/integrations/supabase/client.server"
         );
         const { error: refErr } = await cloudAdmin
-          .from("referral_sources" as never)
+          .from("referral_sources")
           .insert({
             signature_id: row.id as string,
             source: data.referral_source,
@@ -202,7 +202,7 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
               data.referral_source === "others"
                 ? (data.referral_other ?? "").trim()
                 : null,
-          } as never);
+          });
         if (refErr) {
           console.error("[submitDigitalSignature] referral insert failed", {
             code: refErr.code,
