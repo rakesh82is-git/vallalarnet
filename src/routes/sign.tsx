@@ -515,6 +515,9 @@ function DigitalTab() {
           pincode: pincode || null,
           mobile_number,
           signature_image: sig,
+          referral_source: referral || null,
+          referral_other:
+            referral === "others" ? referralOther.trim() || null : null,
         },
       });
       if (!res.ok) {
