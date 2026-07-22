@@ -1,27 +1,38 @@
-## Problem
+## Goal
+Add a required "How did you hear about us?" radio group on the "Sign to confirm" dialog (between the declaration and the signature pad). Disable Submit until a valid choice is made. Store the answer in a **new, separate analytics table** — `signatures` is untouched.
 
-The preview is blank because SSR is crashing with:
+## Options (bilingual EN + TA via `src/i18n/dict.ts`)
+- Facebook
+- Instagram
+- YouTube
+- Twitter (X)
+- Others → reveals a required text input (trimmed, max 200 chars)
 
-```
-Cannot find module '@/assets/vallalar_study.jpg' imported from src/routes/story.tsx
-```
+## New table (single migration)
+`public.referral_sources`
+- `id uuid PK default gen_random_uuid()`
+- `signature_id uuid NULL` — soft link to `signatures.id` (no FK, so referral capture never blocks a signature insert and stays decoupled for analytics)
+- `source text NOT NULL` — enum-checked: `facebook | instagram | youtube | twitter | others`
+- `other_text text NULL` — required (non-empty) when `source='others'`, else null (CHECK)
+- `created_at timestamptz NOT NULL default now()`
 
-`src/routes/story.tsx` imports three assets with the wrong extension. The files on disk are `.jpeg`, but the imports use `.jpg`:
+Grants + RLS:
+- `GRANT INSERT ON public.referral_sources TO anon, authenticated;`
+- `GRANT ALL ON public.referral_sources TO service_role;`
+- Enable RLS. Policy: `INSERT` allowed to `anon` + `authenticated` (matches how signatures are captured). No public SELECT — admin/analytics read via service role.
 
-| Import in story.tsx | Actual file in src/assets |
-| --- | --- |
-| `@/assets/gnana_sabai_over.jpg` | `gnana_sabai_over.jpeg` |
-| `@/assets/vallalar_study.jpg` | `vallalar_study.jpeg` |
-| `@/assets/vallalar_with_animals_2.jpg` | `vallalar_with_animals_2.jpeg` |
+## Server (`src/lib/petition.functions.ts`)
+1. Extend `DigitalSignaturePayload` with optional `referral_source` (enum) and `referral_other` (string, max 200), enforcing "others ⇒ non-empty text" in `.refine`.
+2. In `submitDigitalSignature.handler`, after the signature row is inserted successfully, best-effort insert into `referral_sources` with the returned `signature_id`. Wrap in try/catch — failures are logged but do NOT fail the signature submission (analytics is non-critical, per user).
 
-Because the root route renders these imports during SSR, every page (including `/sign`) returns 500 and the preview is blank — that's why the Digital Signing enhancements look like they "aren't working".
+## Frontend (`src/routes/sign.tsx`)
+1. Add `referral` state (`'' | 'facebook' | 'instagram' | 'youtube' | 'twitter' | 'others'`) and `referralOther` string. Reset in `resetForm` and after success.
+2. In the Sign dialog, between the declaration box and `<SignaturePad>`, render a shadcn `<RadioGroup>` with the 5 options. When `others` is selected, render an `<Input>` beneath (autofocus).
+3. Update the Submit button `disabled` to also require: `referral !== ''` AND (`referral !== 'others'` OR `referralOther.trim().length > 0`).
+4. Pass `referral_source` + `referral_other` into the `submitDigitalSignature` call.
 
-## Fix
+## Out of scope
+- Capturing referral for manual (admin) uploads
+- Admin analytics UI / Excel column for referral (can follow later)
 
-Update the four import paths in `src/routes/story.tsx` to use `.jpeg`:
-
-- `@/assets/gnana_sabai_over.jpg` → `@/assets/gnana_sabai_over.jpeg` (two occurrences: `sanctuaryImg` and `gatheringImg`)
-- `@/assets/vallalar_study.jpg` → `@/assets/vallalar_study.jpeg`
-- `@/assets/vallalar_with_animals_2.jpg` → `@/assets/vallalar_with_animals_2.jpeg`
-
-No other files need changes. Once SSR stops crashing, the cascading country/state/district dropdowns on `/sign` will render normally.
+Ready to implement on approval.

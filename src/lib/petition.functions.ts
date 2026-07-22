@@ -96,9 +96,19 @@ const DigitalSignaturePayload = z.object({
   sub_district: z.string().trim().max(120).optional().nullable(),
   locality: z.string().trim().max(160).optional().nullable(),
   pincode: z.string().trim().max(20).optional().nullable(),
+  referral_source: z
+    .enum(["facebook", "instagram", "youtube", "twitter", "others"])
+    .optional()
+    .nullable(),
+  referral_other: z.string().trim().max(200).optional().nullable(),
 }).refine(
   (d) => d.country.toLowerCase() !== "india" || (d.pincode && d.pincode.length >= 4),
   { message: "Pincode is required for India", path: ["pincode"] },
+).refine(
+  (d) =>
+    d.referral_source !== "others" ||
+    (d.referral_other != null && d.referral_other.trim().length > 0),
+  { message: "Please specify how you heard about us", path: ["referral_other"] },
 );
 
 const ManualSignaturePayload = z.object({
@@ -176,6 +186,33 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
     const { count } = await supabaseAdmin
       .from("signatures")
       .select("*", { count: "exact", head: true });
+
+    // Best-effort analytics capture — never fails the signature submission.
+    if (data.referral_source) {
+      try {
+        const { supabaseAdmin: cloudAdmin } = await import(
+          "@/integrations/supabase/client.server"
+        );
+        const { error: refErr } = await cloudAdmin
+          .from("referral_sources")
+          .insert({
+            signature_id: row.id as string,
+            source: data.referral_source,
+            other_text:
+              data.referral_source === "others"
+                ? (data.referral_other ?? "").trim()
+                : null,
+          });
+        if (refErr) {
+          console.error("[submitDigitalSignature] referral insert failed", {
+            code: refErr.code,
+            message: refErr.message,
+          });
+        }
+      } catch (e) {
+        console.error("[submitDigitalSignature] referral capture threw", e);
+      }
+    }
 
     return {
       ok: true as const,
