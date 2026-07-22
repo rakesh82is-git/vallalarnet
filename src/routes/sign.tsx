@@ -482,6 +482,8 @@ function DigitalTab() {
     setPinRows([]);
     setPinSearchRows([]);
     lastPinRef.current = "";
+    setReferral("");
+    setReferralOther("");
     setForm({
       name: "",
       age: "",
