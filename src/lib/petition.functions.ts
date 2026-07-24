@@ -97,7 +97,7 @@ const DigitalSignaturePayload = z.object({
   locality: z.string().trim().max(160).optional().nullable(),
   pincode: z.string().trim().max(20).optional().nullable(),
   referral_source: z
-    .enum(["facebook", "instagram", "youtube", "twitter", "others"])
+    .enum(["facebook", "instagram", "youtube", "whatsapp", "twitter", "others"])
     .optional()
     .nullable(),
   referral_other: z.string().trim().max(200).optional().nullable(),
