@@ -23,7 +23,14 @@ import * as gn from "@/lib/geonames";
 import { useLang } from "@/i18n/context";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-type ReferralSource = "" | "facebook" | "instagram" | "youtube" | "twitter" | "others";
+type ReferralSource =
+  | ""
+  | "facebook"
+  | "instagram"
+  | "youtube"
+  | "whatsapp"
+  | "twitter"
+  | "others";
 
 export const Route = createFileRoute("/sign")({
   head: () => ({
@@ -752,18 +759,19 @@ function DigitalTab() {
             <RadioGroup
               value={referral}
               onValueChange={(v) => setReferral(v as ReferralSource)}
-              className="grid grid-cols-2 gap-2"
+              className="grid grid-cols-2 gap-2 sm:grid-cols-3"
             >
               {[
                 { v: "facebook", label: "Facebook" },
                 { v: "instagram", label: "Instagram" },
                 { v: "youtube", label: "YouTube" },
+                { v: "whatsapp", label: "WhatsApp" },
                 { v: "twitter", label: "Twitter (X)" },
                 { v: "others", label: lang === "ta" ? "மற்றவை" : "Others" },
               ].map((o) => (
                 <label
                   key={o.v}
-                  className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm cursor-pointer hover:bg-secondary/40"
+                  className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm cursor-pointer hover:bg-secondary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                 >
                   <RadioGroupItem value={o.v} id={`ref-${o.v}`} />
                   <span>{o.label}</span>
@@ -771,15 +779,20 @@ function DigitalTab() {
               ))}
             </RadioGroup>
             {referral === "others" && (
-              <Input
-                autoFocus
-                value={referralOther}
-                onChange={(e) => setReferralOther(e.target.value)}
-                maxLength={200}
-                placeholder={
-                  lang === "ta" ? "தயவுசெய்து குறிப்பிடவும்" : "Please specify"
-                }
-              />
+              <div className="w-full pt-1">
+                <Input
+                  autoFocus
+                  value={referralOther}
+                  onChange={(e) => setReferralOther(e.target.value)}
+                  maxLength={200}
+                  className="w-full"
+                  placeholder={
+                    lang === "ta"
+                      ? "தயவுசெய்து குறிப்பிடவும்"
+                      : "Please specify how you heard about us"
+                  }
+                />
+              </div>
             )}
           </div>
           <SignaturePad onChange={setPendingSig} />
