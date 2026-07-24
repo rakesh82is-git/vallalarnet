@@ -111,6 +111,15 @@ const DigitalSignaturePayload = z.object({
   { message: "Please specify how you heard about us", path: ["referral_other"] },
 );
 
+function sanitizeReferralOther(
+  source: z.infer<typeof DigitalSignaturePayload>["referral_source"],
+  other: z.infer<typeof DigitalSignaturePayload>["referral_other"],
+) {
+  if (source !== "others") return null;
+  const trimmed = (other ?? "").trim();
+  return trimmed.length ? trimmed : null;
+}
+
 const ManualSignaturePayload = z.object({
   name: z.string().trim().min(1).max(100),
   mobile_number: z.string().trim().min(6).max(20),
@@ -190,15 +199,16 @@ export const submitDigitalSignature = createServerFn({ method: "POST" })
     // Best-effort analytics capture — never fails the signature submission.
     if (data.referral_source) {
       try {
+        const referralOther = sanitizeReferralOther(
+          data.referral_source,
+          data.referral_other,
+        );
         const { error: refErr } = await supabaseAdmin
           .from("referral_sources")
           .insert({
             signature_id: row.id as string,
             source: data.referral_source,
-            other_text:
-              data.referral_source === "others"
-                ? (data.referral_other ?? "").trim()
-                : null,
+            other_text: referralOther,
           });
         if (refErr) {
           console.error("[submitDigitalSignature] referral insert failed", {

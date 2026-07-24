@@ -508,6 +508,8 @@ function DigitalTab() {
     const country = selectedCountry?.name ?? "";
     const ageNum = Number(age);
     const mobile_number = `${dialCode} ${mobile_local}`.trim();
+    const cleanedReferralOther =
+      referral === "others" ? referralOther.trim() || null : null;
     setBusy(true);
     try {
       const res = await submitDigitalSignature({
@@ -523,8 +525,7 @@ function DigitalTab() {
           mobile_number,
           signature_image: sig,
           referral_source: referral || null,
-          referral_other:
-            referral === "others" ? referralOther.trim() || null : null,
+          referral_other: cleanedReferralOther,
         },
       });
       if (!res.ok) {
@@ -758,7 +759,11 @@ function DigitalTab() {
             </p>
             <RadioGroup
               value={referral}
-              onValueChange={(v) => setReferral(v as ReferralSource)}
+              onValueChange={(v) => {
+                const next = v as ReferralSource;
+                setReferral(next);
+                if (next !== "others") setReferralOther("");
+              }}
               className="grid grid-cols-2 gap-2 sm:grid-cols-3"
             >
               {[
