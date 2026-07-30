@@ -75,7 +75,15 @@ function emptyStats() {
     series: [] as Array<{ day: string; daily: number; cumulative: number }>,
     regions: [] as Array<{ label: string; count: number }>,
     countryList: [] as Array<{ label: string; count: number }>,
-    geoTree: [] as Array<{ country: string; count: number; states: Array<{ state: string; count: number }> }>,
+    geoTree: [] as Array<{
+      country: string;
+      count: number;
+      states: Array<{
+        state: string;
+        count: number;
+        districts: Array<{ district: string; count: number }>;
+      }>;
+    }>,
     recent: [] as Array<{ name: string | null; district: string | null; state: string | null; created_at: string }>,
     goal: 100_000,
   };
@@ -416,23 +424,35 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count);
 
-  // Country -> State breakdown for the sunburst chart
-  const geoMap = new Map<string, Map<string, number>>();
+  // Country -> State -> District breakdown for the sunburst chart
+  const geoMap = new Map<string, Map<string, Map<string, number>>>();
   for (const r of list) {
     const country = r.country || "Unknown";
     const state = r.state || "Unspecified";
+    const district = r.district || "Unspecified";
     if (!geoMap.has(country)) geoMap.set(country, new Map());
     const states = geoMap.get(country)!;
-    states.set(state, (states.get(state) ?? 0) + 1);
+    if (!states.has(state)) states.set(state, new Map());
+    const districtsMap = states.get(state)!;
+    districtsMap.set(district, (districtsMap.get(district) ?? 0) + 1);
   }
   const geoTree = Array.from(geoMap.entries())
-    .map(([country, states]) => ({
-      country,
-      count: Array.from(states.values()).reduce((a, b) => a + b, 0),
-      states: Array.from(states.entries())
-        .map(([state, count]) => ({ state, count }))
-        .sort((a, b) => b.count - a.count),
-    }))
+    .map(([country, states]) => {
+      const stateList = Array.from(states.entries())
+        .map(([state, dmap]) => ({
+          state,
+          count: Array.from(dmap.values()).reduce((a, b) => a + b, 0),
+          districts: Array.from(dmap.entries())
+            .map(([district, count]) => ({ district, count }))
+            .sort((a, b) => b.count - a.count),
+        }))
+        .sort((a, b) => b.count - a.count);
+      return {
+        country,
+        count: stateList.reduce((a, b) => a + b.count, 0),
+        states: stateList,
+      };
+    })
     .sort((a, b) => b.count - a.count);
 
   const { data: recent } = await supabaseAdmin
