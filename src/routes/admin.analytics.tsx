@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { getStats } from "@/lib/petition.functions";
 import { adminExportSignaturesXlsx } from "@/lib/admin.functions";
 import { useT } from "@/i18n/context";
@@ -14,14 +14,16 @@ export const Route = createFileRoute("/admin/analytics")({
   component: AdminAnalytics,
 });
 
-function timeAgo(iso: string) {
-  const t = new Date(iso).getTime();
-  const s = Math.floor((Date.now() - t) / 1000);
-  if (s < 60) return `${s}s`;
-  if (s < 3600) return `${Math.floor(s / 60)}m`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h`;
-  return `${Math.floor(s / 86400)}d`;
-}
+const RING_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(24 90% 55%)",
+  "hsl(160 60% 40%)",
+  "hsl(280 55% 55%)",
+  "hsl(200 70% 45%)",
+  "hsl(45 90% 50%)",
+  "hsl(0 65% 55%)",
+];
 
 function AdminAnalytics() {
   const t = useT();
@@ -30,7 +32,21 @@ function AdminAnalytics() {
   const [exporting, setExporting] = useState(false);
 
   const pct = Math.min(100, Math.round((data.total / data.goal) * 100));
-  const maxRegion = data.regions[0]?.count ?? 1;
+  const geoTree = data.geoTree ?? [];
+  const geoTotal = geoTree.reduce((a, c) => a + c.count, 0);
+  const inner = geoTree.map((c, i) => ({
+    name: c.country,
+    value: c.count,
+    fill: RING_COLORS[i % RING_COLORS.length],
+  }));
+  const outer = geoTree.flatMap((c, i) =>
+    c.states.map((s, j) => ({
+      name: `${s.state} · ${c.country}`,
+      value: s.count,
+      fill: RING_COLORS[i % RING_COLORS.length],
+      opacity: Math.max(0.35, 1 - j * 0.14),
+    })),
+  );
 
   async function handleExport() {
     setExporting(true);
@@ -92,81 +108,93 @@ function AdminAnalytics() {
       </section>
 
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
-        <h2 className="text-xl font-display font-bold mb-4">{t.analytics.growthTitle}</h2>
-        {data.series.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">{t.analytics.growthEmpty}</p>
+        <h2 className="text-xl font-display font-bold">Signers by country and state</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Inner ring: country · outer ring: state ({geoTotal.toLocaleString("en-IN")} signatures)
+        </p>
+        {geoTree.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic mt-4">{t.analytics.worldEmpty}</p>
         ) : (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.series}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-                <Line type="monotone" dataKey="cumulative" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </section>
+          <div className="mt-4 grid lg:grid-cols-[1.3fr_1fr] gap-6 items-center">
+            <div className="h-[420px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip
+                    formatter={(value: number, name: string) => [
+                      `${value.toLocaleString("en-IN")} (${geoTotal ? Math.round((value / geoTotal) * 100) : 0}%)`,
+                      name,
+                    ]}
+                    contentStyle={{
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend verticalAlign="bottom" height={24} iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                  <Pie
+                    data={inner}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="47%"
+                    outerRadius="52%"
+                    isAnimationActive={false}
+                    label={({ name, value }) => `${name} (${value})`}
+                    labelLine={false}
+                    stroke="hsl(var(--card))"
+                    strokeWidth={2}
+                  >
+                    {inner.map((d, i) => (
+                      <Cell key={i} fill={d.fill} />
+                    ))}
+                  </Pie>
+                  <Pie
+                    data={outer}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="47%"
+                    innerRadius="56%"
+                    outerRadius="76%"
+                    isAnimationActive={false}
+                    label={({ name, value }) => `${String(name).split(" · ")[0]} (${value})`}
+                    labelLine={{ stroke: "hsl(var(--border))" }}
+                    stroke="hsl(var(--card))"
+                    strokeWidth={1}
+                  >
+                    {outer.map((d, i) => (
+                      <Cell key={i} fill={d.fill} fillOpacity={d.opacity} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <section className="rounded-3xl bg-card ring-1 ring-border p-6">
-          <h2 className="text-xl font-display font-bold mb-4">{t.analytics.recentTitle}</h2>
-          {data.recent.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">{t.wall.empty}</p>
-          ) : (
-            <ul className="space-y-3">
-              {data.recent.map((r, i) => (
-                <li key={i} className="flex items-center justify-between text-sm">
-                  <div>
-                    <span className="font-semibold">{r.name}</span>
-                    <span className="text-muted-foreground"> · {r.district}, {r.state}</span>
+            <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
+              {geoTree.map((c, i) => (
+                <div key={c.country}>
+                  <div className="flex items-center justify-between text-sm font-semibold">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        style={{ background: RING_COLORS[i % RING_COLORS.length] }}
+                      />
+                      {c.country}
+                    </span>
+                    <span className="font-mono">{c.count.toLocaleString("en-IN")}</span>
                   </div>
-                  <span className="font-mono text-xs text-muted-foreground">{timeAgo(r.created_at as string)}</span>
-                </li>
+                  <ul className="mt-1 pl-5 space-y-0.5">
+                    {c.states.map((s) => (
+                      <li key={s.state} className="flex justify-between text-xs text-muted-foreground font-mono">
+                        <span>{s.state}</span>
+                        <span>{s.count.toLocaleString("en-IN")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="rounded-3xl bg-card ring-1 ring-border p-6">
-          <h2 className="text-xl font-display font-bold mb-4">{t.analytics.regionTitle}</h2>
-          {data.regions.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">—</p>
-          ) : (
-            <ul className="space-y-3">
-              {data.regions.map((r, i) => (
-                <li key={i}>
-                  <div className="flex justify-between text-xs font-mono mb-1">
-                    <span>{r.label}</span>
-                    <span className="text-muted-foreground">{r.count}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full bg-primary/70"
-                      style={{ width: `${Math.round((r.count / maxRegion) * 100)}%` }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
-
-      <section className="rounded-3xl bg-card ring-1 ring-border p-6">
-        <h2 className="text-xl font-display font-bold mb-4">{t.analytics.worldTitle}</h2>
-        {data.countryList.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">{t.analytics.worldEmpty}</p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {data.countryList.map((c, i) => (
-              <div key={i} className="rounded-xl bg-secondary/40 px-4 py-3 flex justify-between text-sm">
-                <span className="font-medium">{c.label}</span>
-                <span className="font-mono text-muted-foreground">{c.count}</span>
-              </div>
-            ))}
+            </div>
           </div>
         )}
       </section>
