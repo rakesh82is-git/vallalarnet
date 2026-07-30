@@ -75,6 +75,7 @@ function emptyStats() {
     series: [] as Array<{ day: string; daily: number; cumulative: number }>,
     regions: [] as Array<{ label: string; count: number }>,
     countryList: [] as Array<{ label: string; count: number }>,
+    geoTree: [] as Array<{ country: string; count: number; states: Array<{ state: string; count: number }> }>,
     recent: [] as Array<{ name: string | null; district: string | null; state: string | null; created_at: string }>,
     goal: 100_000,
   };
