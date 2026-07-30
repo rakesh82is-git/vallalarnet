@@ -15,38 +15,93 @@ export const Route = createFileRoute("/admin/analytics")({
 });
 
 const RING_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--accent))",
   "hsl(24 90% 55%)",
-  "hsl(160 60% 40%)",
-  "hsl(280 55% 55%)",
-  "hsl(200 70% 45%)",
-  "hsl(45 90% 50%)",
-  "hsl(0 65% 55%)",
+  "hsl(200 75% 48%)",
+  "hsl(160 60% 42%)",
+  "hsl(280 55% 58%)",
+  "hsl(45 92% 50%)",
+  "hsl(340 70% 58%)",
+  "hsl(95 50% 45%)",
+  "hsl(15 80% 60%)",
+  "hsl(255 60% 62%)",
+  "hsl(185 65% 42%)",
 ];
+
+type Level = "country" | "state" | "district";
 
 function AdminAnalytics() {
   const t = useT();
   const { data } = useSuspenseQuery(opts);
   const exportXlsx = useServerFn(adminExportSignaturesXlsx);
   const [exporting, setExporting] = useState(false);
+  const [levels, setLevels] = useState<Record<Level, boolean>>({
+    country: true,
+    state: false,
+    district: false,
+  });
 
   const pct = Math.min(100, Math.round((data.total / data.goal) * 100));
-  const geoTree = data.geoTree ?? [];
+  const geoTree = (data.geoTree ?? []) as Array<{
+    country: string;
+    count: number;
+    states: Array<{
+      state: string;
+      count: number;
+      districts?: Array<{ district: string; count: number }>;
+    }>;
+  }>;
   const geoTotal = geoTree.reduce((a, c) => a + c.count, 0);
-  const inner = geoTree.map((c, i) => ({
+
+  const countryRing = geoTree.map((c, i) => ({
     name: c.country,
     value: c.count,
     fill: RING_COLORS[i % RING_COLORS.length],
+    opacity: 1,
   }));
-  const outer = geoTree.flatMap((c, i) =>
+  const stateRing = geoTree.flatMap((c, i) =>
     c.states.map((s, j) => ({
       name: `${s.state} · ${c.country}`,
+      short: s.state,
       value: s.count,
       fill: RING_COLORS[i % RING_COLORS.length],
-      opacity: Math.max(0.35, 1 - j * 0.14),
+      opacity: Math.max(0.4, 1 - j * 0.14),
     })),
   );
+  const districtRing = geoTree.flatMap((c, i) =>
+    c.states.flatMap((s) =>
+      (s.districts ?? []).map((d, k) => ({
+        name: `${d.district} · ${s.state}`,
+        short: d.district,
+        value: d.count,
+        fill: RING_COLORS[i % RING_COLORS.length],
+        opacity: Math.max(0.3, 0.9 - k * 0.1),
+      })),
+    ),
+  );
+
+  const rings = (
+    [
+      levels.country ? countryRing : null,
+      levels.state ? stateRing : null,
+      levels.district ? districtRing : null,
+    ].filter(Boolean) as Array<
+      Array<{ name: string; short?: string; value: number; fill: string; opacity: number }>
+    >
+  ).filter((r) => r.length > 0);
+
+  const RADII = [
+    ["0%", "52%"],
+    ["56%", "72%"],
+    ["76%", "90%"],
+  ] as const;
+
+  function toggle(level: Level) {
+    setLevels((prev) => {
+      const next = { ...prev, [level]: !prev[level] };
+      if (!next.country && !next.state && !next.district) return prev;
+      return next;
+    });
+  }
 
   async function handleExport() {
     setExporting(true);
@@ -108,10 +163,26 @@ function AdminAnalytics() {
       </section>
 
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
-        <h2 className="text-xl font-display font-bold">Signers by country and state</h2>
+        <h2 className="text-xl font-display font-bold">Signers by geography</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Inner ring: country · outer ring: state ({geoTotal.toLocaleString("en-IN")} signatures)
+          Pick the levels to display ({geoTotal.toLocaleString("en-IN")} signatures)
         </p>
+        <div className="mt-4 flex flex-wrap gap-4">
+          {(["country", "state", "district"] as Level[]).map((lv) => (
+            <label
+              key={lv}
+              className="flex items-center gap-2 text-sm capitalize cursor-pointer select-none rounded-full ring-1 ring-border px-4 py-1.5 hover:bg-secondary/60"
+            >
+              <input
+                type="checkbox"
+                checked={levels[lv]}
+                onChange={() => toggle(lv)}
+                className="h-4 w-4 accent-[hsl(24_90%_55%)]"
+              />
+              {lv}
+            </label>
+          ))}
+        </div>
         {geoTree.length === 0 ? (
           <p className="text-sm text-muted-foreground italic mt-4">{t.analytics.worldEmpty}</p>
         ) : (
@@ -132,41 +203,29 @@ function AdminAnalytics() {
                     }}
                   />
                   <Legend verticalAlign="bottom" height={24} iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                  <Pie
-                    data={inner}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="47%"
-                    outerRadius="52%"
-                    isAnimationActive={false}
-                    label={({ name, value }) => `${name} (${value})`}
-                    labelLine={false}
-                    stroke="hsl(var(--card))"
-                    strokeWidth={2}
-                  >
-                    {inner.map((d, i) => (
-                      <Cell key={i} fill={d.fill} />
-                    ))}
-                  </Pie>
-                  <Pie
-                    data={outer}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="47%"
-                    innerRadius="56%"
-                    outerRadius="76%"
-                    isAnimationActive={false}
-                    label={({ name, value }) => `${String(name).split(" · ")[0]} (${value})`}
-                    labelLine={{ stroke: "hsl(var(--border))" }}
-                    stroke="hsl(var(--card))"
-                    strokeWidth={1}
-                  >
-                    {outer.map((d, i) => (
-                      <Cell key={i} fill={d.fill} fillOpacity={d.opacity} />
-                    ))}
-                  </Pie>
+                  {rings.map((ring, idx) => (
+                    <Pie
+                      key={idx}
+                      data={ring}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="47%"
+                      innerRadius={RADII[idx][0]}
+                      outerRadius={RADII[idx][1]}
+                      isAnimationActive={false}
+                      label={({ name, value }: { name: string; value: number }) =>
+                        `${String(name).split(" · ")[0]} (${value})`
+                      }
+                      labelLine={idx === 0 ? false : { stroke: "hsl(var(--border))" }}
+                      stroke="hsl(var(--card))"
+                      strokeWidth={idx === 0 ? 2 : 1}
+                    >
+                      {ring.map((d, i) => (
+                        <Cell key={i} fill={d.fill} fillOpacity={d.opacity} />
+                      ))}
+                    </Pie>
+                  ))}
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -186,9 +245,24 @@ function AdminAnalytics() {
                   </div>
                   <ul className="mt-1 pl-5 space-y-0.5">
                     {c.states.map((s) => (
-                      <li key={s.state} className="flex justify-between text-xs text-muted-foreground font-mono">
-                        <span>{s.state}</span>
-                        <span>{s.count.toLocaleString("en-IN")}</span>
+                      <li key={s.state}>
+                        <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                          <span>{s.state}</span>
+                          <span>{s.count.toLocaleString("en-IN")}</span>
+                        </div>
+                        {levels.district && (
+                          <ul className="pl-4">
+                            {(s.districts ?? []).map((d) => (
+                              <li
+                                key={d.district}
+                                className="flex justify-between text-[11px] text-muted-foreground/80 font-mono"
+                              >
+                                <span>{d.district}</span>
+                                <span>{d.count.toLocaleString("en-IN")}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </li>
                     ))}
                   </ul>
