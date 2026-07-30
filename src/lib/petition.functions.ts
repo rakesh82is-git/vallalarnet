@@ -415,6 +415,25 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count);
 
+  // Country -> State breakdown for the sunburst chart
+  const geoMap = new Map<string, Map<string, number>>();
+  for (const r of list) {
+    const country = r.country || "Unknown";
+    const state = r.state || "Unspecified";
+    if (!geoMap.has(country)) geoMap.set(country, new Map());
+    const states = geoMap.get(country)!;
+    states.set(state, (states.get(state) ?? 0) + 1);
+  }
+  const geoTree = Array.from(geoMap.entries())
+    .map(([country, states]) => ({
+      country,
+      count: Array.from(states.values()).reduce((a, b) => a + b, 0),
+      states: Array.from(states.entries())
+        .map(([state, count]) => ({ state, count }))
+        .sort((a, b) => b.count - a.count),
+    }))
+    .sort((a, b) => b.count - a.count);
+
   const { data: recent } = await supabaseAdmin
     .from("signatures_public")
     .select("name, district, state, created_at")
@@ -428,6 +447,7 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     series,
     regions,
     countryList,
+    geoTree,
     recent: (recent ?? []) as Array<{ name: string | null; district: string | null; state: string | null; created_at: string }>,
     goal: 100_000,
   };
