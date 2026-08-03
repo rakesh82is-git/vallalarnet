@@ -27,6 +27,31 @@ const RING_COLORS = [
   "hsl(185 65% 42%)",
 ];
 
+// Distinct, high-contrast palette used for state/district slices so that many
+// sub-regions stay visually separable (no opacity-only shading).
+const SUB_COLORS = [
+  "hsl(210 80% 52%)",
+  "hsl(140 55% 40%)",
+  "hsl(32 92% 52%)",
+  "hsl(300 50% 55%)",
+  "hsl(175 65% 38%)",
+  "hsl(0 70% 58%)",
+  "hsl(260 60% 60%)",
+  "hsl(88 52% 42%)",
+  "hsl(48 90% 46%)",
+  "hsl(320 60% 55%)",
+  "hsl(195 70% 45%)",
+  "hsl(12 75% 55%)",
+  "hsl(235 55% 58%)",
+  "hsl(120 45% 45%)",
+  "hsl(60 65% 42%)",
+  "hsl(345 65% 52%)",
+  "hsl(165 55% 45%)",
+  "hsl(275 55% 50%)",
+  "hsl(20 85% 48%)",
+  "hsl(220 60% 45%)",
+];
+
 const sKey = (c: string, s: string) => `${c}|${s}`;
 const dKey = (c: string, s: string, d: string) => `${c}|${s}|${d}`;
 
@@ -74,6 +99,9 @@ function AdminAnalytics() {
   let anyState = false;
   let anyDistrict = false;
 
+  let subIdx = 0;
+  const nextSub = () => SUB_COLORS[subIdx++ % SUB_COLORS.length];
+
   geoTree.forEach((c, i) => {
     if (!countries.has(c.country)) return;
     const fill = RING_COLORS[i % RING_COLORS.length];
@@ -87,28 +115,28 @@ function AdminAnalytics() {
     }
     anyState = true;
     const rest = c.count - picked.reduce((a, s) => a + s.count, 0);
-    picked.forEach((s, j) => {
-      const op = Math.max(0.4, 1 - j * 0.14);
-      stateRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill, opacity: op });
+    picked.forEach((s) => {
+      const sFill = nextSub();
+      stateRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill: sFill, opacity: 1 });
       const dPicked = (s.districts ?? []).filter((d) =>
         districts.has(dKey(c.country, s.state, d.district)),
       );
       if (dPicked.length === 0) {
-        districtRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill, opacity: 0.12 });
+        districtRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill: sFill, opacity: 0.18 });
         return;
       }
       anyDistrict = true;
       const dRest = s.count - dPicked.reduce((a, d) => a + d.count, 0);
-      dPicked.forEach((d, k) => {
+      dPicked.forEach((d) => {
         districtRing.push({
           name: `${d.district} · ${s.state}`,
           value: d.count,
-          fill,
-          opacity: Math.max(0.3, 0.9 - k * 0.1),
+          fill: nextSub(),
+          opacity: 1,
         });
       });
       if (dRest > 0)
-        districtRing.push({ name: `Other · ${s.state}`, value: dRest, fill, opacity: 0.12 });
+        districtRing.push({ name: `Other · ${s.state}`, value: dRest, fill: sFill, opacity: 0.18 });
     });
     if (rest > 0) {
       stateRing.push({ name: `Other · ${c.country}`, value: rest, fill, opacity: 0.15 });
@@ -239,6 +267,22 @@ function AdminAnalytics() {
             </div>
 
             <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground border-b border-border pb-2">
+                <input
+                  type="checkbox"
+                  checked={geoTree.length > 0 && geoTree.every((c) => countries.has(c.country))}
+                  onChange={(e) =>
+                    toggleSet(
+                      countries,
+                      setCountries,
+                      geoTree.map((c) => c.country),
+                      e.target.checked,
+                    )
+                  }
+                  className="h-4 w-4 accent-[hsl(24_90%_55%)]"
+                />
+                Select all countries
+              </label>
               {geoTree.map((c, i) => {
                 const color = RING_COLORS[i % RING_COLORS.length];
                 const expanded = open.has(c.country);
@@ -272,6 +316,29 @@ function AdminAnalytics() {
                     </div>
                     {expanded && (
                       <ul className="mt-1 pl-6 space-y-1">
+                        <li>
+                          <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                            <input
+                              type="checkbox"
+                              checked={
+                                c.states.length > 0 &&
+                                c.states.every((s) => states.has(sKey(c.country, s.state)))
+                              }
+                              onChange={(e) => {
+                                toggleSet(
+                                  states,
+                                  setStates,
+                                  c.states.map((s) => sKey(c.country, s.state)),
+                                  e.target.checked,
+                                );
+                                if (e.target.checked)
+                                  toggleSet(countries, setCountries, [c.country], true);
+                              }}
+                              className="h-3.5 w-3.5 accent-[hsl(24_90%_55%)]"
+                            />
+                            Select all states
+                          </label>
+                        </li>
                         {c.states.map((s) => {
                           const k = sKey(c.country, s.state);
                           const sOpen = open.has(k);
@@ -305,6 +372,35 @@ function AdminAnalytics() {
                               </div>
                               {sOpen && (
                                 <ul className="pl-6 mt-0.5 space-y-0.5">
+                                  <li>
+                                    <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                      <input
+                                        type="checkbox"
+                                        checked={
+                                          (s.districts ?? []).length > 0 &&
+                                          (s.districts ?? []).every((d) =>
+                                            districts.has(dKey(c.country, s.state, d.district)),
+                                          )
+                                        }
+                                        onChange={(e) => {
+                                          toggleSet(
+                                            districts,
+                                            setDistricts,
+                                            (s.districts ?? []).map((d) =>
+                                              dKey(c.country, s.state, d.district),
+                                            ),
+                                            e.target.checked,
+                                          );
+                                          if (e.target.checked) {
+                                            toggleSet(states, setStates, [k], true);
+                                            toggleSet(countries, setCountries, [c.country], true);
+                                          }
+                                        }}
+                                        className="h-3 w-3 accent-[hsl(24_90%_55%)]"
+                                      />
+                                      Select all districts
+                                    </label>
+                                  </li>
                                   {(s.districts ?? []).map((d) => {
                                     const dk = dKey(c.country, s.state, d.district);
                                     return (

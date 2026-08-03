@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getStats } from "@/lib/petition.functions";
 import { useLang } from "@/i18n/context";
@@ -76,13 +77,15 @@ function Lamp({ pct, size }: { pct: number; size: number }) {
 export function SignatureProgressLamp({ orientation = "vertical", className }: Props) {
   const { lang } = useLang();
   const fetchStats = useServerFn(getStats);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const { data } = useQuery({
     queryKey: ["stats"],
     queryFn: () => fetchStats(),
     staleTime: 60_000,
   });
-  const total = data?.total ?? 0;
-  const goal = data?.goal ?? 100000;
+  const total = mounted ? (data?.total ?? 0) : 0;
+  const goal = mounted ? (data?.goal ?? 100000) : 100000;
   const pct = Math.min(100, Math.round((total / Math.max(goal, 1)) * 100));
   const locale = lang === "ta" ? "ta-IN" : "en-IN";
   const eyebrow = lang === "ta" ? "வடலூர் புனித நகருக்கு செல்லும் பாதை" : "Road to Vadalur's Punitha Nagaram";
