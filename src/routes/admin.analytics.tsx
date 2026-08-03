@@ -27,18 +27,14 @@ const RING_COLORS = [
   "hsl(185 65% 42%)",
 ];
 
-type Level = "country" | "state" | "district";
+const sKey = (c: string, s: string) => `${c}|${s}`;
+const dKey = (c: string, s: string, d: string) => `${c}|${s}|${d}`;
 
 function AdminAnalytics() {
   const t = useT();
   const { data } = useSuspenseQuery(opts);
   const exportXlsx = useServerFn(adminExportSignaturesXlsx);
   const [exporting, setExporting] = useState(false);
-  const [levels, setLevels] = useState<Record<Level, boolean>>({
-    country: true,
-    state: false,
-    district: false,
-  });
 
   const pct = Math.min(100, Math.round((data.total / data.goal) * 100));
   const geoTree = (data.geoTree ?? []) as Array<{
@@ -52,56 +48,83 @@ function AdminAnalytics() {
   }>;
   const geoTotal = geoTree.reduce((a, c) => a + c.count, 0);
 
-  const countryRing = geoTree.map((c, i) => ({
-    name: c.country,
-    value: c.count,
-    fill: RING_COLORS[i % RING_COLORS.length],
-    opacity: 1,
-  }));
-  const stateRing = geoTree.flatMap((c, i) =>
-    c.states.map((s, j) => ({
-      name: `${s.state} · ${c.country}`,
-      short: s.state,
-      value: s.count,
-      fill: RING_COLORS[i % RING_COLORS.length],
-      opacity: Math.max(0.4, 1 - j * 0.14),
-    })),
+  const [countries, setCountries] = useState<Set<string>>(
+    () => new Set(geoTree.map((c) => c.country)),
   );
-  const districtRing = geoTree.flatMap((c, i) =>
-    c.states.flatMap((s) =>
-      (s.districts ?? []).map((d, k) => ({
-        name: `${d.district} · ${s.state}`,
-        short: d.district,
-        value: d.count,
-        fill: RING_COLORS[i % RING_COLORS.length],
-        opacity: Math.max(0.3, 0.9 - k * 0.1),
-      })),
-    ),
-  );
+  const [states, setStates] = useState<Set<string>>(() => new Set());
+  const [districts, setDistricts] = useState<Set<string>>(() => new Set());
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
 
-  const rings = (
-    [
-      levels.country ? countryRing : null,
-      levels.state ? stateRing : null,
-      levels.district ? districtRing : null,
-    ].filter(Boolean) as Array<
-      Array<{ name: string; short?: string; value: number; fill: string; opacity: number }>
-    >
-  ).filter((r) => r.length > 0);
+  function toggleSet(
+    set: Set<string>,
+    setter: (s: Set<string>) => void,
+    keys: string[],
+    on: boolean,
+  ) {
+    const next = new Set(set);
+    for (const k of keys) (on ? next.add(k) : next.delete(k));
+    setter(next);
+  }
+
+  type Slice = { name: string; value: number; fill: string; opacity: number };
+
+  const countryRing: Slice[] = [];
+  const stateRing: Slice[] = [];
+  const districtRing: Slice[] = [];
+  let anyState = false;
+  let anyDistrict = false;
+
+  geoTree.forEach((c, i) => {
+    if (!countries.has(c.country)) return;
+    const fill = RING_COLORS[i % RING_COLORS.length];
+    countryRing.push({ name: c.country, value: c.count, fill, opacity: 1 });
+
+    const picked = c.states.filter((s) => states.has(sKey(c.country, s.state)));
+    if (picked.length === 0) {
+      stateRing.push({ name: c.country, value: c.count, fill, opacity: 0.15 });
+      districtRing.push({ name: c.country, value: c.count, fill, opacity: 0.1 });
+      return;
+    }
+    anyState = true;
+    const rest = c.count - picked.reduce((a, s) => a + s.count, 0);
+    picked.forEach((s, j) => {
+      const op = Math.max(0.4, 1 - j * 0.14);
+      stateRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill, opacity: op });
+      const dPicked = (s.districts ?? []).filter((d) =>
+        districts.has(dKey(c.country, s.state, d.district)),
+      );
+      if (dPicked.length === 0) {
+        districtRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill, opacity: 0.12 });
+        return;
+      }
+      anyDistrict = true;
+      const dRest = s.count - dPicked.reduce((a, d) => a + d.count, 0);
+      dPicked.forEach((d, k) => {
+        districtRing.push({
+          name: `${d.district} · ${s.state}`,
+          value: d.count,
+          fill,
+          opacity: Math.max(0.3, 0.9 - k * 0.1),
+        });
+      });
+      if (dRest > 0)
+        districtRing.push({ name: `Other · ${s.state}`, value: dRest, fill, opacity: 0.12 });
+    });
+    if (rest > 0) {
+      stateRing.push({ name: `Other · ${c.country}`, value: rest, fill, opacity: 0.15 });
+      districtRing.push({ name: `Other · ${c.country}`, value: rest, fill, opacity: 0.1 });
+    }
+  });
+
+  const rings = [countryRing, anyState ? stateRing : null, anyDistrict ? districtRing : null].filter(
+    (r): r is Slice[] => !!r && r.length > 0,
+  );
 
   const RADII = [
     ["0%", "52%"],
     ["56%", "72%"],
     ["76%", "90%"],
   ] as const;
-
-  function toggle(level: Level) {
-    setLevels((prev) => {
-      const next = { ...prev, [level]: !prev[level] };
-      if (!next.country && !next.state && !next.district) return prev;
-      return next;
-    });
-  }
 
   async function handleExport() {
     setExporting(true);
