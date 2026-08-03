@@ -27,18 +27,14 @@ const RING_COLORS = [
   "hsl(185 65% 42%)",
 ];
 
-type Level = "country" | "state" | "district";
+const sKey = (c: string, s: string) => `${c}|${s}`;
+const dKey = (c: string, s: string, d: string) => `${c}|${s}|${d}`;
 
 function AdminAnalytics() {
   const t = useT();
   const { data } = useSuspenseQuery(opts);
   const exportXlsx = useServerFn(adminExportSignaturesXlsx);
   const [exporting, setExporting] = useState(false);
-  const [levels, setLevels] = useState<Record<Level, boolean>>({
-    country: true,
-    state: false,
-    district: false,
-  });
 
   const pct = Math.min(100, Math.round((data.total / data.goal) * 100));
   const geoTree = (data.geoTree ?? []) as Array<{
@@ -52,56 +48,83 @@ function AdminAnalytics() {
   }>;
   const geoTotal = geoTree.reduce((a, c) => a + c.count, 0);
 
-  const countryRing = geoTree.map((c, i) => ({
-    name: c.country,
-    value: c.count,
-    fill: RING_COLORS[i % RING_COLORS.length],
-    opacity: 1,
-  }));
-  const stateRing = geoTree.flatMap((c, i) =>
-    c.states.map((s, j) => ({
-      name: `${s.state} · ${c.country}`,
-      short: s.state,
-      value: s.count,
-      fill: RING_COLORS[i % RING_COLORS.length],
-      opacity: Math.max(0.4, 1 - j * 0.14),
-    })),
+  const [countries, setCountries] = useState<Set<string>>(
+    () => new Set(geoTree.map((c) => c.country)),
   );
-  const districtRing = geoTree.flatMap((c, i) =>
-    c.states.flatMap((s) =>
-      (s.districts ?? []).map((d, k) => ({
-        name: `${d.district} · ${s.state}`,
-        short: d.district,
-        value: d.count,
-        fill: RING_COLORS[i % RING_COLORS.length],
-        opacity: Math.max(0.3, 0.9 - k * 0.1),
-      })),
-    ),
-  );
+  const [states, setStates] = useState<Set<string>>(() => new Set());
+  const [districts, setDistricts] = useState<Set<string>>(() => new Set());
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
 
-  const rings = (
-    [
-      levels.country ? countryRing : null,
-      levels.state ? stateRing : null,
-      levels.district ? districtRing : null,
-    ].filter(Boolean) as Array<
-      Array<{ name: string; short?: string; value: number; fill: string; opacity: number }>
-    >
-  ).filter((r) => r.length > 0);
+  function toggleSet(
+    set: Set<string>,
+    setter: (s: Set<string>) => void,
+    keys: string[],
+    on: boolean,
+  ) {
+    const next = new Set(set);
+    for (const k of keys) (on ? next.add(k) : next.delete(k));
+    setter(next);
+  }
+
+  type Slice = { name: string; value: number; fill: string; opacity: number };
+
+  const countryRing: Slice[] = [];
+  const stateRing: Slice[] = [];
+  const districtRing: Slice[] = [];
+  let anyState = false;
+  let anyDistrict = false;
+
+  geoTree.forEach((c, i) => {
+    if (!countries.has(c.country)) return;
+    const fill = RING_COLORS[i % RING_COLORS.length];
+    countryRing.push({ name: c.country, value: c.count, fill, opacity: 1 });
+
+    const picked = c.states.filter((s) => states.has(sKey(c.country, s.state)));
+    if (picked.length === 0) {
+      stateRing.push({ name: c.country, value: c.count, fill, opacity: 0.15 });
+      districtRing.push({ name: c.country, value: c.count, fill, opacity: 0.1 });
+      return;
+    }
+    anyState = true;
+    const rest = c.count - picked.reduce((a, s) => a + s.count, 0);
+    picked.forEach((s, j) => {
+      const op = Math.max(0.4, 1 - j * 0.14);
+      stateRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill, opacity: op });
+      const dPicked = (s.districts ?? []).filter((d) =>
+        districts.has(dKey(c.country, s.state, d.district)),
+      );
+      if (dPicked.length === 0) {
+        districtRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill, opacity: 0.12 });
+        return;
+      }
+      anyDistrict = true;
+      const dRest = s.count - dPicked.reduce((a, d) => a + d.count, 0);
+      dPicked.forEach((d, k) => {
+        districtRing.push({
+          name: `${d.district} · ${s.state}`,
+          value: d.count,
+          fill,
+          opacity: Math.max(0.3, 0.9 - k * 0.1),
+        });
+      });
+      if (dRest > 0)
+        districtRing.push({ name: `Other · ${s.state}`, value: dRest, fill, opacity: 0.12 });
+    });
+    if (rest > 0) {
+      stateRing.push({ name: `Other · ${c.country}`, value: rest, fill, opacity: 0.15 });
+      districtRing.push({ name: `Other · ${c.country}`, value: rest, fill, opacity: 0.1 });
+    }
+  });
+
+  const rings = [countryRing, anyState ? stateRing : null, anyDistrict ? districtRing : null].filter(
+    (r): r is Slice[] => !!r && r.length > 0,
+  );
 
   const RADII = [
     ["0%", "52%"],
     ["56%", "72%"],
     ["76%", "90%"],
   ] as const;
-
-  function toggle(level: Level) {
-    setLevels((prev) => {
-      const next = { ...prev, [level]: !prev[level] };
-      if (!next.country && !next.state && !next.district) return prev;
-      return next;
-    });
-  }
 
   async function handleExport() {
     setExporting(true);
@@ -165,24 +188,9 @@ function AdminAnalytics() {
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
         <h2 className="text-xl font-display font-bold">Signers by geography</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Pick the levels to display ({geoTotal.toLocaleString("en-IN")} signatures)
+          Tick a country to include it; expand it to break it down by state, and a state to break
+          it down by district ({geoTotal.toLocaleString("en-IN")} signatures)
         </p>
-        <div className="mt-4 flex flex-wrap gap-4">
-          {(["country", "state", "district"] as Level[]).map((lv) => (
-            <label
-              key={lv}
-              className="flex items-center gap-2 text-sm capitalize cursor-pointer select-none rounded-full ring-1 ring-border px-4 py-1.5 hover:bg-secondary/60"
-            >
-              <input
-                type="checkbox"
-                checked={levels[lv]}
-                onChange={() => toggle(lv)}
-                className="h-4 w-4 accent-[hsl(24_90%_55%)]"
-              />
-              {lv}
-            </label>
-          ))}
-        </div>
         {geoTree.length === 0 ? (
           <p className="text-sm text-muted-foreground italic mt-4">{t.analytics.worldEmpty}</p>
         ) : (
@@ -230,44 +238,121 @@ function AdminAnalytics() {
               </ResponsiveContainer>
             </div>
 
-            <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
-              {geoTree.map((c, i) => (
-                <div key={c.country}>
-                  <div className="flex items-center justify-between text-sm font-semibold">
-                    <span className="flex items-center gap-2">
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              {geoTree.map((c, i) => {
+                const color = RING_COLORS[i % RING_COLORS.length];
+                const expanded = open.has(c.country);
+                return (
+                  <div key={c.country}>
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={countries.has(c.country)}
+                        onChange={(e) =>
+                          toggleSet(countries, setCountries, [c.country], e.target.checked)
+                        }
+                        className="h-4 w-4 accent-[hsl(24_90%_55%)]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          toggleSet(open, setOpen, [c.country], !expanded)
+                        }
+                        className="w-4 text-muted-foreground hover:text-foreground"
+                        aria-label="Toggle states"
+                      >
+                        {expanded ? "−" : "+"}
+                      </button>
                       <span
                         className="inline-block h-2.5 w-2.5 rounded-full"
-                        style={{ background: RING_COLORS[i % RING_COLORS.length] }}
+                        style={{ background: color }}
                       />
-                      {c.country}
-                    </span>
-                    <span className="font-mono">{c.count.toLocaleString("en-IN")}</span>
+                      <span className="flex-1">{c.country}</span>
+                      <span className="font-mono">{c.count.toLocaleString("en-IN")}</span>
+                    </div>
+                    {expanded && (
+                      <ul className="mt-1 pl-6 space-y-1">
+                        {c.states.map((s) => {
+                          const k = sKey(c.country, s.state);
+                          const sOpen = open.has(k);
+                          return (
+                            <li key={s.state}>
+                              <div className="flex items-center gap-2 text-xs">
+                                <input
+                                  type="checkbox"
+                                  checked={states.has(k)}
+                                  onChange={(e) =>
+                                    {
+                                      toggleSet(states, setStates, [k], e.target.checked);
+                                      if (e.target.checked)
+                                        toggleSet(countries, setCountries, [c.country], true);
+                                    }
+                                  }
+                                  className="h-3.5 w-3.5 accent-[hsl(24_90%_55%)]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSet(open, setOpen, [k], !sOpen)}
+                                  className="w-4 text-muted-foreground hover:text-foreground"
+                                  aria-label="Toggle districts"
+                                >
+                                  {(s.districts ?? []).length ? (sOpen ? "−" : "+") : ""}
+                                </button>
+                                <span className="flex-1">{s.state}</span>
+                                <span className="font-mono text-muted-foreground">
+                                  {s.count.toLocaleString("en-IN")}
+                                </span>
+                              </div>
+                              {sOpen && (
+                                <ul className="pl-6 mt-0.5 space-y-0.5">
+                                  {(s.districts ?? []).map((d) => {
+                                    const dk = dKey(c.country, s.state, d.district);
+                                    return (
+                                      <li
+                                        key={d.district}
+                                        className="flex items-center gap-2 text-[11px]"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={districts.has(dk)}
+                                          onChange={(e) =>
+                                            {
+                                              toggleSet(
+                                                districts,
+                                                setDistricts,
+                                                [dk],
+                                                e.target.checked,
+                                              );
+                                              if (e.target.checked) {
+                                                toggleSet(states, setStates, [k], true);
+                                                toggleSet(
+                                                  countries,
+                                                  setCountries,
+                                                  [c.country],
+                                                  true,
+                                                );
+                                              }
+                                            }
+                                          }
+                                          className="h-3 w-3 accent-[hsl(24_90%_55%)]"
+                                        />
+                                        <span className="flex-1">{d.district}</span>
+                                        <span className="font-mono text-muted-foreground/80">
+                                          {d.count.toLocaleString("en-IN")}
+                                        </span>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                   </div>
-                  <ul className="mt-1 pl-5 space-y-0.5">
-                    {c.states.map((s) => (
-                      <li key={s.state}>
-                        <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                          <span>{s.state}</span>
-                          <span>{s.count.toLocaleString("en-IN")}</span>
-                        </div>
-                        {levels.district && (
-                          <ul className="pl-4">
-                            {(s.districts ?? []).map((d) => (
-                              <li
-                                key={d.district}
-                                className="flex justify-between text-[11px] text-muted-foreground/80 font-mono"
-                              >
-                                <span>{d.district}</span>
-                                <span>{d.count.toLocaleString("en-IN")}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
