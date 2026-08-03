@@ -282,7 +282,11 @@ function AdminAnalytics() {
                                   type="checkbox"
                                   checked={states.has(k)}
                                   onChange={(e) =>
-                                    toggleSet(states, setStates, [k], e.target.checked)
+                                    {
+                                      toggleSet(states, setStates, [k], e.target.checked);
+                                      if (e.target.checked)
+                                        toggleSet(countries, setCountries, [c.country], true);
+                                    }
                                   }
                                   className="h-3.5 w-3.5 accent-[hsl(24_90%_55%)]"
                                 />
@@ -312,12 +316,23 @@ function AdminAnalytics() {
                                           type="checkbox"
                                           checked={districts.has(dk)}
                                           onChange={(e) =>
-                                            toggleSet(
-                                              districts,
-                                              setDistricts,
-                                              [dk],
-                                              e.target.checked,
-                                            )
+                                            {
+                                              toggleSet(
+                                                districts,
+                                                setDistricts,
+                                                [dk],
+                                                e.target.checked,
+                                              );
+                                              if (e.target.checked) {
+                                                toggleSet(states, setStates, [k], true);
+                                                toggleSet(
+                                                  countries,
+                                                  setCountries,
+                                                  [c.country],
+                                                  true,
+                                                );
+                                              }
+                                            }
                                           }
                                           className="h-3 w-3 accent-[hsl(24_90%_55%)]"
                                         />
