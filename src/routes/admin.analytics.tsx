@@ -99,6 +99,9 @@ function AdminAnalytics() {
   let anyState = false;
   let anyDistrict = false;
 
+  let subIdx = 0;
+  const nextSub = () => SUB_COLORS[subIdx++ % SUB_COLORS.length];
+
   geoTree.forEach((c, i) => {
     if (!countries.has(c.country)) return;
     const fill = RING_COLORS[i % RING_COLORS.length];
@@ -112,28 +115,28 @@ function AdminAnalytics() {
     }
     anyState = true;
     const rest = c.count - picked.reduce((a, s) => a + s.count, 0);
-    picked.forEach((s, j) => {
-      const op = Math.max(0.4, 1 - j * 0.14);
-      stateRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill, opacity: op });
+    picked.forEach((s) => {
+      const sFill = nextSub();
+      stateRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill: sFill, opacity: 1 });
       const dPicked = (s.districts ?? []).filter((d) =>
         districts.has(dKey(c.country, s.state, d.district)),
       );
       if (dPicked.length === 0) {
-        districtRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill, opacity: 0.12 });
+        districtRing.push({ name: `${s.state} · ${c.country}`, value: s.count, fill: sFill, opacity: 0.18 });
         return;
       }
       anyDistrict = true;
       const dRest = s.count - dPicked.reduce((a, d) => a + d.count, 0);
-      dPicked.forEach((d, k) => {
+      dPicked.forEach((d) => {
         districtRing.push({
           name: `${d.district} · ${s.state}`,
           value: d.count,
-          fill,
-          opacity: Math.max(0.3, 0.9 - k * 0.1),
+          fill: nextSub(),
+          opacity: 1,
         });
       });
       if (dRest > 0)
-        districtRing.push({ name: `Other · ${s.state}`, value: dRest, fill, opacity: 0.12 });
+        districtRing.push({ name: `Other · ${s.state}`, value: dRest, fill: sFill, opacity: 0.18 });
     });
     if (rest > 0) {
       stateRing.push({ name: `Other · ${c.country}`, value: rest, fill, opacity: 0.15 });
