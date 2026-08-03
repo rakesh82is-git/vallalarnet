@@ -27,6 +27,31 @@ const RING_COLORS = [
   "hsl(185 65% 42%)",
 ];
 
+// Distinct, high-contrast palette used for state/district slices so that many
+// sub-regions stay visually separable (no opacity-only shading).
+const SUB_COLORS = [
+  "hsl(210 80% 52%)",
+  "hsl(140 55% 40%)",
+  "hsl(32 92% 52%)",
+  "hsl(300 50% 55%)",
+  "hsl(175 65% 38%)",
+  "hsl(0 70% 58%)",
+  "hsl(260 60% 60%)",
+  "hsl(88 52% 42%)",
+  "hsl(48 90% 46%)",
+  "hsl(320 60% 55%)",
+  "hsl(195 70% 45%)",
+  "hsl(12 75% 55%)",
+  "hsl(235 55% 58%)",
+  "hsl(120 45% 45%)",
+  "hsl(60 65% 42%)",
+  "hsl(345 65% 52%)",
+  "hsl(165 55% 45%)",
+  "hsl(275 55% 50%)",
+  "hsl(20 85% 48%)",
+  "hsl(220 60% 45%)",
+];
+
 const sKey = (c: string, s: string) => `${c}|${s}`;
 const dKey = (c: string, s: string, d: string) => `${c}|${s}|${d}`;
 
