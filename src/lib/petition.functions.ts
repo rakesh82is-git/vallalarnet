@@ -259,22 +259,36 @@ export const submitManualSignature = createServerFn({ method: "POST" })
       .maybeSingle();
     if (existingMobile) return { ok: false as const, error: "duplicate" as const };
 
-    const { data: row, error } = await supabaseAdmin
+    const baseRow = {
+      name: data.name,
+      full_name: data.name,
+      mobile_number: data.mobile_number,
+      phone_number: data.mobile_number,
+      document_title: data.document_title,
+      manual_document_url: data.manual_document_url,
+      kind: "manual",
+      consent: true,
+      phone_hash: phoneHash,
+      phone_masked: mask(data.mobile_number),
+    };
+
+    let { data: row, error } = await supabaseAdmin
       .from("signatures")
-      .insert({
-        name: data.name,
-        full_name: data.name,
-        mobile_number: data.mobile_number,
-        phone_number: data.mobile_number,
-        document_title: data.document_title,
-        manual_document_url: data.manual_document_url,
-        kind: "manual",
-        consent: true,
-        phone_hash: phoneHash,
-        phone_masked: mask(data.mobile_number),
-      })
+      .insert({ ...baseRow, manual_signature_count: data.signature_count })
       .select("id")
       .single();
+
+    // Backend without the manual_signature_count column yet.
+    if (error && error.code === "42703") {
+      const retry = await supabaseAdmin
+        .from("signatures")
+        .insert(baseRow)
+        .select("id")
+        .single();
+      row = retry.data;
+      error = retry.error;
+    }
+
 
     if (error) {
       if (error.code === "23505") {
