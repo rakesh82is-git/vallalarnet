@@ -28,7 +28,10 @@ type SignatureRow = {
   state: string | null;
   district: string | null;
   created_at: string;
+  manual_document_url?: string | null;
+  manual_signature_count?: number | null;
 };
+
 
 type GalleryItem = {
   id: string;
