@@ -493,7 +493,11 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     .limit(8);
 
   return {
-    total: total ?? 0,
+    total,
+    digitalTotal,
+    manualTotal,
+    manualDocuments,
+
     countries,
     districts,
     series,
