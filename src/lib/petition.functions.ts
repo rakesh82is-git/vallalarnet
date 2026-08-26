@@ -73,7 +73,11 @@ type CampaignUpdate = {
 function emptyStats() {
   return {
     total: 0,
+    digitalTotal: 0,
+    manualTotal: 0,
+    manualDocuments: 0,
     countries: 0,
+
     districts: 0,
     series: [] as Array<{ day: string; daily: number; cumulative: number }>,
     regions: [] as Array<{ label: string; count: number }>,
