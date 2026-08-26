@@ -6,10 +6,12 @@ type ManualItem = {
   id: string;
   name: string;
   document_title: string | null;
+  signature_count: number;
   url: string | null;
   is_pdf: boolean;
   created_at: string;
 };
+
 
 type SignatureItem = {
   id: string;
