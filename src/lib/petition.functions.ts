@@ -448,7 +448,7 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
   const countryCount = new Map<string, number>();
   for (const r of list) {
     if (!r.country) continue;
-    countryCount.set(r.country, (countryCount.get(r.country) ?? 0) + 1);
+    countryCount.set(r.country, (countryCount.get(r.country) ?? 0) + r.weight);
   }
   const countryList = Array.from(countryCount.entries())
     .map(([label, count]) => ({ label, count }))
@@ -464,8 +464,9 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     const states = geoMap.get(country)!;
     if (!states.has(state)) states.set(state, new Map());
     const districtsMap = states.get(state)!;
-    districtsMap.set(district, (districtsMap.get(district) ?? 0) + 1);
+    districtsMap.set(district, (districtsMap.get(district) ?? 0) + r.weight);
   }
+
   const geoTree = Array.from(geoMap.entries())
     .map(([country, states]) => {
       const stateList = Array.from(states.entries())
