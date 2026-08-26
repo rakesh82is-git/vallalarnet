@@ -37,7 +37,7 @@ function AdminManualPage() {
 function ManualTab() {
   const { lang, t } = useLang();
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ name: "", mobile_number: "", document_title: "" });
+  const [form, setForm] = useState({ name: "", mobile_number: "", document_title: "", signature_count: "" });
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -49,7 +49,7 @@ function ManualTab() {
   }
 
   function resetForm() {
-    setForm({ name: "", mobile_number: "", document_title: "" });
+    setForm({ name: "", mobile_number: "", document_title: "", signature_count: "" });
     setFile(null);
     setPreview(null);
   }
@@ -88,6 +88,11 @@ function ManualTab() {
       toast.error("Please fill in all fields");
       return;
     }
+    const signatureCount = Number(form.signature_count);
+    if (!Number.isInteger(signatureCount) || signatureCount < 1) {
+      toast.error("Enter how many signatures this document contains (1 or more)");
+      return;
+    }
     if (!file) {
       toast.error("Please attach the signed document");
       return;
@@ -101,6 +106,7 @@ function ManualTab() {
           name: form.name,
           mobile_number: form.mobile_number,
           document_title: form.document_title,
+          signature_count: signatureCount,
           manual_document_url: uploaded.publicUrl,
         },
       });
@@ -150,6 +156,17 @@ function ManualTab() {
               value={form.mobile_number}
               onChange={(e) => set("mobile_number", e.target.value)}
               maxLength={20}
+            />
+          </Field>
+          <Field label="Number of signatures in this document">
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              step={1}
+              value={form.signature_count}
+              onChange={(e) => set("signature_count", e.target.value)}
+              placeholder="e.g. 45"
             />
           </Field>
           <div className="sm:col-span-2">
@@ -229,6 +246,7 @@ type ManualItem = {
   id: string;
   name: string;
   document_title: string | null;
+  signature_count: number;
   url: string | null;
   is_pdf: boolean;
   created_at: string;
@@ -287,6 +305,9 @@ function ManualFeed() {
               </div>
               <figcaption className="p-3">
                 <p className="text-sm font-medium truncate">{it.name}</p>
+                <p className="text-xs font-mono text-accent mt-0.5">
+                  {it.signature_count.toLocaleString()} signature{it.signature_count === 1 ? "" : "s"}
+                </p>
                 {it.document_title && (
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{it.document_title}</p>
                 )}
