@@ -311,16 +311,32 @@ export const listManualSignatures = createServerFn({ method: "GET" }).handler(
     const supabaseAdmin = await getBackendClient();
     if (!supabaseAdmin) return { items: [] as ManualItem[] };
 
-    const { data: rows } = await supabaseAdmin
-      .from("signatures")
-      .select("id, name, document_title, manual_document_url, created_at")
-      .eq("kind", "manual")
-      .not("manual_document_url", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(24);
+    const cols = "id, name, document_title, manual_document_url, created_at";
+    let rows: Array<Record<string, unknown>> = [];
+    {
+      const withCount = await supabaseAdmin
+        .from("signatures")
+        .select(`${cols}, manual_signature_count`)
+        .eq("kind", "manual")
+        .not("manual_document_url", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(24);
+      if (withCount.error) {
+        const fb = await supabaseAdmin
+          .from("signatures")
+          .select(cols)
+          .eq("kind", "manual")
+          .not("manual_document_url", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(24);
+        rows = (fb.data ?? []) as unknown as Array<Record<string, unknown>>;
+      } else {
+        rows = (withCount.data ?? []) as unknown as Array<Record<string, unknown>>;
+      }
+    }
 
     const items = await Promise.all(
-      ((rows ?? []) as Array<{ id: string; name: string; document_title: string | null; manual_document_url: string | null; created_at: string }>).map(async (r) => {
+      rows.map(async (r) => {
         const stored = r.manual_document_url as string;
         let url: string | null = null;
         if (/^https?:\/\//i.test(stored)) {
@@ -337,12 +353,14 @@ export const listManualSignatures = createServerFn({ method: "GET" }).handler(
           id: r.id as string,
           name: r.name as string,
           document_title: r.document_title as string | null,
+          signature_count: Number(r.manual_signature_count ?? 0),
           url,
           is_pdf: isPdf,
           created_at: r.created_at as string,
         };
       }),
     );
+
 
     return { items: items.filter((i: ManualItem) => i.url) };
   });
