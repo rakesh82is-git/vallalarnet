@@ -6,10 +6,12 @@ type ManualItem = {
   id: string;
   name: string;
   document_title: string | null;
+  signature_count: number;
   url: string | null;
   is_pdf: boolean;
   created_at: string;
 };
+
 
 type SignatureItem = {
   id: string;
@@ -28,7 +30,10 @@ type SignatureRow = {
   state: string | null;
   district: string | null;
   created_at: string;
+  manual_document_url?: string | null;
+  manual_signature_count?: number | null;
 };
+
 
 type GalleryItem = {
   id: string;
@@ -70,7 +75,11 @@ type CampaignUpdate = {
 function emptyStats() {
   return {
     total: 0,
+    digitalTotal: 0,
+    manualTotal: 0,
+    manualDocuments: 0,
     countries: 0,
+
     districts: 0,
     series: [] as Array<{ day: string; daily: number; cumulative: number }>,
     regions: [] as Array<{ label: string; count: number }>,
@@ -133,6 +142,8 @@ const ManualSignaturePayload = z.object({
   name: z.string().trim().min(1).max(100),
   mobile_number: z.string().trim().min(6).max(20),
   document_title: z.string().trim().min(1).max(200),
+  signature_count: z.number().int().min(1).max(1_000_000),
+
   manual_document_url: z.string().trim().url().max(2000),
 });
 
@@ -252,22 +263,36 @@ export const submitManualSignature = createServerFn({ method: "POST" })
       .maybeSingle();
     if (existingMobile) return { ok: false as const, error: "duplicate" as const };
 
-    const { data: row, error } = await supabaseAdmin
+    const baseRow = {
+      name: data.name,
+      full_name: data.name,
+      mobile_number: data.mobile_number,
+      phone_number: data.mobile_number,
+      document_title: data.document_title,
+      manual_document_url: data.manual_document_url,
+      kind: "manual",
+      consent: true,
+      phone_hash: phoneHash,
+      phone_masked: mask(data.mobile_number),
+    };
+
+    let { data: row, error } = await supabaseAdmin
       .from("signatures")
-      .insert({
-        name: data.name,
-        full_name: data.name,
-        mobile_number: data.mobile_number,
-        phone_number: data.mobile_number,
-        document_title: data.document_title,
-        manual_document_url: data.manual_document_url,
-        kind: "manual",
-        consent: true,
-        phone_hash: phoneHash,
-        phone_masked: mask(data.mobile_number),
-      })
+      .insert({ ...baseRow, manual_signature_count: data.signature_count })
       .select("id")
       .single();
+
+    // Backend without the manual_signature_count column yet.
+    if (error && error.code === "42703") {
+      const retry = await supabaseAdmin
+        .from("signatures")
+        .insert(baseRow)
+        .select("id")
+        .single();
+      row = retry.data;
+      error = retry.error;
+    }
+
 
     if (error) {
       if (error.code === "23505") {
@@ -288,16 +313,32 @@ export const listManualSignatures = createServerFn({ method: "GET" }).handler(
     const supabaseAdmin = await getBackendClient();
     if (!supabaseAdmin) return { items: [] as ManualItem[] };
 
-    const { data: rows } = await supabaseAdmin
-      .from("signatures")
-      .select("id, name, document_title, manual_document_url, created_at")
-      .eq("kind", "manual")
-      .not("manual_document_url", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(24);
+    const cols = "id, name, document_title, manual_document_url, created_at";
+    let rows: Array<Record<string, unknown>> = [];
+    {
+      const withCount = await supabaseAdmin
+        .from("signatures")
+        .select(`${cols}, manual_signature_count`)
+        .eq("kind", "manual")
+        .not("manual_document_url", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(24);
+      if (withCount.error) {
+        const fb = await supabaseAdmin
+          .from("signatures")
+          .select(cols)
+          .eq("kind", "manual")
+          .not("manual_document_url", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(24);
+        rows = (fb.data ?? []) as unknown as Array<Record<string, unknown>>;
+      } else {
+        rows = (withCount.data ?? []) as unknown as Array<Record<string, unknown>>;
+      }
+    }
 
     const items = await Promise.all(
-      ((rows ?? []) as Array<{ id: string; name: string; document_title: string | null; manual_document_url: string | null; created_at: string }>).map(async (r) => {
+      rows.map(async (r) => {
         const stored = r.manual_document_url as string;
         let url: string | null = null;
         if (/^https?:\/\//i.test(stored)) {
@@ -314,12 +355,14 @@ export const listManualSignatures = createServerFn({ method: "GET" }).handler(
           id: r.id as string,
           name: r.name as string,
           document_title: r.document_title as string | null,
+          signature_count: Number(r.manual_signature_count ?? 0),
           url,
           is_pdf: isPdf,
           created_at: r.created_at as string,
         };
       }),
     );
+
 
     return { items: items.filter((i: ManualItem) => i.url) };
   });
@@ -370,22 +413,47 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
   const supabaseAdmin = await getBackendClient();
   if (!supabaseAdmin) return emptyStats();
 
-  const { count: total } = await supabaseAdmin
-    .from("signatures")
-    .select("*", { count: "exact", head: true });
+  const BASE_COLS = "country, state, district, created_at, manual_document_url";
+  // The manual_signature_count column may not exist yet on older backends.
+  let rows: SignatureRow[] | null = null;
+  {
+    const withCount = await supabaseAdmin
+      .from("signatures")
+      .select(`${BASE_COLS}, manual_signature_count`)
+      .order("created_at", { ascending: true })
+      .limit(20000);
+    if (withCount.error) {
+      const fallback = await supabaseAdmin
+        .from("signatures")
+        .select(BASE_COLS)
+        .order("created_at", { ascending: true })
+        .limit(20000);
+      rows = (fallback.data ?? []) as unknown as SignatureRow[];
+    } else {
+      rows = (withCount.data ?? []) as unknown as SignatureRow[];
+    }
+  }
 
-  const { data: rows } = await supabaseAdmin
-    .from("signatures")
-    .select("country, state, district, created_at")
-    .order("created_at", { ascending: true })
-    .limit(5000);
+  const list = (rows ?? []).map((r: SignatureRow) => {
+    const isManual = !!r.manual_document_url;
+    return {
+      country: (r.country ?? "").trim(),
+      state: (r.state ?? "").trim(),
+      district: (r.district ?? "").trim(),
+      created_at: r.created_at,
+      isManual,
+      // Digital records count as one; manual documents count the signatures inside.
+      weight: isManual ? Math.max(0, Number(r.manual_signature_count ?? 0)) : 1,
+    };
+  });
 
-  const list = ((rows ?? []) as SignatureRow[]).map((r: SignatureRow) => ({
-    country: (r.country ?? "").trim(),
-    state: (r.state ?? "").trim(),
-    district: (r.district ?? "").trim(),
-    created_at: r.created_at,
-  }));
+  const digitalTotal = list.filter((r) => !r.isManual).length;
+  const manualTotal = list
+    .filter((r) => r.isManual)
+    .reduce((a, b) => a + b.weight, 0);
+  const total = digitalTotal + manualTotal;
+  const manualDocuments = list.filter((r) => r.isManual).length;
+
   const countries = new Set(list.map((r) => r.country).filter(Boolean)).size;
   const districts = new Set(
     list.filter((r) => r.state || r.district).map((r) => `${r.state}::${r.district}`),
@@ -394,7 +462,7 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
   const byDay = new Map<string, number>();
   for (const r of list) {
     const day = (r.created_at as string).slice(0, 10);
-    byDay.set(day, (byDay.get(day) ?? 0) + 1);
+    byDay.set(day, (byDay.get(day) ?? 0) + r.weight);
   }
   let cum = 0;
   const series = Array.from(byDay.entries())
@@ -408,17 +476,19 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
   for (const r of list) {
     if (!r.district && !r.state) continue;
     const key = `${r.district}, ${r.state}`;
-    topRegion.set(key, (topRegion.get(key) ?? 0) + 1);
+    topRegion.set(key, (topRegion.get(key) ?? 0) + r.weight);
   }
   const regions = Array.from(topRegion.entries())
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
+
+
   const countryCount = new Map<string, number>();
   for (const r of list) {
     if (!r.country) continue;
-    countryCount.set(r.country, (countryCount.get(r.country) ?? 0) + 1);
+    countryCount.set(r.country, (countryCount.get(r.country) ?? 0) + r.weight);
   }
   const countryList = Array.from(countryCount.entries())
     .map(([label, count]) => ({ label, count }))
@@ -434,8 +504,9 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     const states = geoMap.get(country)!;
     if (!states.has(state)) states.set(state, new Map());
     const districtsMap = states.get(state)!;
-    districtsMap.set(district, (districtsMap.get(district) ?? 0) + 1);
+    districtsMap.set(district, (districtsMap.get(district) ?? 0) + r.weight);
   }
+
   const geoTree = Array.from(geoMap.entries())
     .map(([country, states]) => {
       const stateList = Array.from(states.entries())
@@ -462,7 +533,11 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
     .limit(8);
 
   return {
-    total: total ?? 0,
+    total,
+    digitalTotal,
+    manualTotal,
+    manualDocuments,
+
     countries,
     districts,
     series,
