@@ -373,22 +373,47 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
   const supabaseAdmin = await getBackendClient();
   if (!supabaseAdmin) return emptyStats();
 
-  const { count: total } = await supabaseAdmin
-    .from("signatures")
-    .select("*", { count: "exact", head: true });
+  const BASE_COLS = "country, state, district, created_at, manual_document_url";
+  // The manual_signature_count column may not exist yet on older backends.
+  let rows: SignatureRow[] | null = null;
+  {
+    const withCount = await supabaseAdmin
+      .from("signatures")
+      .select(`${BASE_COLS}, manual_signature_count`)
+      .order("created_at", { ascending: true })
+      .limit(20000);
+    if (withCount.error) {
+      const fallback = await supabaseAdmin
+        .from("signatures")
+        .select(BASE_COLS)
+        .order("created_at", { ascending: true })
+        .limit(20000);
+      rows = (fallback.data ?? []) as unknown as SignatureRow[];
+    } else {
+      rows = (withCount.data ?? []) as unknown as SignatureRow[];
+    }
+  }
 
-  const { data: rows } = await supabaseAdmin
-    .from("signatures")
-    .select("country, state, district, created_at")
-    .order("created_at", { ascending: true })
-    .limit(5000);
+  const list = (rows ?? []).map((r: SignatureRow) => {
+    const isManual = !!r.manual_document_url;
+    return {
+      country: (r.country ?? "").trim(),
+      state: (r.state ?? "").trim(),
+      district: (r.district ?? "").trim(),
+      created_at: r.created_at,
+      isManual,
+      // Digital records count as one; manual documents count the signatures inside.
+      weight: isManual ? Math.max(0, Number(r.manual_signature_count ?? 0)) : 1,
+    };
+  });
 
-  const list = ((rows ?? []) as SignatureRow[]).map((r: SignatureRow) => ({
-    country: (r.country ?? "").trim(),
-    state: (r.state ?? "").trim(),
-    district: (r.district ?? "").trim(),
-    created_at: r.created_at,
-  }));
+  const digitalTotal = list.filter((r) => !r.isManual).length;
+  const manualTotal = list
+    .filter((r) => r.isManual)
+    .reduce((a, b) => a + b.weight, 0);
+  const total = digitalTotal + manualTotal;
+  const manualDocuments = list.filter((r) => r.isManual).length;
+
   const countries = new Set(list.map((r) => r.country).filter(Boolean)).size;
   const districts = new Set(
     list.filter((r) => r.state || r.district).map((r) => `${r.state}::${r.district}`),
@@ -397,7 +422,7 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
   const byDay = new Map<string, number>();
   for (const r of list) {
     const day = (r.created_at as string).slice(0, 10);
-    byDay.set(day, (byDay.get(day) ?? 0) + 1);
+    byDay.set(day, (byDay.get(day) ?? 0) + r.weight);
   }
   let cum = 0;
   const series = Array.from(byDay.entries())
@@ -411,12 +436,14 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
   for (const r of list) {
     if (!r.district && !r.state) continue;
     const key = `${r.district}, ${r.state}`;
-    topRegion.set(key, (topRegion.get(key) ?? 0) + 1);
+    topRegion.set(key, (topRegion.get(key) ?? 0) + r.weight);
   }
   const regions = Array.from(topRegion.entries())
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
+
+
 
   const countryCount = new Map<string, number>();
   for (const r of list) {
