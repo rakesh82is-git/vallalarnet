@@ -222,7 +222,12 @@ function ManualTab() {
         </div>
 
         <div className="flex gap-3">
-          <Button onClick={handleSubmit} disabled={busy} size="lg" className="flex-1">
+          <Button
+            onClick={handleSubmit}
+            disabled={busy || !form.signature_count}
+            size="lg"
+            className="flex-1"
+          >
             {busy ? "Uploading…" : "Upload Signature"}
           </Button>
           <Button type="button" variant="outline" onClick={resetForm} disabled={busy} size="lg">
