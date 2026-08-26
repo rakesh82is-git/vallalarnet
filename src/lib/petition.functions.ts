@@ -140,6 +140,8 @@ const ManualSignaturePayload = z.object({
   name: z.string().trim().min(1).max(100),
   mobile_number: z.string().trim().min(6).max(20),
   document_title: z.string().trim().min(1).max(200),
+  signature_count: z.number().int().min(1).max(1_000_000),
+
   manual_document_url: z.string().trim().url().max(2000),
 });
 
