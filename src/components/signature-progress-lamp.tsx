@@ -85,19 +85,42 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
     staleTime: 60_000,
   });
   const total = mounted ? (data?.total ?? 0) : 0;
+  const digitalTotal = mounted ? (data?.digitalTotal ?? 0) : 0;
+  const manualTotal = mounted ? (data?.manualTotal ?? 0) : 0;
   const goal = mounted ? (data?.goal ?? 100000) : 100000;
   const pct = Math.min(100, Math.round((total / Math.max(goal, 1)) * 100));
+  const digitalPct = Math.min(100, (digitalTotal / Math.max(goal, 1)) * 100);
+  const manualPct = Math.min(100 - digitalPct, (manualTotal / Math.max(goal, 1)) * 100);
   const locale = lang === "ta" ? "ta-IN" : "en-IN";
   const eyebrow = lang === "ta" ? "வடலூர் புனித நகருக்கு செல்லும் பாதை" : "Road to Vadalur's Punitha Nagaram";
   const goalLabel = lang === "ta" ? "இலக்கு" : "Goal";
   const signedLabel = lang === "ta" ? "கையொப்பங்கள்" : "signatures";
+  const digitalLabel = lang === "ta" ? "இணையம்" : "digital";
+  const manualLabel = lang === "ta" ? "காகிதம்" : "paper";
 
   const bar = (
-    <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+    <div className="h-1.5 rounded-full bg-secondary overflow-hidden flex">
       <div
         className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-        style={{ width: `${Math.max(pct, 1)}%` }}
+        style={{ width: `${digitalTotal > 0 ? Math.max(digitalPct, 1) : 0}%` }}
       />
+      <div
+        className="h-full bg-manual transition-all duration-700"
+        style={{ width: `${manualPct}%` }}
+      />
+    </div>
+  );
+
+  const legend = (
+    <div className="mt-1.5 flex items-center gap-3 text-[10px] font-mono text-muted-foreground">
+      <span className="flex items-center gap-1">
+        <span className="size-2 rounded-full bg-primary" aria-hidden />
+        {digitalTotal.toLocaleString(locale)} {digitalLabel}
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="size-2 rounded-full bg-manual" aria-hidden />
+        {manualTotal.toLocaleString(locale)} {manualLabel}
+      </span>
     </div>
   );
 
@@ -137,7 +160,8 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
     const stroke = 10;
     const radius = (ringSize - stroke) / 2;
     const circumference = 2 * Math.PI * radius;
-    const dashOffset = circumference * (1 - pct / 100);
+    const digitalLen = circumference * (digitalPct / 100);
+    const manualLen = circumference * (manualPct / 100);
     return (
       <div
         className={cn(
@@ -177,9 +201,20 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
               stroke="url(#lamp-ring)"
               strokeWidth={stroke}
               strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={dashOffset}
-              style={{ transition: "stroke-dashoffset 800ms cubic-bezier(0.16, 1, 0.3, 1)" }}
+              strokeDasharray={`${digitalLen} ${circumference}`}
+              style={{ transition: "stroke-dasharray 800ms cubic-bezier(0.16, 1, 0.3, 1)" }}
+            />
+            <circle
+              cx={ringSize / 2}
+              cy={ringSize / 2}
+              r={radius}
+              fill="none"
+              stroke="var(--manual)"
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              strokeDasharray={`${manualLen} ${circumference}`}
+              strokeDashoffset={-digitalLen}
+              style={{ transition: "stroke-dasharray 800ms cubic-bezier(0.16, 1, 0.3, 1)" }}
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center">
@@ -194,6 +229,16 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
         </div>
         <div className="text-[11px] font-mono text-muted-foreground text-center">
           {goalLabel} {goal.toLocaleString(locale)} {signedLabel}
+        </div>
+        <div className="flex items-center justify-center gap-3 text-[10px] font-mono text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="size-2 rounded-full bg-primary" aria-hidden />
+            {digitalTotal.toLocaleString(locale)} {digitalLabel}
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="size-2 rounded-full bg-manual" aria-hidden />
+            {manualTotal.toLocaleString(locale)} {manualLabel}
+          </span>
         </div>
       </div>
     );
@@ -221,7 +266,10 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
           </div>
         </div>
       </div>
-      <div className="mt-3">{bar}</div>
+      <div className="mt-3">
+        {bar}
+        {legend}
+      </div>
     </div>
   );
 }

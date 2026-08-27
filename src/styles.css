@@ -63,6 +63,7 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
+  --color-manual: var(--manual);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
@@ -102,6 +103,8 @@
   --muted-foreground: oklch(0.52 0.03 55);
   --accent: oklch(0.74 0.18 50);
   --accent-foreground: oklch(0.2 0.04 50);
+  /* Paper-petition signatures — warm amber, distinct from the saffron primary */
+  --manual: oklch(0.82 0.14 95);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.27 0.04 50 / 0.08);
@@ -136,6 +139,7 @@
   --muted: oklch(0.279 0.041 260.031);
   --muted-foreground: oklch(0.704 0.04 256.788);
   --accent: oklch(0.279 0.041 260.031);
+  --manual: oklch(0.75 0.13 95);
   --accent-foreground: oklch(0.984 0.003 247.858);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.984 0.003 247.858);

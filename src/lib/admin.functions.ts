@@ -167,10 +167,22 @@ export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handl
     const sb = await getBackend();
 
     const selectCols = [...SAFE_COLS, "signature_image", "manual_document_url"].join(",");
-    const { data, error } = await sb
+    let data: unknown = null;
+    let error: { message: string } | null = null;
+    const primary = await sb
       .from("signatures")
-      .select(selectCols)
+      .select(`${selectCols},manual_signature_count`)
       .order("created_at", { ascending: false });
+    data = primary.data;
+    error = primary.error;
+    if (error) {
+      const fb = await sb
+        .from("signatures")
+        .select(selectCols)
+        .order("created_at", { ascending: false });
+      data = fb.data;
+      error = fb.error;
+    }
     if (error) throw new Error(error.message);
 
     const rows = ((data ?? []) as unknown) as SigRow[];
@@ -202,6 +214,7 @@ export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handl
       { key: "consent", header: "Consent", width: 9 },
       { key: "kind", header: "Kind", width: 10 },
       { key: "document_title", header: "Document Title", width: 22 },
+      { key: "manual_signature_count", header: "Signatures in Document", width: 20 },
     ];
 
     const ROW_HEIGHT = 90; // px; ExcelJS uses points (≈ px*0.75)
@@ -324,7 +337,11 @@ export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handl
       base64,
       filename: `signatures-${new Date().toISOString().slice(0, 10)}.xlsx`,
       digitalCount: digitalRows.length,
-      manualCount: manualRows.length,
+      manualCount: manualRows.reduce(
+        (a, r) => a + Math.max(0, Number((r as any).manual_signature_count ?? 0)),
+        0,
+      ),
+      manualDocuments: manualRows.length,
     };
   },
 );
