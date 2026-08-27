@@ -416,24 +416,37 @@ export const getStats = createServerFn({ method: "GET" }).handler(async () => {
 
   const BASE_COLS = "country, state, district, created_at, manual_document_url";
   // The manual_signature_count column may not exist yet on older backends.
-  let rows: SignatureRow[] | null = null;
-  {
-    const withCount = await supabaseAdmin
-      .from("signatures")
-      .select(`${BASE_COLS}, manual_signature_count`)
-      .order("created_at", { ascending: true })
-      .limit(20000);
-    if (withCount.error) {
-      const fallback = await supabaseAdmin
+  // PostgREST caps a single response (typically 1000 rows), so page through.
+  const PAGE = 1000;
+  const MAX_ROWS = 200000;
+
+  async function fetchAll(cols: string) {
+    const all: SignatureRow[] = [];
+    for (let from = 0; from < MAX_ROWS; from += PAGE) {
+      const { data, error } = await supabaseAdmin!
         .from("signatures")
-        .select(BASE_COLS)
+        .select(cols)
         .order("created_at", { ascending: true })
-        .limit(20000);
-      rows = (fallback.data ?? []) as unknown as SignatureRow[];
-    } else {
-      rows = (withCount.data ?? []) as unknown as SignatureRow[];
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      const batch = (data ?? []) as unknown as SignatureRow[];
+      all.push(...batch);
+      if (batch.length < PAGE) break;
+    }
+    return all;
+  }
+
+  let rows: SignatureRow[] = [];
+  try {
+    rows = await fetchAll(`${BASE_COLS}, manual_signature_count`);
+  } catch {
+    try {
+      rows = await fetchAll(BASE_COLS);
+    } catch {
+      return emptyStats();
     }
   }
+
 
   const list = (rows ?? []).map((r: SignatureRow) => {
     const isManual = !!r.manual_document_url;
