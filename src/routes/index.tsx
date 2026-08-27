@@ -96,6 +96,12 @@ function Index() {
             <span className="mx-2">·</span>
             <span className="text-foreground font-semibold">{stats.countries}</span> {t.home.counterCountries}
           </div>
+          <div className="mt-1.5 text-center text-xs font-mono text-muted-foreground">
+            <span className="text-primary font-semibold">{stats.digitalTotal.toLocaleString("en-IN")}</span> digital
+            <span className="mx-2">·</span>
+            <span className="text-accent font-semibold">{stats.manualTotal.toLocaleString("en-IN")}</span> from paper petitions
+          </div>
+
         </div>
       </header>
 
