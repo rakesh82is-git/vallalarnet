@@ -173,7 +173,7 @@ function AdminAnalytics() {
       a.remove();
       URL.revokeObjectURL(url);
       toast.success(
-        `Exported ${res.digitalCount} digital + ${res.manualCount} manual`,
+        `Exported ${res.digitalCount} digital + ${res.manualCount} manual signatures`,
       );
     } catch (e) {
       console.error(e);
