@@ -167,10 +167,14 @@ export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handl
     const sb = await getBackend();
 
     const selectCols = [...SAFE_COLS, "signature_image", "manual_document_url"].join(",");
-    let { data, error } = await sb
+    let data: unknown = null;
+    let error: { message: string } | null = null;
+    const primary = await sb
       .from("signatures")
       .select(`${selectCols},manual_signature_count`)
       .order("created_at", { ascending: false });
+    data = primary.data;
+    error = primary.error;
     if (error) {
       const fb = await sb
         .from("signatures")

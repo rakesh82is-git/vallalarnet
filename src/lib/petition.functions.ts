@@ -305,6 +305,7 @@ export const submitManualSignature = createServerFn({ method: "POST" })
       .from("signatures")
       .select("*", { count: "exact", head: true });
 
+    if (!row) throw new Error("Failed to save manual document");
     return { ok: true as const, id: row.id as string, voteNumber: count ?? 1 };
   });
 
