@@ -202,15 +202,25 @@ function AdminAnalytics() {
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
         <h2 className="text-xl font-display font-bold">{t.analytics.goalTitle}</h2>
         <p className="text-sm text-muted-foreground mt-1">{t.analytics.goalSub}</p>
-        <div className="mt-5 h-4 rounded-full bg-secondary overflow-hidden">
+        <div className="mt-5 h-4 rounded-full bg-secondary overflow-hidden flex">
           <div
             className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-            style={{ width: `${Math.max(pct, 1)}%` }}
+            style={{ width: `${Math.min(100, (data.digitalTotal / Math.max(data.goal, 1)) * 100)}%` }}
+          />
+          <div
+            className="h-full bg-manual transition-all duration-700"
+            style={{ width: `${Math.min(100, (data.manualTotal / Math.max(data.goal, 1)) * 100)}%` }}
           />
         </div>
         <p className="mt-3 font-mono text-sm text-muted-foreground">
           {data.total.toLocaleString("en-IN")} / {data.goal.toLocaleString("en-IN")} · {pct}%
         </p>
+        <p className="mt-1 font-mono text-xs text-muted-foreground">
+          {data.digitalTotal.toLocaleString("en-IN")} digital ·{" "}
+          {data.manualTotal.toLocaleString("en-IN")} from {data.manualDocuments.toLocaleString("en-IN")} paper document
+          {data.manualDocuments === 1 ? "" : "s"}
+        </p>
+
       </section>
 
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
