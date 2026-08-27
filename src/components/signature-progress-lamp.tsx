@@ -102,7 +102,7 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
     <div className="h-1.5 rounded-full bg-secondary overflow-hidden flex">
       <div
         className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-        style={{ width: `${Math.max(digitalPct, total > 0 ? 1 : 1)}%` }}
+        style={{ width: `${digitalTotal > 0 ? Math.max(digitalPct, 1) : 0}%` }}
       />
       <div
         className="h-full bg-manual transition-all duration-700"
