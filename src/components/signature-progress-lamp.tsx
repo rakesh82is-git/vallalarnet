@@ -150,6 +150,7 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
             </span>
           </div>
           <div className="mt-1">{bar}</div>
+          {legend}
         </div>
       </div>
     );
