@@ -230,15 +230,9 @@ export function SignatureProgressLamp({ orientation = "vertical", className }: P
         <div className="text-[11px] font-mono text-muted-foreground text-center">
           {goalLabel} {goal.toLocaleString(locale)} {signedLabel}
         </div>
-        <div className="flex items-center justify-center gap-3 text-[10px] font-mono text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-primary" aria-hidden />
-            {digitalTotal.toLocaleString(locale)} {digitalLabel}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-manual" aria-hidden />
-            {manualTotal.toLocaleString(locale)} {manualLabel}
-          </span>
+        <div className="w-full">
+          {bar}
+          {legend}
         </div>
       </div>
     );
