@@ -20,12 +20,52 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes flame-flicker {
+  0%, 100% { opacity: 0.8; filter: brightness(1); }
+  22% { opacity: 1; filter: brightness(1.15); }
+  45% { opacity: 0.85; filter: brightness(0.98); }
+  68% { opacity: 1; filter: brightness(1.2); }
+  85% { opacity: 0.9; filter: brightness(1.05); }
+}
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
 @utility animate-glow {
   animation: glow-pulse 8s ease-in-out infinite;
 }
 
 @utility animate-reveal {
   animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Burning lamp-flame glow for the Sign CTA — saffron/amber ember shimmer */
+@utility flame-text {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-shadow:
+    0 0 6px color-mix(in oklab, var(--primary) 65%, transparent),
+    0 0 16px color-mix(in oklab, var(--accent) 50%, transparent),
+    0 0 30px color-mix(in oklab, var(--manual) 35%, transparent);
+  animation: flame-flicker 2.4s ease-in-out infinite;
+}
+
+/* Glowing chip for the floating Sign-here button */
+@utility flame-chip {
+  background: linear-gradient(155deg, var(--primary), var(--accent));
+  color: var(--primary-foreground);
+  box-shadow:
+    0 0 14px color-mix(in oklab, var(--primary) 55%, transparent),
+    0 0 36px color-mix(in oklab, var(--accent) 35%, transparent);
+  animation: flame-flicker 2.8s ease-in-out infinite, float-soft 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flame-text, .flame-chip {
+    animation: none;
+  }
 }
 
 /*
