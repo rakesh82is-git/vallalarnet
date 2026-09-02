@@ -113,16 +113,13 @@ const DigitalSignaturePayload = z.object({
   signature_image: z.string().max(800_000),
   sub_district: z.string().trim().max(120).optional().nullable(),
   locality: z.string().trim().max(160).optional().nullable(),
-  pincode: z.string().trim().max(20).optional().nullable(),
+  pincode: z.string().trim().min(1).max(20),
   referral_source: z
     .enum(["facebook", "instagram", "youtube", "whatsapp", "twitter", "others"])
     .optional()
     .nullable(),
   referral_other: z.string().trim().max(200).optional().nullable(),
 }).refine(
-  (d) => d.country.toLowerCase() !== "india" || (d.pincode && d.pincode.length >= 4),
-  { message: "Pincode is required for India", path: ["pincode"] },
-).refine(
   (d) =>
     d.referral_source !== "others" ||
     (d.referral_other != null && d.referral_other.trim().length > 0),
