@@ -460,12 +460,12 @@ function DigitalTab() {
   function validateForm(): boolean {
     const { name, age, district, mobile_local, pincode, locality } = form;
     const country = selectedCountry?.name ?? "";
-    if (!name || !age || !country || !stateName || !district || !mobile_local) {
+    if (!name || !age || !country || !stateName || !district || !mobile_local || !pincode) {
       toast.error(lang === "ta" ? "அனைத்து புலங்களையும் நிரப்பவும்" : "Please fill in all fields");
       return false;
     }
-    if (isIndia && (!pincode || !locality)) {
-      toast.error(lang === "ta" ? "இந்தியாவிற்கு அஞ்சல் குறியீடு மற்றும் ஊர் தேவை" : "Pincode and Locality are required for India");
+    if (isIndia && !locality) {
+      toast.error(lang === "ta" ? "இந்தியாவிற்கு ஊர் தேவை" : "Locality is required for India");
       return false;
     }
     const ageNum = Number(age);
@@ -665,8 +665,8 @@ function DigitalTab() {
         <Field
           label={
             isIndia
-              ? (lang === "ta" ? "அஞ்சல் குறியீடு" : "Pincode / Postcode")
-              : (lang === "ta" ? "அஞ்சல் குறியீடு" : "Pincode / Postcode")
+              ? (lang === "ta" ? "அஞ்சல் குறியீடு *" : "Pincode / Postcode *")
+              : (lang === "ta" ? "அஞ்சல் குறியீடு *" : "Pincode / Postcode *")
           }
         >
           <Combobox
