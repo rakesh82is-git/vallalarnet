@@ -521,7 +521,7 @@ function DigitalTab() {
           district,
           sub_district: null,
           locality: locality || null,
-          pincode: pincode || null,
+          pincode,
           mobile_number,
           signature_image: sig,
           referral_source: referral || null,
