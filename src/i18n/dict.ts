@@ -8,6 +8,7 @@ export const dict = {
       analytics: "பகுப்பாய்வு",
       gallery: "படத்தொகுப்பு",
       brand: "வடலூர்",
+      signHere: "இங்கே கையெழுத்திடுங்கள்",
     },
     home: {
       eyebrow: [
@@ -183,6 +184,7 @@ export const dict = {
       analytics: "Analytics",
       gallery: "Gallery",
       brand: "Vadalur",
+      signHere: "Sign here",
     },
     home: {
       eyebrow: [
