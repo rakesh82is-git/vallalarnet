@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { LanguageProvider, useLang } from "@/i18n/context";
 import { CampaignUpdatesDrawer } from "@/components/campaign-updates-drawer";
 import { SignatureProgressLamp } from "@/components/signature-progress-lamp";
+import { SignCtaFloater } from "@/components/sign-cta-floater";
 import { cn } from "@/lib/utils";
 
 const NAV = [
