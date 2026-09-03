@@ -52,14 +52,17 @@
   animation: flame-flicker 2.4s ease-in-out infinite;
 }
 
-/* Glowing chip for the floating Sign-here button */
+/* Oil-lamp flame outline chip for the floating Sign-here button:
+   a warm ember outline with a flame-shaped glow, breathing brighter/dimmer */
 @utility flame-chip {
-  background: linear-gradient(155deg, var(--primary), var(--accent));
-  color: var(--primary-foreground);
+  background: color-mix(in oklab, var(--card) 70%, transparent);
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
   box-shadow:
-    0 0 14px color-mix(in oklab, var(--primary) 55%, transparent),
-    0 0 36px color-mix(in oklab, var(--accent) 35%, transparent);
-  animation: flame-flicker 2.8s ease-in-out infinite, float-soft 5s ease-in-out infinite;
+    inset 0 -6px 14px color-mix(in oklab, var(--accent) 30%, transparent),
+    0 0 10px color-mix(in oklab, var(--primary) 45%, transparent),
+    0 0 28px color-mix(in oklab, var(--accent) 28%, transparent);
+  animation: flame-flicker 4.5s ease-in-out infinite, float-soft 6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
