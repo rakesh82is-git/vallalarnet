@@ -20,12 +20,12 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Slow dancing flame — breathes brighter and dimmer like a lamp in still air */
 @keyframes flame-flicker {
-  0%, 100% { opacity: 0.8; filter: brightness(1); }
-  22% { opacity: 1; filter: brightness(1.15); }
-  45% { opacity: 0.85; filter: brightness(0.98); }
-  68% { opacity: 1; filter: brightness(1.2); }
-  85% { opacity: 0.9; filter: brightness(1.05); }
+  0%, 100% { opacity: 0.75; filter: brightness(0.95); }
+  25% { opacity: 1; filter: brightness(1.25); }
+  50% { opacity: 0.85; filter: brightness(1.05); }
+  75% { opacity: 1; filter: brightness(1.35); }
 }
 
 @keyframes float-soft {
