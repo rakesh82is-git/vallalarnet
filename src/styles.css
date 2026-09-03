@@ -49,7 +49,7 @@
     0 0 6px color-mix(in oklab, var(--primary) 65%, transparent),
     0 0 16px color-mix(in oklab, var(--accent) 50%, transparent),
     0 0 30px color-mix(in oklab, var(--manual) 35%, transparent);
-  animation: flame-flicker 2.4s ease-in-out infinite;
+  animation: flame-flicker 4.5s ease-in-out infinite;
 }
 
 /* Oil-lamp flame outline chip for the floating Sign-here button:
