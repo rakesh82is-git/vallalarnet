@@ -120,8 +120,7 @@
   50% { transform: scale(1.05, 1.1) rotate(1.5deg); opacity: 1; }
 }
 @utility diya-medallion {
-  background: linear-gradient(180deg, color-mix(in oklab, var(--card) 92%, transparent), color-mix(in oklab, var(--card) 80%, var(--accent) 8%));
-  backdrop-filter: blur(6px);
+  background: linear-gradient(180deg, var(--card), color-mix(in oklab, var(--card) 88%, var(--accent) 12%));
   animation: jyothi-aura 5s ease-in-out infinite;
 }
 @utility diya-flame {
