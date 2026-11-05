@@ -18,7 +18,7 @@ export function SignCtaFloater() {
       aria-label={t.nav.signHere}
       className="fixed z-30 right-2 top-1/2 -translate-y-1/2 group"
     >
-      <span className="diya-medallion flex w-[6.5rem] flex-col items-center gap-1 rounded-2xl px-2 pb-2.5 pt-2 transition-transform duration-300 group-hover:scale-105 md:w-28">
+      <span className="diya-medallion flex w-[5.75rem] flex-col items-center gap-1 rounded-2xl px-1.5 pb-2.5 pt-2 transition-transform duration-300 group-hover:scale-105 md:w-32">
         <svg viewBox="0 0 64 64" className="h-11 w-11 md:h-12 md:w-12" aria-hidden="true">
           <defs>
             <radialGradient id="diya-glow" cx="50%" cy="45%" r="50%">
