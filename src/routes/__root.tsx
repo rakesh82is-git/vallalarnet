@@ -218,7 +218,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-    const message = String(error?.message || error || "");
+    const message = String((error as Error)?.message || error || "");
     const isStaleDevModule =
       message.includes("Failed to fetch dynamically imported module") ||
       message.includes("Outdated Optimize Dep") ||

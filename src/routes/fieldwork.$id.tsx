@@ -36,7 +36,7 @@ export const Route = createFileRoute("/fieldwork/$id")({
   errorComponent: ({ error, reset }: ErrorComponentProps) => (
     <div className="max-w-3xl mx-auto px-6 py-20 text-center">
       <h1 className="text-2xl font-display font-bold">Something went wrong</h1>
-      <p className="mt-2 text-muted-foreground">{error.message}</p>
+      <p className="mt-2 text-muted-foreground">{(error as Error).message}</p>
       <button onClick={reset} className="mt-6 text-accent underline">Try again</button>
     </div>
   ),
