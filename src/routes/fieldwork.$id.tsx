@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, type ErrorComponentProps } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { getFieldworkEvent } from "@/lib/petition.functions";
 import { useLang, useT } from "@/i18n/context";
@@ -33,10 +33,10 @@ export const Route = createFileRoute("/fieldwork/$id")({
       <Link to="/gallery" className="mt-6 inline-block text-accent underline">Back to gallery</Link>
     </div>
   ),
-  errorComponent: ({ error, reset }) => (
+  errorComponent: ({ error, reset }: ErrorComponentProps) => (
     <div className="max-w-3xl mx-auto px-6 py-20 text-center">
       <h1 className="text-2xl font-display font-bold">Something went wrong</h1>
-      <p className="mt-2 text-muted-foreground">{error.message}</p>
+      <p className="mt-2 text-muted-foreground">{(error as Error).message}</p>
       <button onClick={reset} className="mt-6 text-accent underline">Try again</button>
     </div>
   ),

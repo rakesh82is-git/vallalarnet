@@ -7,6 +7,7 @@ import {
   useRouterState,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -213,11 +214,11 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-    const message = String(error?.message || error || "");
+    const message = String((error as Error)?.message || error || "");
     const isStaleDevModule =
       message.includes("Failed to fetch dynamically imported module") ||
       message.includes("Outdated Optimize Dep") ||
