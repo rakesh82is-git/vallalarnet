@@ -100,7 +100,38 @@
   transform-origin: bottom center;
 }
 
+/* Sacred Diya medallion: steady card, softly breathing golden aura */
+@keyframes jyothi-aura {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--primary) 35%, transparent),
+      0 0 14px color-mix(in oklab, var(--accent) 28%, transparent),
+      0 8px 24px -10px color-mix(in oklab, var(--primary) 40%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--accent) 60%, transparent),
+      0 0 30px color-mix(in oklab, var(--accent) 45%, transparent),
+      0 10px 30px -10px color-mix(in oklab, var(--primary) 55%, transparent);
+  }
+}
+@keyframes jyothi-flame {
+  0%, 100% { transform: scale(1, 1) rotate(-1.5deg); opacity: 0.92; }
+  50% { transform: scale(1.05, 1.1) rotate(1.5deg); opacity: 1; }
+}
+@utility diya-medallion {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--card) 92%, transparent), color-mix(in oklab, var(--card) 80%, var(--accent) 8%));
+  backdrop-filter: blur(6px);
+  animation: jyothi-aura 5s ease-in-out infinite;
+}
+@utility diya-flame {
+  transform-origin: 50% 90%;
+  transform-box: fill-box;
+  animation: jyothi-flame 3.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .diya-medallion, .diya-flame { animation: none; }
   .flame-text, .flame-chip {
     animation: none;
   }
