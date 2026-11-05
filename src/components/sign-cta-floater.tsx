@@ -46,7 +46,7 @@ export function SignCtaFloater() {
           <path d="M8 38 C14 41 50 41 56 38" fill="none" stroke="var(--card)" strokeOpacity="0.5" strokeWidth="1.2" />
           <rect x="24" y="54" width="16" height="3" rx="1.5" fill="var(--primary)" />
         </svg>
-        <span className="break-words text-center text-[8.5px] font-semibold leading-snug text-primary md:text-[10.5px]">
+        <span className="w-full min-w-0 break-words text-center text-[8.5px] font-semibold leading-snug text-primary md:text-[10.5px]">
           {t.nav.signHere}
         </span>
       </span>
