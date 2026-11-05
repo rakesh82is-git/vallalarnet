@@ -4,7 +4,7 @@ import { useLang } from "@/i18n/context";
 /**
  * Persistent "Sign here" call-to-action: a Sacred Diya (Agal Vilakku)
  * medallion anchored to the right edge, vertically centred on every viewport.
- * The card stays steady; only the golden aura and the flame breathe gently.
+ * The opaque silhouette follows the lamp and label; its aura breathes gently.
  * Hidden on /sign and /admin.
  */
 export function SignCtaFloater() {
@@ -18,7 +18,10 @@ export function SignCtaFloater() {
       aria-label={t.nav.signHere}
       className="fixed z-30 right-2 top-1/2 -translate-y-1/2 group"
     >
-      <span className="diya-medallion flex w-[6.75rem] flex-col items-center gap-1 rounded-2xl px-1.5 pb-2.5 pt-2 transition-transform duration-300 group-hover:scale-105 md:w-[8.5rem]">
+      <span className="relative isolate flex w-[6.75rem] flex-col items-center gap-1 px-1.5 pb-2.5 pt-2 transition-transform duration-300 group-hover:scale-105 md:w-[8.5rem]">
+        <svg viewBox="0 0 136 120" preserveAspectRatio="none" className="diya-medallion pointer-events-none absolute inset-0 -z-10 h-full w-full" aria-hidden="true">
+          <path d="M68 2 C48 2 38 17 38 34 C38 45 42 53 38 60 C34 66 22 66 12 72 C5 76 2 83 2 94 C2 110 11 118 27 118 H109 C125 118 134 110 134 94 C134 83 131 76 124 72 C114 66 102 66 98 60 C94 53 98 45 98 34 C98 17 88 2 68 2 Z" fill="var(--card)" stroke="var(--primary)" strokeOpacity="0.45" strokeWidth="1" />
+        </svg>
         <svg viewBox="0 0 64 64" className="h-11 w-11 md:h-12 md:w-12" aria-hidden="true">
           <defs>
             <radialGradient id="diya-glow" cx="50%" cy="45%" r="50%">
