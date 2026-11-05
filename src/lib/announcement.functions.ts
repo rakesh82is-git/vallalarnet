@@ -42,10 +42,7 @@ async function getBackend() {
 
 // ---- Types ---------------------------------------------------------------
 
-export type DismissalRule =
-  | "once_per_announcement"
-  | "once_per_session"
-  | "every_visit";
+export type DismissalRule = "once_per_announcement" | "once_per_session";
 
 export type SiteAnnouncement = {
   id: string;
@@ -65,7 +62,6 @@ export type SiteAnnouncement = {
 const DISMISSAL_RULES: DismissalRule[] = [
   "once_per_announcement",
   "once_per_session",
-  "every_visit",
 ];
 
 // ---- Public: fetch the active announcement for a page --------------------
@@ -119,7 +115,7 @@ const AnnouncementUpsert = z.object({
   media_type: z.enum(["image", "video"]).optional().nullable(),
   target_pages: z.array(z.string().trim().min(1).max(100)).min(1).max(20),
   dismissal_rule: z
-    .enum(["once_per_announcement", "once_per_session", "every_visit"])
+    .enum(["once_per_announcement", "once_per_session"])
     .default("once_per_announcement"),
   is_active: z.boolean().default(false),
 });

@@ -13,7 +13,6 @@ const SS_KEY = (id: string) => `vd_ann_session:${id}`;
 
 function isDismissed(a: SiteAnnouncement): boolean {
   try {
-    if (a.dismissal_rule === "every_visit") return false;
     if (a.dismissal_rule === "once_per_session") {
       return !!sessionStorage.getItem(SS_KEY(a.id));
     }

@@ -57,11 +57,6 @@ const DISMISSAL_OPTIONS: { value: DismissalRule; label: string; hint: string }[]
     label: "Once per visit",
     hint: "Hidden after closing, but returns on the visitor's next session.",
   },
-  {
-    value: "every_visit",
-    label: "Every page load",
-    hint: "Shows every time a matching page is opened. Use sparingly.",
-  },
 ];
 
 type Draft = {
