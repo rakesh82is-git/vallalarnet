@@ -2,12 +2,10 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useLang } from "@/i18n/context";
 
 /**
- * Persistent "Sign here" call-to-action that floats in the blank space at the
- * right edge of every public page (hidden on /sign and /admin). The chip is
- * shaped like the flame of an oil lamp — a pointed-top teardrop outline —
- * breathing through the saffron/amber palette. On wide screens it renders as
- * a vertical ribbon centred on the right edge; on smaller screens it becomes
- * a compact flame above the Campaign Updates sheet.
+ * Persistent "Sign here" call-to-action: a Sacred Diya (Agal Vilakku)
+ * medallion anchored to the right edge, vertically centred on every viewport.
+ * The card stays steady; only the golden aura and the flame breathe gently.
+ * Hidden on /sign and /admin.
  */
 export function SignCtaFloater() {
   const { t } = useLang();
@@ -18,12 +16,39 @@ export function SignCtaFloater() {
     <Link
       to="/sign"
       aria-label={t.nav.signHere}
-      className="fixed z-30 right-3 bottom-24 md:right-0 md:bottom-auto md:top-1/2 md:-translate-y-1/2 group"
+      className="fixed z-30 right-2 top-1/2 -translate-y-1/2 group"
     >
-      <span
-        className="flame-chip inline-flex items-center justify-center px-5 py-3 text-xs font-semibold tracking-wide transition-transform group-hover:scale-105 md:[writing-mode:vertical-rl] md:px-3 md:py-6 md:text-sm"
-      >
-        {t.nav.signHere}
+      <span className="diya-medallion flex w-[6.5rem] flex-col items-center gap-1 rounded-2xl px-2 pb-2.5 pt-2 transition-transform duration-300 group-hover:scale-105 md:w-28">
+        <svg viewBox="0 0 64 64" className="h-11 w-11 md:h-12 md:w-12" aria-hidden="true">
+          <defs>
+            <radialGradient id="diya-glow" cx="50%" cy="45%" r="50%">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.55" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id="diya-flame-g" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stopColor="var(--primary)" />
+              <stop offset="60%" stopColor="var(--accent)" />
+              <stop offset="100%" stopColor="var(--manual)" />
+            </linearGradient>
+            <linearGradient id="diya-bowl-g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--manual)" />
+              <stop offset="100%" stopColor="var(--primary)" />
+            </linearGradient>
+          </defs>
+          <circle cx="32" cy="24" r="20" fill="url(#diya-glow)" />
+          <path
+            className="diya-flame"
+            d="M32 6 C36 14 40 19 40 26 C40 31 36.5 34 32 34 C27.5 34 24 31 24 26 C24 19 28 14 32 6 Z"
+            fill="url(#diya-flame-g)"
+          />
+          <path d="M32 18 C34 22 35.5 24 35.5 27 C35.5 29.5 34 31 32 31 C30 31 28.5 29.5 28.5 27 C28.5 24 30 22 32 18 Z" fill="var(--card)" opacity="0.75" />
+          <path d="M8 38 C14 36 50 36 56 38 C54 48 44 54 32 54 C20 54 10 48 8 38 Z" fill="url(#diya-bowl-g)" />
+          <path d="M8 38 C14 41 50 41 56 38" fill="none" stroke="var(--card)" strokeOpacity="0.5" strokeWidth="1.2" />
+          <rect x="24" y="54" width="16" height="3" rx="1.5" fill="var(--primary)" />
+        </svg>
+        <span className="text-center text-[10px] font-semibold leading-tight text-primary md:text-[11px]">
+          {t.nav.signHere}
+        </span>
       </span>
     </Link>
   );
