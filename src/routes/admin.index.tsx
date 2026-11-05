@@ -47,6 +47,16 @@ function AdminHome() {
           Upload scanned paper petitions on behalf of supporters who signed offline.
         </p>
       </Link>
+      <Link
+        to="/admin/announcements"
+        className="rounded-3xl bg-card ring-1 ring-border p-6 hover:ring-primary/60 transition"
+      >
+        <p className="text-xs font-mono uppercase tracking-widest text-accent">05</p>
+        <h2 className="mt-2 text-xl font-display font-bold">Announcements</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Popup notifications shown to visitors on page load, with text, images or videos.
+        </p>
+      </Link>
     </div>
   );
 }

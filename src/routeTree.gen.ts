@@ -22,6 +22,7 @@ import { Route as FieldworkIdRouteImport } from './routes/fieldwork.$id'
 import { Route as AdminUpdatesRouteImport } from './routes/admin.updates'
 import { Route as AdminManualRouteImport } from './routes/admin.manual'
 import { Route as AdminGalleryRouteImport } from './routes/admin.gallery'
+import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -93,6 +94,11 @@ const AdminGalleryRoute = AdminGalleryRouteImport.update({
   path: '/gallery',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/manual': typeof AdminManualRoute
   '/admin/updates': typeof AdminUpdatesRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/manual': typeof AdminManualRoute
   '/admin/updates': typeof AdminUpdatesRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/manual': typeof AdminManualRoute
   '/admin/updates': typeof AdminUpdatesRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/analytics'
+    | '/admin/announcements'
     | '/admin/gallery'
     | '/admin/manual'
     | '/admin/updates'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/analytics'
+    | '/admin/announcements'
     | '/admin/gallery'
     | '/admin/manual'
     | '/admin/updates'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/analytics'
+    | '/admin/announcements'
     | '/admin/gallery'
     | '/admin/manual'
     | '/admin/updates'
@@ -353,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminGalleryRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/announcements': {
+      id: '/admin/announcements'
+      path: '/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AdminAnnouncementsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/analytics': {
       id: '/admin/analytics'
       path: '/analytics'
@@ -393,6 +412,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminGalleryRoute: typeof AdminGalleryRoute
   AdminManualRoute: typeof AdminManualRoute
   AdminUpdatesRoute: typeof AdminUpdatesRoute
@@ -401,6 +421,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminGalleryRoute: AdminGalleryRoute,
   AdminManualRoute: AdminManualRoute,
   AdminUpdatesRoute: AdminUpdatesRoute,

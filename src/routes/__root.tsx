@@ -17,6 +17,7 @@ import { LanguageProvider, useLang } from "@/i18n/context";
 import { CampaignUpdatesDrawer } from "@/components/campaign-updates-drawer";
 import { SignatureProgressLamp } from "@/components/signature-progress-lamp";
 import { SignCtaFloater } from "@/components/sign-cta-floater";
+import { AnnouncementOverlay } from "@/components/announcement-overlay";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -168,6 +169,7 @@ function SiteShell({ children }: { children: ReactNode }) {
         )}
       </main>
       <SignCtaFloater />
+      <AnnouncementOverlay />
       <footer ref={footerRef} className="border-t border-border py-8 px-6 mt-16">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-muted-foreground">
           <div className="font-display font-bold text-primary text-sm">அருட்பெருஞ்ஜோதி</div>
