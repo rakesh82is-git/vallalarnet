@@ -22,6 +22,10 @@ export const Route = createFileRoute("/fieldwork/$id")({
   },
   head: ({ loaderData: _ld, params }) => ({
     meta: [
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary"},
+      {"property": "og:title", "content": "Fieldwork Event \u2014 Vadalur Holy City"},
+      {"property": "og:description", "content": "Community fieldwork supporting Vadalur Holy City status."},
       { title: "Fieldwork Event — Vadalur Holy City" },
       { name: "description", content: `Fieldwork event ${params.id}` },
     ],

@@ -8,6 +8,14 @@ import { submitManualSignature, listManualSignatures } from "@/lib/petition.func
 import { useLang } from "@/i18n/context";
 
 export const Route = createFileRoute("/admin/manual")({
+  head: () => ({ meta: [
+    {"title": "Paper Petitions \u2014 Vadalur Holy City"},
+    {"name": "description", "content": "Upload paper petitions and record their signature counts."},
+    {"property": "og:title", "content": "Paper Petitions \u2014 Vadalur Holy City"},
+    {"property": "og:description", "content": "Upload paper petitions and record their signature counts."},
+    {"property": "og:type", "content": "website"},
+    {"name": "twitter:card", "content": "summary"},
+  ] }),
   component: AdminManualPage,
 });
 

@@ -7,6 +7,11 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary"},
+      {"name": "description", "content": "Administrator access for the Vadalur petition and campaign."},
+      {"property": "og:title", "content": "Admin \u2014 Vadalur Holy City"},
+      {"property": "og:description", "content": "Administrator access for the Vadalur petition and campaign."},
       { title: "Admin — Vadalur" },
       { name: "robots", content: "noindex, nofollow" },
     ],

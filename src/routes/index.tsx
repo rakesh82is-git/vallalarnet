@@ -18,6 +18,9 @@ const recentOpts = queryOptions({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary"},
+      { name: "twitter:image", content: sanctuaryImg },
       { title: "Vadalur — Declare a Holy City" },
       { name: "description", content: "Global petition honouring Vallalar's sacred land and the Sathya Gnana Sabha. Sign to declare Vadalur a Holy City." },
       { property: "og:title", content: "Vadalur — Declare a Holy City" },

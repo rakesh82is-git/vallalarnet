@@ -25,6 +25,14 @@ const oauth = (supabase.auth as unknown as {
 }).oauth;
 
 export const Route = createFileRoute("/.lovable/oauth/consent")({
+  head: () => ({ meta: [
+    {"title": "Access Consent \u2014 Vadalur Holy City"},
+    {"name": "description", "content": "Review access to Vadalur campaign information."},
+    {"property": "og:title", "content": "Access Consent \u2014 Vadalur Holy City"},
+    {"property": "og:description", "content": "Review access to Vadalur campaign information."},
+    {"property": "og:type", "content": "website"},
+    {"name": "twitter:card", "content": "summary"},
+  ] }),
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id: typeof s.authorization_id === "string" ? s.authorization_id : "",

@@ -11,6 +11,8 @@ const wallOpts = queryOptions({
 export const Route = createFileRoute("/wall")({
   head: () => ({
     meta: [
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary"},
       { title: "Signature Wall — Vadalur Holy City" },
       { name: "description", content: "Every signature is a prayer for Vadalur. Read voices from across the world." },
       { property: "og:title", content: "Vadalur Signature Wall" },

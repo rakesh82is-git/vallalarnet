@@ -15,6 +15,9 @@ const siddhiValagamImg = STATIC.siddhiValagam;
 export const Route = createFileRoute("/story")({
   head: () => ({
     meta: [
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary"},
+      { name: "twitter:image", content: lampImg },
       { title: "The Story — Vadalur Holy City" },
       { name: "description", content: "Vallalar, the Sathya Gnana Sabha, and the case for declaring Vadalur a Holy City." },
       { property: "og:title", content: "The Story of Vadalur" },

@@ -10,6 +10,11 @@ export const Route = createFileRoute("/login")({
   }),
   head: () => ({
     meta: [
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary"},
+      {"name": "description", "content": "Sign in to access Vadalur campaign services."},
+      {"property": "og:title", "content": "Sign in \u2014 Vadalur Punitha Nagaram"},
+      {"property": "og:description", "content": "Sign in to access Vadalur campaign services."},
       { title: "Sign in — Vadalur Punitha Nagaram" },
       { name: "robots", content: "noindex, nofollow" },
     ],

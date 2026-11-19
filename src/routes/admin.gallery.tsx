@@ -82,6 +82,14 @@ const emptyEventDraft = (): EventDraft => ({
 });
 
 export const Route = createFileRoute("/admin/gallery")({
+  head: () => ({ meta: [
+    {"title": "Gallery Management \u2014 Vadalur Holy City"},
+    {"name": "description", "content": "Manage Vadalur campaign photographs, videos and fieldwork."},
+    {"property": "og:title", "content": "Gallery Management \u2014 Vadalur Holy City"},
+    {"property": "og:description", "content": "Manage Vadalur campaign photographs, videos and fieldwork."},
+    {"property": "og:type", "content": "website"},
+    {"name": "twitter:card", "content": "summary"},
+  ] }),
   component: AdminGallery,
 });
 

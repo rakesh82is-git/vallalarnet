@@ -4,13 +4,24 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { getStats } from "@/lib/petition.functions";
-import { adminExportSignaturesXlsx } from "@/lib/admin.functions";
+import { adminExportSignaturesPage } from "@/lib/admin.functions";
+import { buildSignaturesWorkbook, collectExportRows, deliverWorkbook, exportCounts } from "@/lib/signature-export";
+import { Button } from "@/components/ui/button";
+import { Download, LoaderCircle } from "lucide-react";
 import { useT } from "@/i18n/context";
 import { toast } from "sonner";
 
 const opts = queryOptions({ queryKey: ["admin", "stats", "full"], queryFn: () => getStats() });
 
 export const Route = createFileRoute("/admin/analytics")({
+  head: () => ({ meta: [
+    { title: "Petition Analytics — Vadalur Holy City" },
+    { name: "description", content: "Signature totals, geographic analysis and complete petition exports for Vadalur administrators." },
+    { property: "og:title", content: "Petition Analytics — Vadalur Holy City" },
+    { property: "og:description", content: "Vadalur petition analytics and signature exports." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: AdminAnalytics,
 });
 
@@ -58,8 +69,10 @@ const dKey = (c: string, s: string, d: string) => `${c}|${s}|${d}`;
 function AdminAnalytics() {
   const t = useT();
   const { data } = useSuspenseQuery(opts);
-  const exportXlsx = useServerFn(adminExportSignaturesXlsx);
+  const exportPage = useServerFn(adminExportSignaturesPage);
   const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [prepared, setPrepared] = useState<{ blob: Blob; filename: string; digitalCount: number; manualCount: number } | null>(null);
 
   const pct = Math.min(100, Math.round((data.total / data.goal) * 100));
   const geoTree = (data.geoTree ?? []) as Array<{
@@ -156,28 +169,24 @@ function AdminAnalytics() {
 
   async function handleExport() {
     setExporting(true);
+    setExportProgress(0);
+    setPrepared(null);
     try {
-      const res = await exportXlsx();
-      const bin = atob(res.base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast.success(
-        `Exported ${res.digitalCount} digital + ${res.manualCount} manual signatures`,
+      const rows = await collectExportRows(
+        (cursor, snapshot) => exportPage({ data: { cursor, snapshot } }),
+        setExportProgress,
       );
+      const counts = exportCounts(rows);
+      const blob = await buildSignaturesWorkbook(rows);
+      setPrepared({
+        blob,
+        filename: `signatures-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        ...counts,
+      });
+      toast.success(`Excel ready: ${counts.digitalCount.toLocaleString("en-IN")} digital + ${counts.manualCount.toLocaleString("en-IN")} paper signatures`);
     } catch (e) {
       console.error(e);
-      toast.error("Export failed");
+      toast.error(e instanceof Error ? e.message : "Export failed. Please try again.");
     } finally {
       setExporting(false);
     }
@@ -187,17 +196,25 @@ function AdminAnalytics() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-display font-bold">Analytics</h1>
-        <button
+        <Button
           onClick={handleExport}
           disabled={exporting}
-          className="rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-50"
         >
-          {exporting ? "Preparing…" : "Download signatures (Excel)"}
-        </button>
+          {exporting ? <LoaderCircle className="animate-spin" /> : <Download />}
+          {exporting ? `Preparing… ${exportProgress.toLocaleString("en-IN")} records` : "Prepare signatures (Excel)"}
+        </Button>
       </div>
       <p className="text-xs text-muted-foreground -mt-4">
-        Excel workbook with two sheets — Digital Signatures (with embedded signature images) and Manual Documents (with embedded document images, or a link when the file is a PDF). Excludes unmasked phone numbers.
+        All digital signatures and paper documents, including referral details and document links. Images and unmasked phone numbers are excluded. Legacy document links expire after seven days.
       </p>
+      {prepared && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-3" role="status">
+          <p className="text-sm">Ready: {prepared.digitalCount.toLocaleString("en-IN")} digital + {prepared.manualCount.toLocaleString("en-IN")} paper signatures</p>
+          <Button onClick={() => { void deliverWorkbook(prepared.blob, prepared.filename).catch(() => toast.error("Download failed. Please try again.")); }}>
+            <Download /> Download Excel
+          </Button>
+        </div>
+      )}
 
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
         <h2 className="text-xl font-display font-bold">{t.analytics.goalTitle}</h2>

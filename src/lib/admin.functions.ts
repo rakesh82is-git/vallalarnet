@@ -129,222 +129,75 @@ export const adminExportSignaturesCsv = createServerFn({ method: "GET" }).handle
   },
 );
 
-// ---- XLSX export with embedded signature / document images ---------------
-
-type SigRow = Record<string, unknown> & {
-  id: string;
-  signature_image?: string | null;
-  manual_document_url?: string | null;
-  kind?: string | null;
-};
-
-function parseDataUrl(s: string): { mime: string; bytes: Buffer } | null {
-  const m = /^data:([^;,]+)(;base64)?,(.*)$/.exec(s);
-  if (!m) return null;
-  const mime = m[1] || "image/png";
-  const isB64 = !!m[2];
-  try {
-    const bytes = isB64
-      ? Buffer.from(m[3], "base64")
-      : Buffer.from(decodeURIComponent(m[3]), "utf8");
-    return { mime, bytes };
-  } catch {
-    return null;
-  }
-}
-
-function imgExt(mime: string): "png" | "jpeg" | "gif" | null {
-  const m = mime.toLowerCase();
-  if (m.includes("png")) return "png";
-  if (m.includes("jpeg") || m.includes("jpg")) return "jpeg";
-  if (m.includes("gif")) return "gif";
-  return null;
-}
-
-export const adminExportSignaturesXlsx = createServerFn({ method: "GET" }).handler(
-  async () => {
+// Metadata-only cursor pages. Every request independently verifies the admin cookie.
+export const adminExportSignaturesPage = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({
+    cursor: z.string().uuid().nullable(),
+    snapshot: z.string().datetime().nullable(),
+  }).parse(input))
+  .handler(async ({ data }) => {
     await requireAdmin();
     const sb = await getBackend();
-
-    const selectCols = [...SAFE_COLS, "signature_image", "manual_document_url"].join(",");
-    let data: unknown = null;
-    let error: { message: string } | null = null;
-    const primary = await sb
-      .from("signatures")
-      .select(`${selectCols},manual_signature_count`)
-      .order("created_at", { ascending: false });
-    data = primary.data;
-    error = primary.error;
+    const { EXPORT_PAGE_SIZE } = await import("@/lib/signature-export");
+    const snapshot = data.snapshot ?? new Date().toISOString();
+    let query = sb.from("signatures")
+      .select([...SAFE_COLS, "locality", "manual_signature_count", "manual_document_url"].join(","))
+      .lte("created_at", snapshot)
+      .order("id", { ascending: true })
+      .limit(EXPORT_PAGE_SIZE);
+    if (data.cursor) query = query.gt("id", data.cursor);
+    const { data: records, error } = await query;
     if (error) {
-      const fb = await sb
-        .from("signatures")
-        .select(selectCols)
-        .order("created_at", { ascending: false });
-      data = fb.data;
-      error = fb.error;
+      console.error("[signature export] page query failed", { code: error.code });
+      throw new Error("Unable to load signatures. Please try again.");
     }
-    if (error) throw new Error(error.message);
-
-    const rows = ((data ?? []) as unknown) as SigRow[];
-    const manualRows = rows.filter((r) => !!r.manual_document_url);
-    const digitalRows = rows.filter((r) => !r.manual_document_url);
-
-    // exceljs ships as CJS; in the workers/ESM bundle the default export can
-    // be either the namespace itself or a `{ default }` wrapper.
-    const mod: any = await import("exceljs");
-    const ExcelJS: any = mod?.Workbook ? mod : (mod?.default?.Workbook ? mod.default : (mod?.default ?? mod));
-    if (typeof ExcelJS?.Workbook !== "function") {
-      throw new Error("exceljs failed to load (Workbook constructor missing)");
+    const rows = (records ?? []) as unknown as Array<Record<string, unknown>>;
+    const ids = rows.map((row) => String(row.id));
+    const referrals = new Map<string, { source: string; other_text: string | null }>();
+    // Best-effort analytics can be absent for older signatures.
+    if (ids.length) {
+      const { data: referralRows, error: referralError } = await sb.from("referral_sources")
+        .select("signature_id,source,other_text").in("signature_id", ids);
+      if (referralError) {
+        console.error("[signature export] referral query failed", { code: referralError.code });
+        throw new Error("Unable to load referral details. Please try again.");
+      }
+      for (const row of referralRows ?? []) referrals.set(row.signature_id, row);
     }
-    const wb = new ExcelJS.Workbook();
-
-    const baseHeaders: Array<{ key: string; header: string; width: number }> = [
-      { key: "created_at", header: "Created At", width: 22 },
-      { key: "full_name", header: "Full Name", width: 22 },
-      { key: "name", header: "Name", width: 18 },
-      { key: "email", header: "Email", width: 26 },
-      { key: "age", header: "Age", width: 6 },
-      { key: "country", header: "Country", width: 14 },
-      { key: "state", header: "State", width: 16 },
-      { key: "district", header: "District", width: 18 },
-      { key: "pincode", header: "Pincode", width: 10 },
-      { key: "residential_address", header: "Address", width: 30 },
-      { key: "message", header: "Message", width: 30 },
-      { key: "phone_masked", header: "Phone (masked)", width: 16 },
-      { key: "consent", header: "Consent", width: 9 },
-      { key: "kind", header: "Kind", width: 10 },
-      { key: "document_title", header: "Document Title", width: 22 },
-      { key: "manual_signature_count", header: "Signatures in Document", width: 20 },
-    ];
-
-    const ROW_HEIGHT = 90; // px; ExcelJS uses points (≈ px*0.75)
-    const IMG_COL_WIDTH = 28;
-
-    async function addSheet(
-      name: string,
-      list: SigRow[],
-      imageHeader: string,
-      getImage: (r: SigRow) => Promise<
-        | { kind: "image"; ext: "png" | "jpeg" | "gif"; bytes: Buffer }
-        | { kind: "link"; url: string; label: string }
-        | null
-      >,
-    ) {
-      const ws = wb.addWorksheet(name);
-      const cols = [
-        ...baseHeaders,
-        { key: "__img__", header: imageHeader, width: IMG_COL_WIDTH },
-      ];
-      ws.columns = cols.map((c) => ({ header: c.header, key: c.key, width: c.width }));
-      ws.getRow(1).font = { bold: true };
-      ws.getRow(1).alignment = { vertical: "middle" };
-
-      const imgColIndex = cols.length; // 1-based
-
-      for (const r of list) {
-        const rowValues: Record<string, unknown> = {};
-        for (const h of baseHeaders) rowValues[h.key] = r[h.key] ?? "";
-        const row = ws.addRow(rowValues);
-        row.height = ROW_HEIGHT * 0.75;
-        row.alignment = { vertical: "middle", wrapText: true };
-
-        const rowNumber = row.number;
-        const result = await getImage(r).catch(() => null);
-        if (!result) continue;
-
-        if (result.kind === "image") {
-          const imageId = wb.addImage({
-            buffer: result.bytes as unknown as ArrayBuffer,
-            extension: result.ext,
-          });
-          ws.addImage(imageId, {
-            tl: { col: imgColIndex - 1 + 0.05, row: rowNumber - 1 + 0.05 },
-            ext: { width: 180, height: 80 },
-            editAs: "oneCell",
-          });
-        } else {
-          const cell = row.getCell(imgColIndex);
-          cell.value = { text: result.label, hyperlink: result.url };
-          cell.font = { color: { argb: "FF1F6FEB" }, underline: true };
-        }
+    // Sign legacy storage paths in bulk without downloading any document bytes.
+    const paths = [...new Set(rows.map((row) => row.manual_document_url)
+      .filter((url): url is string => typeof url === "string" && !!url && !/^https?:\/\//i.test(url)))];
+    const links = new Map<string, string>();
+    if (paths.length) {
+      const { data: signed, error: storageError } = await sb.storage.from("petition-manual")
+        .createSignedUrls(paths, 7 * 24 * 60 * 60);
+      if (storageError) throw new Error("Unable to prepare document links. Please try again.");
+      for (const item of signed ?? []) {
+        if (item.path && item.signedUrl) links.set(item.path, item.signedUrl);
       }
     }
-
-    // Digital sheet — embed signature_image (data URL)
-    await addSheet("Digital Signatures", digitalRows, "Signature", async (r) => {
-      const s = (r.signature_image as string | null) ?? null;
-      if (!s) return null;
-      const parsed = s.startsWith("data:") ? parseDataUrl(s) : null;
-      if (!parsed) return null;
-      const ext = imgExt(parsed.mime);
-      if (!ext) return null;
-      return { kind: "image", ext, bytes: parsed.bytes };
+    const result: import("@/lib/signature-export").ExportRow[] = rows.map((row) => {
+      const referral = referrals.get(String(row.id));
+      const stored = row.manual_document_url;
+      const manual = Boolean(stored || row.kind === "manual");
+      const safe: import("@/lib/signature-export").ExportRow = {};
+      for (const [key, value] of Object.entries(row)) {
+        safe[key] = typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : null;
+      }
+      return {
+        ...safe,
+        manual_document_url: typeof stored === "string" ? (links.get(stored) ?? stored) : null,
+        referral_source: referral?.source ?? null,
+        referral_other: referral?.other_text ?? null,
+        signature_status: manual ? "Paper document" : "Digitally signed",
+      };
     });
-
-    // Manual sheet — fetch from petition-manual bucket
-    await addSheet("Manual Documents", manualRows, "Document", async (r) => {
-      const stored = (r.manual_document_url as string | null) ?? null;
-      if (!stored) return null;
-
-      // New: R2 (or any http) URLs — fetch directly.
-      if (/^https?:\/\//i.test(stored)) {
-        try {
-          const resp = await fetch(stored);
-          if (!resp.ok) {
-            return { kind: "link", url: stored, label: "Open document" };
-          }
-          const mime = resp.headers.get("content-type") || "";
-          const ext = imgExt(mime);
-          if (ext) {
-            const buf = Buffer.from(await resp.arrayBuffer());
-            return { kind: "image", ext, bytes: buf };
-          }
-          return { kind: "link", url: stored, label: "Open document" };
-        } catch {
-          return { kind: "link", url: stored, label: "Open document" };
-        }
-      }
-
-      // Legacy: object path in the petition-manual Supabase bucket.
-      const dl = await sb.storage.from("petition-manual").download(stored);
-      if (dl.error || !dl.data) {
-        const { data: signed } = await sb.storage
-          .from("petition-manual")
-          .createSignedUrl(stored, 60 * 60 * 24 * 7);
-        return signed?.signedUrl
-          ? { kind: "link", url: signed.signedUrl, label: "Open document" }
-          : null;
-      }
-      const blob = dl.data as Blob;
-      const mime = blob.type || "";
-      const ext = imgExt(mime);
-      if (ext) {
-        const buf = Buffer.from(await blob.arrayBuffer());
-        return { kind: "image", ext, bytes: buf };
-      }
-      // Not a renderable image (PDF, etc.) — fall back to a signed link
-      const { data: signed } = await sb.storage
-        .from("petition-manual")
-        .createSignedUrl(stored, 60 * 60 * 24 * 7);
-      return signed?.signedUrl
-        ? { kind: "link", url: signed.signedUrl, label: "Open document" }
-        : null;
-    });
-
-    const buf = await wb.xlsx.writeBuffer();
-    const base64 = Buffer.from(buf as ArrayBuffer).toString("base64");
     return {
-      base64,
-      filename: `signatures-${new Date().toISOString().slice(0, 10)}.xlsx`,
-      digitalCount: digitalRows.length,
-      manualCount: manualRows.reduce(
-        (a, r) => a + Math.max(0, Number((r as any).manual_signature_count ?? 0)),
-        0,
-      ),
-      manualDocuments: manualRows.length,
+      rows: result,
+      nextCursor: rows.length === EXPORT_PAGE_SIZE ? String(rows[rows.length - 1].id) : null,
+      snapshot,
     };
-  },
-);
+  });
 
 type GalleryItem = {
   id: string;

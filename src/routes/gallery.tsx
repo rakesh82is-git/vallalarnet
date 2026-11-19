@@ -38,6 +38,10 @@ const fwOpts = queryOptions({
 export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary"},
+      {"property": "og:description", "content": "Photos, videos and fieldwork from the Vadalur Holy City movement."},
+      { name: "twitter:image", content: gatheringImg },
       { title: "Gallery — Vadalur Holy City" },
       { name: "description", content: "Photos, videos and field-work from the Vadalur Holy City movement." },
       { property: "og:title", content: "Vadalur Gallery" },

@@ -34,6 +34,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/admin/announcements")({
+  head: () => ({ meta: [
+    {"title": "Announcements \u2014 Vadalur Holy City"},
+    {"name": "description", "content": "Manage bilingual visitor announcements for the Vadalur campaign."},
+    {"property": "og:title", "content": "Announcements \u2014 Vadalur Holy City"},
+    {"property": "og:description", "content": "Manage bilingual visitor announcements for the Vadalur campaign."},
+    {"property": "og:type", "content": "website"},
+    {"name": "twitter:card", "content": "summary"},
+  ] }),
   component: AdminAnnouncementsPage,
 });
 

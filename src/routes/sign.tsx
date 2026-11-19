@@ -35,6 +35,10 @@ type ReferralSource =
 export const Route = createFileRoute("/sign")({
   head: () => ({
     meta: [
+      {"property": "og:type", "content": "website"},
+      {"name": "twitter:card", "content": "summary"},
+      { name: "twitter:image", content: heroImg },
+      { property: "og:image", content: heroImg },
       { title: "Sign — Vadalur Holy City" },
       {
         name: "description",
