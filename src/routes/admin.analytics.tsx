@@ -5,7 +5,8 @@ import { useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { getStats } from "@/lib/petition.functions";
 import { adminExportSignaturesPage } from "@/lib/admin.functions";
-import { buildSignaturesWorkbook, collectExportRows, deliverWorkbook, exportCounts } from "@/lib/signature-export";
+import { buildSignaturesWorkbook, buildManualWorkbook, collectExportRows, deliverWorkbook, exportCounts } from "@/lib/signature-export";
+import { renderManualDocument } from "@/lib/manual-document-media";
 import { Button } from "@/components/ui/button";
 import { Download, LoaderCircle } from "lucide-react";
 import { useT } from "@/i18n/context";
@@ -70,9 +71,9 @@ function AdminAnalytics() {
   const t = useT();
   const { data } = useSuspenseQuery(opts);
   const exportPage = useServerFn(adminExportSignaturesPage);
-  const [exporting, setExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState(0);
-  const [prepared, setPrepared] = useState<{ blob: Blob; filename: string; digitalCount: number; manualCount: number } | null>(null);
+  const [exporting, setExporting] = useState<"digital" | "manual" | null>(null);
+  const [exportProgress, setExportProgress] = useState("");
+  const [prepared, setPrepared] = useState<Partial<Record<"digital" | "manual", { blob: Blob; filename: string; count: number; documents: number }>>>({});
 
   const pct = Math.min(100, Math.round((data.total / data.goal) * 100));
   const geoTree = (data.geoTree ?? []) as Array<{
@@ -167,28 +168,31 @@ function AdminAnalytics() {
     ["76%", "90%"],
   ] as const;
 
-  async function handleExport() {
-    setExporting(true);
-    setExportProgress(0);
-    setPrepared(null);
+  async function handleExport(scope: "digital" | "manual") {
+    setExporting(scope);
+    setExportProgress("Loading records…");
+    setPrepared((previous) => ({ ...previous, [scope]: undefined }));
     try {
       const rows = await collectExportRows(
-        (cursor, snapshot) => exportPage({ data: { cursor, snapshot } }),
-        setExportProgress,
+        (cursor, snapshot) => exportPage({ data: { cursor, snapshot, scope } }),
+        (count) => setExportProgress(`Loading ${count.toLocaleString("en-IN")} records…`),
       );
       const counts = exportCounts(rows);
-      const blob = await buildSignaturesWorkbook(rows);
-      setPrepared({
+      setExportProgress("Finishing workbook…");
+      const blob = scope === "digital" ? await buildSignaturesWorkbook(rows)
+        : await buildManualWorkbook(rows, renderManualDocument, setExportProgress);
+      setPrepared((previous) => ({ ...previous, [scope]: {
         blob,
-        filename: `signatures-${new Date().toISOString().slice(0, 10)}.xlsx`,
-        ...counts,
-      });
-      toast.success(`Excel ready: ${counts.digitalCount.toLocaleString("en-IN")} digital + ${counts.manualCount.toLocaleString("en-IN")} paper signatures`);
+        filename: `vadalur_${scope === "digital" ? "digital_signatures" : "manual_signatures_archive"}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+        count: scope === "digital" ? counts.digitalCount : counts.manualCount,
+        documents: counts.manualDocuments,
+      } }));
+      toast.success(`${scope === "digital" ? "Digital signatures" : "Manual archive"} ready`);
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "Export failed. Please try again.");
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   }
 
@@ -196,25 +200,27 @@ function AdminAnalytics() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-display font-bold">Analytics</h1>
-        <Button
-          onClick={handleExport}
-          disabled={exporting}
-        >
-          {exporting ? <LoaderCircle className="animate-spin" /> : <Download />}
-          {exporting ? `Preparing… ${exportProgress.toLocaleString("en-IN")} records` : "Prepare signatures (Excel)"}
-        </Button>
       </div>
-      <p className="text-xs text-muted-foreground -mt-4">
-        All digital signatures and paper documents, including referral details and document links. Images and unmasked phone numbers are excluded. Legacy document links expire after seven days.
-      </p>
-      {prepared && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-3" role="status">
-          <p className="text-sm">Ready: {prepared.digitalCount.toLocaleString("en-IN")} digital + {prepared.manualCount.toLocaleString("en-IN")} paper signatures</p>
-          <Button onClick={() => { void deliverWorkbook(prepared.blob, prepared.filename).catch(() => toast.error("Download failed. Please try again.")); }}>
-            <Download /> Download Excel
-          </Button>
-        </div>
-      )}
+      <div className="grid gap-4 border-y border-border py-4 md:grid-cols-2">
+        {(["digital", "manual"] as const).map((scope) => {
+          const file = prepared[scope];
+          const busy = exporting === scope;
+          return <section key={scope} className="min-w-0 space-y-3">
+            <h2 className="font-display text-lg font-semibold">{scope === "digital" ? "Digital Signatures" : "Manual Signatures Archive"}</h2>
+            <Button className="h-auto min-h-10 max-w-full whitespace-normal" disabled={exporting !== null} onClick={() => void handleExport(scope)}>
+              {busy ? <LoaderCircle className="animate-spin shrink-0" /> : <Download className="shrink-0" />}
+              {scope === "digital" ? "Prepare Digital Signatures (Excel)" : "Prepare Manual Archive (Excel)"}
+            </Button>
+            {busy && <p role="status" className="text-sm text-muted-foreground">{exportProgress}</p>}
+            {file && <div className="space-y-2">
+              <p role="status" className="text-sm">Ready: {file.count.toLocaleString("en-IN")} {scope === "digital" ? "digital signatures" : `paper signatures · ${file.documents} documents`}</p>
+              <Button variant="outline" onClick={() => void deliverWorkbook(file.blob, file.filename).catch(() => toast.error("Download failed. Please try again."))}>
+                <Download /> {scope === "digital" ? "Download Digital Excel" : "Download Manual Excel"}
+              </Button>
+            </div>}
+          </section>;
+        })}
+      </div>
 
       <section className="rounded-3xl bg-card ring-1 ring-border p-6 md:p-8">
         <h2 className="text-xl font-display font-bold">{t.analytics.goalTitle}</h2>

@@ -134,6 +134,7 @@ export const adminExportSignaturesPage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({
     cursor: z.string().uuid().nullable(),
     snapshot: z.string().datetime().nullable(),
+    scope: z.enum(["digital", "manual"]),
   }).parse(input))
   .handler(async ({ data }) => {
     await requireAdmin();
@@ -141,10 +142,15 @@ export const adminExportSignaturesPage = createServerFn({ method: "POST" })
     const { EXPORT_PAGE_SIZE } = await import("@/lib/signature-export");
     const snapshot = data.snapshot ?? new Date().toISOString();
     let query = sb.from("signatures")
-      .select([...SAFE_COLS, "locality", "manual_signature_count", "manual_document_url"].join(","))
+      .select([...SAFE_COLS, "locality", ...(data.scope === "manual" ? ["manual_signature_count", "manual_document_url"] : [])].join(","))
       .lte("created_at", snapshot)
       .order("id", { ascending: true })
       .limit(EXPORT_PAGE_SIZE);
+    if (data.scope === "manual") {
+      query = query.or("kind.eq.manual,manual_document_url.not.is.null");
+    } else {
+      query = query.or("kind.eq.digital,kind.is.null").is("manual_document_url", null);
+    }
     if (data.cursor) query = query.gt("id", data.cursor);
     const { data: records, error } = await query;
     if (error) {
@@ -164,13 +170,13 @@ export const adminExportSignaturesPage = createServerFn({ method: "POST" })
       }
       for (const row of referralRows ?? []) referrals.set(row.signature_id, row);
     }
-    // Sign legacy storage paths in bulk without downloading any document bytes.
+    // Temporary transport URLs are used only to embed manual attachments, never written to Excel.
     const paths = [...new Set(rows.map((row) => row.manual_document_url)
       .filter((url): url is string => typeof url === "string" && !!url && !/^https?:\/\//i.test(url)))];
     const links = new Map<string, string>();
     if (paths.length) {
       const { data: signed, error: storageError } = await sb.storage.from("petition-manual")
-        .createSignedUrls(paths, 7 * 24 * 60 * 60);
+        .createSignedUrls(paths, 60 * 60);
       if (storageError) throw new Error("Unable to prepare document links. Please try again.");
       for (const item of signed ?? []) {
         if (item.path && item.signedUrl) links.set(item.path, item.signedUrl);

@@ -1,5 +1,5 @@
-# Excel export
+# Separate Excel exports
 
-- [x] Replace the image-heavy server export with complete, paginated metadata and document links.
-- [x] Prepare and deliver the workbook reliably from Analytics, with progress and errors.
-- [x] Test pagination, weighted manual counts, and the authenticated download with live records.
+- [x] Export digital records only, with flattened referrals and no images or external links.
+- [x] Build a manual master index and one attachment tab per upload, including all PDF pages.
+- [x] Verify both downloads against live records and run export tests; leave the database unchanged.
